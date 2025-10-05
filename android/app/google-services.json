@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "52004539939",
+    "project_id": "drift-score",
+    "storage_bucket": "drift-score.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:52004539939:android:78b00f7cee6b10d3ea6b96",
+        "android_client_info": {
+          "package_name": "com.driftscore.drift_score"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCFrEPKIIBuxp3-8uBx1QDd1BETSfGC-Q0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

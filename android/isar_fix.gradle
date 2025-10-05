@@ -1,0 +1,7 @@
+afterEvaluate { project ->
+    if (project.plugins.hasPlugin('com.android.library')) {
+        project.android {
+            namespace 'dev.isar.isar_flutter_libs'
+        }
+    }
+}
