@@ -24,4 +24,11 @@ class AppColors {
   static Color shadowPrimary = primary.withOpacity(0.3);
   static Color shadowUpcoming = upcoming.withOpacity(0.3);
   static Color shadowBlack = Colors.black.withOpacity(0.2);
+
+  // Дополнительные цвета для UI элементов
+  static const Color surface = Color(0xFF2A4A6F); // Темнее фона для карточек
+  static const Color divider = Color(0xFF3D5A7C); // Разделители
+  static const Color textPrimary = text; // Основной текст (белый)
+  static const Color error = Color(0xFFE74C3C); // Ошибки
+  static const Color success = Color(0xFF27AE60); // Успех
 }

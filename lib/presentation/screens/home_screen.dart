@@ -4,6 +4,7 @@ import 'package:easy_localization/easy_localization.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_dimensions.dart';
+import 'enter_code_screen.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -291,7 +292,10 @@ class HomeScreen extends ConsumerWidget {
                 OutlinedButton.icon(
                   onPressed: () {
                     Navigator.pop(context);
-                    _showNotImplemented(context, 'enter_code'.tr());
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const EnterCodeScreen()),
+                    );
                   },
                   icon: const Icon(Icons.qr_code, size: AppDimensions.iconMedium),
                   label: Text('enter_code'.tr()),

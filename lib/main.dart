@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'firebase_options.dart';
 import 'data/services/isar_service.dart';
 import 'presentation/screens/home_screen.dart';
+import 'presentation/providers/competition_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,8 +22,28 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
+  // Инициализация Remote Config
+  final remoteConfig = FirebaseRemoteConfig.instance;
+  await remoteConfig.setConfigSettings(RemoteConfigSettings(
+    fetchTimeout: const Duration(seconds: 10),
+    minimumFetchInterval: const Duration(hours: 1),
+  ));
+
+  // Установка дефолтных значений
+  await remoteConfig.setDefaults(<String, dynamic>{
+    'master_code': 'DS-ADMIN-2025',
+  });
+
+  // Fetch и активация
+  try {
+    await remoteConfig.fetchAndActivate();
+    print('Remote Config activated. master_code: ${remoteConfig.getString('master_code')}');
+  } catch (e) {
+    print('Remote Config fetch failed: $e');
+  }
+
   // Инициализация Isar
-  await IsarService.getInstance();
+  final isar = await IsarService.getInstance();
 
   // Настройка Crashlytics
   FlutterError.onError = (errorDetails) {
@@ -45,8 +67,11 @@ void main() async {
       ],
       path: 'assets/locales',
       fallbackLocale: const Locale('ru'),
-      child: const ProviderScope(
-        child: DriftScoreApp(),
+      child: ProviderScope(
+        overrides: [
+          isarProvider.overrideWithValue(isar),
+        ],
+        child: const DriftScoreApp(),
       ),
     ),
   );

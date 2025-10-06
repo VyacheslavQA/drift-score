@@ -33,23 +33,51 @@ class AppTextStyles {
   static const TextStyle buttonMedium = TextStyle(
     fontSize: 15,
     fontWeight: FontWeight.w600,
+    color: AppColors.text,
   );
 
   static const TextStyle buttonSmall = TextStyle(
     fontSize: 14,
     fontWeight: FontWeight.w600,
+    color: AppColors.text,
+  );
+
+  static const TextStyle button = TextStyle(
+    fontSize: 16,
+    fontWeight: FontWeight.w600,
+    color: AppColors.text,
+    letterSpacing: 0.5,
   );
 
   // Обычный текст
-  static TextStyle bodyLarge = TextStyle(
+  static const TextStyle bodyLarge = TextStyle(
     fontSize: 16,
-    color: AppColors.textSecondary,
+    fontWeight: FontWeight.w400,
+    color: AppColors.text,
   );
 
-  static TextStyle bodyMedium = TextStyle(
+  static const TextStyle body = TextStyle(
+    fontSize: 14,
+    fontWeight: FontWeight.w400,
+    color: AppColors.text,
+  );
+
+  static const TextStyle bodyBold = TextStyle(
+    fontSize: 14,
+    fontWeight: FontWeight.w600,
+    color: AppColors.text,
+  );
+
+  static const TextStyle bodyMedium = TextStyle(
     fontSize: 14,
     fontWeight: FontWeight.w500,
-    color: AppColors.textTertiary,
+    color: AppColors.text,
+  );
+
+  static const TextStyle caption = TextStyle(
+    fontSize: 12,
+    fontWeight: FontWeight.w400,
+    color: AppColors.text,
   );
 
   // Язык
