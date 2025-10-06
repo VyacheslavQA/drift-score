@@ -162,5 +162,7 @@
   "offline_mode": "Offline mode",
   "syncing": "Syncing...",
   "synced": "Synced",
-  "pending_sync": "Pending sync"
+  "pending_sync": "Pending sync",
+  "create_competition_description": "To create a competition, enter an organizer code or purchase a new one",
+  "or": "or"
 }
