@@ -273,6 +273,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.7.11"
+  easy_localization:
+    dependency: "direct main"
+    description:
+      name: easy_localization
+      sha256: "2ccdf9db8fe4d9c5a75c122e6275674508fd0f0d49c827354967b8afcc56bbed"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.0.8"
+  easy_logger:
+    dependency: transitive
+    description:
+      name: easy_logger
+      sha256: c764a6e024846f33405a2342caf91c62e357c24b02c04dbc712ef232bf30ffb7
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.2"
   fake_async:
     dependency: transitive
     description:
@@ -462,6 +478,11 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "5.0.0"
+  flutter_localizations:
+    dependency: transitive
+    description: flutter
+    source: sdk
+    version: "0.0.0"
   flutter_plugin_android_lifecycle:
     dependency: transitive
     description:
@@ -470,6 +491,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.30"
+  flutter_riverpod:
+    dependency: "direct main"
+    description:
+      name: flutter_riverpod
+      sha256: "9532ee6db4a943a1ed8383072a2e3eeda041db5657cdf6d2acecf3c21ecbe7e1"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.6.1"
   flutter_svg:
     dependency: transitive
     description:
@@ -577,13 +606,13 @@ packages:
     source: hosted
     version: "0.3.22+1"
   intl:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: intl
-      sha256: d6f56758b7d3014a48af9701c085700aac781a92a87a62b1333b46d8879661cf
+      sha256: "3df61194eb431efc39c4ceba583b95633a403f46c9fd341e550ce0bfa50e9aa5"
       url: "https://pub.dev"
     source: hosted
-    version: "0.19.0"
+    version: "0.20.2"
   io:
     dependency: transitive
     description:
@@ -952,6 +981,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.1.0"
+  riverpod:
+    dependency: transitive
+    description:
+      name: riverpod
+      sha256: "59062512288d3056b2321804332a13ffdd1bf16df70dcc8e506e411280a72959"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.6.1"
   shared_preferences:
     dependency: "direct main"
     description:
@@ -1069,6 +1106,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.12.1"
+  state_notifier:
+    dependency: transitive
+    description:
+      name: state_notifier
+      sha256: b8677376aa54f2d7c58280d5a007f9e8774f1968d1fb1c096adcb4792fba29bb
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.0"
   stream_channel:
     dependency: transitive
     description:
@@ -1097,26 +1142,26 @@ packages:
     dependency: transitive
     description:
       name: syncfusion_flutter_core
-      sha256: "325f519ce4ad8edd81811c21b853d72018529e353584490824da0555156ba076"
+      sha256: bee87cdfe527b31705190162e3bd27bf468d591ae7c68182244bdfd94e21f737
       url: "https://pub.dev"
     source: hosted
-    version: "27.2.5"
+    version: "29.2.11"
   syncfusion_flutter_xlsio:
     dependency: "direct main"
     description:
       name: syncfusion_flutter_xlsio
-      sha256: "9ea161bffa9a5d41686f29ce59314b15d06ad3ad0850dbd76aeb2cc075c30b8c"
+      sha256: "71d6d34cb39c626c82c1066f085f9087adc9b39507f2acbfeb653c2a4ea0916b"
       url: "https://pub.dev"
     source: hosted
-    version: "27.2.5"
+    version: "29.2.11"
   syncfusion_officecore:
     dependency: transitive
     description:
       name: syncfusion_officecore
-      sha256: d69d58d9a07b2d980f5758e407c76fdef8d70537f2c9affea1d8e01a6a0c1615
+      sha256: "2c5f64d307d39f3c1e7c1ed2de07f04bc93365d590cee03e2f0307acb47ccc47"
       url: "https://pub.dev"
     source: hosted
-    version: "27.2.5"
+    version: "29.2.11"
   term_glyph:
     dependency: transitive
     description:
