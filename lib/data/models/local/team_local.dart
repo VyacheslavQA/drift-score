@@ -17,6 +17,7 @@ class TeamLocal {
   String? club;
 
   List<TeamMember> members = [];
+  List<Penalty> penalties = []; // Штрафы (текстовые записи)
 
   int? sector;
   int? drawOrder;
@@ -32,5 +33,13 @@ class TeamLocal {
 class TeamMember {
   late String fullName;
   late bool isCaptain;
-  late String rank;
+  late String rank; // КМС, МС, МСМК
+}
+
+@embedded
+class Penalty {
+  late String id; // UUID
+  late String description; // Свободный текст описания штрафа
+  late DateTime createdAt;
+  late String addedByJudgeId; // Кто добавил
 }

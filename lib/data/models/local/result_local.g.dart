@@ -2615,13 +2615,18 @@ const FishEntrySchema = Schema(
       name: r'id',
       type: IsarType.string,
     ),
-    r'timestamp': PropertySchema(
+    r'length': PropertySchema(
       id: 1,
+      name: r'length',
+      type: IsarType.double,
+    ),
+    r'timestamp': PropertySchema(
+      id: 2,
       name: r'timestamp',
       type: IsarType.dateTime,
     ),
     r'weight': PropertySchema(
-      id: 2,
+      id: 3,
       name: r'weight',
       type: IsarType.double,
     )
@@ -2649,8 +2654,9 @@ void _fishEntrySerialize(
   Map<Type, List<int>> allOffsets,
 ) {
   writer.writeString(offsets[0], object.id);
-  writer.writeDateTime(offsets[1], object.timestamp);
-  writer.writeDouble(offsets[2], object.weight);
+  writer.writeDouble(offsets[1], object.length);
+  writer.writeDateTime(offsets[2], object.timestamp);
+  writer.writeDouble(offsets[3], object.weight);
 }
 
 FishEntry _fishEntryDeserialize(
@@ -2661,8 +2667,9 @@ FishEntry _fishEntryDeserialize(
 ) {
   final object = FishEntry();
   object.id = reader.readString(offsets[0]);
-  object.timestamp = reader.readDateTime(offsets[1]);
-  object.weight = reader.readDouble(offsets[2]);
+  object.length = reader.readDoubleOrNull(offsets[1]);
+  object.timestamp = reader.readDateTime(offsets[2]);
+  object.weight = reader.readDouble(offsets[3]);
   return object;
 }
 
@@ -2676,8 +2683,10 @@ P _fishEntryDeserializeProp<P>(
     case 0:
       return (reader.readString(offset)) as P;
     case 1:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 2:
+      return (reader.readDateTime(offset)) as P;
+    case 3:
       return (reader.readDouble(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -2812,6 +2821,84 @@ extension FishEntryQueryFilter
       return query.addFilterCondition(FilterCondition.greaterThan(
         property: r'id',
         value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<FishEntry, FishEntry, QAfterFilterCondition> lengthIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'length',
+      ));
+    });
+  }
+
+  QueryBuilder<FishEntry, FishEntry, QAfterFilterCondition> lengthIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'length',
+      ));
+    });
+  }
+
+  QueryBuilder<FishEntry, FishEntry, QAfterFilterCondition> lengthEqualTo(
+    double? value, {
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'length',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<FishEntry, FishEntry, QAfterFilterCondition> lengthGreaterThan(
+    double? value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'length',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<FishEntry, FishEntry, QAfterFilterCondition> lengthLessThan(
+    double? value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'length',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<FishEntry, FishEntry, QAfterFilterCondition> lengthBetween(
+    double? lower,
+    double? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'length',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        epsilon: epsilon,
       ));
     });
   }

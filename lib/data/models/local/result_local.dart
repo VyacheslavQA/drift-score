@@ -20,10 +20,10 @@ class ResultLocal {
   late double totalWeight;
   late int fishCount;
   late double avgWeight;
-  double? biggestFishWeight;
+  double? biggestFishWeight; // Самая крупная рыба в этом взвешивании
 
   late bool isConfirmed;
-  String? confirmationMethod;
+  String? confirmationMethod; // 'qr' | 'signature'
   String? signatureLocalPath;
   DateTime? confirmedAt;
 
@@ -36,7 +36,8 @@ class ResultLocal {
 
 @embedded
 class FishEntry {
-  late String id;
+  late String id; // UUID
   late double weight;
+  double? length; // Длина опционально (для Big Fish протокола)
   late DateTime timestamp;
 }
