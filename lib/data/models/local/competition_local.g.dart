@@ -37,85 +37,95 @@ const CompetitionLocalSchema = CollectionSchema(
       name: r'createdByDeviceId',
       type: IsarType.string,
     ),
-    r'durationHours': PropertySchema(
+    r'durationDays': PropertySchema(
       id: 4,
+      name: r'durationDays',
+      type: IsarType.long,
+    ),
+    r'durationHours': PropertySchema(
+      id: 5,
       name: r'durationHours',
       type: IsarType.long,
     ),
     r'editHistory': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'editHistory',
       type: IsarType.objectList,
       target: r'EditLog',
     ),
     r'finalizedAt': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'finalizedAt',
       type: IsarType.dateTime,
     ),
+    r'finishTime': PropertySchema(
+      id: 8,
+      name: r'finishTime',
+      type: IsarType.dateTime,
+    ),
     r'isFinal': PropertySchema(
-      id: 7,
+      id: 9,
       name: r'isFinal',
       type: IsarType.bool,
     ),
     r'isSynced': PropertySchema(
-      id: 8,
+      id: 10,
       name: r'isSynced',
       type: IsarType.bool,
     ),
     r'judges': PropertySchema(
-      id: 9,
+      id: 11,
       name: r'judges',
       type: IsarType.objectList,
       target: r'Judge',
     ),
     r'lakeName': PropertySchema(
-      id: 10,
+      id: 12,
       name: r'lakeName',
       type: IsarType.string,
     ),
     r'lastSyncedAt': PropertySchema(
-      id: 11,
+      id: 13,
       name: r'lastSyncedAt',
       type: IsarType.dateTime,
     ),
     r'name': PropertySchema(
-      id: 12,
+      id: 14,
       name: r'name',
       type: IsarType.string,
     ),
     r'organizerName': PropertySchema(
-      id: 13,
+      id: 15,
       name: r'organizerName',
       type: IsarType.string,
     ),
     r'scoringRules': PropertySchema(
-      id: 14,
+      id: 16,
       name: r'scoringRules',
       type: IsarType.string,
     ),
     r'sectorsCount': PropertySchema(
-      id: 15,
+      id: 17,
       name: r'sectorsCount',
       type: IsarType.long,
     ),
     r'serverId': PropertySchema(
-      id: 16,
+      id: 18,
       name: r'serverId',
       type: IsarType.string,
     ),
     r'startTime': PropertySchema(
-      id: 17,
+      id: 19,
       name: r'startTime',
       type: IsarType.dateTime,
     ),
     r'status': PropertySchema(
-      id: 18,
+      id: 20,
       name: r'status',
       type: IsarType.string,
     ),
     r'updatedAt': PropertySchema(
-      id: 19,
+      id: 21,
       name: r'updatedAt',
       type: IsarType.dateTime,
     )
@@ -207,32 +217,34 @@ void _competitionLocalSerialize(
   writer.writeString(offsets[1], object.cityOrRegion);
   writer.writeDateTime(offsets[2], object.createdAt);
   writer.writeString(offsets[3], object.createdByDeviceId);
-  writer.writeLong(offsets[4], object.durationHours);
+  writer.writeLong(offsets[4], object.durationDays);
+  writer.writeLong(offsets[5], object.durationHours);
   writer.writeObjectList<EditLog>(
-    offsets[5],
+    offsets[6],
     allOffsets,
     EditLogSchema.serialize,
     object.editHistory,
   );
-  writer.writeDateTime(offsets[6], object.finalizedAt);
-  writer.writeBool(offsets[7], object.isFinal);
-  writer.writeBool(offsets[8], object.isSynced);
+  writer.writeDateTime(offsets[7], object.finalizedAt);
+  writer.writeDateTime(offsets[8], object.finishTime);
+  writer.writeBool(offsets[9], object.isFinal);
+  writer.writeBool(offsets[10], object.isSynced);
   writer.writeObjectList<Judge>(
-    offsets[9],
+    offsets[11],
     allOffsets,
     JudgeSchema.serialize,
     object.judges,
   );
-  writer.writeString(offsets[10], object.lakeName);
-  writer.writeDateTime(offsets[11], object.lastSyncedAt);
-  writer.writeString(offsets[12], object.name);
-  writer.writeString(offsets[13], object.organizerName);
-  writer.writeString(offsets[14], object.scoringRules);
-  writer.writeLong(offsets[15], object.sectorsCount);
-  writer.writeString(offsets[16], object.serverId);
-  writer.writeDateTime(offsets[17], object.startTime);
-  writer.writeString(offsets[18], object.status);
-  writer.writeDateTime(offsets[19], object.updatedAt);
+  writer.writeString(offsets[12], object.lakeName);
+  writer.writeDateTime(offsets[13], object.lastSyncedAt);
+  writer.writeString(offsets[14], object.name);
+  writer.writeString(offsets[15], object.organizerName);
+  writer.writeString(offsets[16], object.scoringRules);
+  writer.writeLong(offsets[17], object.sectorsCount);
+  writer.writeString(offsets[18], object.serverId);
+  writer.writeDateTime(offsets[19], object.startTime);
+  writer.writeString(offsets[20], object.status);
+  writer.writeDateTime(offsets[21], object.updatedAt);
 }
 
 CompetitionLocal _competitionLocalDeserialize(
@@ -246,35 +258,35 @@ CompetitionLocal _competitionLocalDeserialize(
   object.cityOrRegion = reader.readString(offsets[1]);
   object.createdAt = reader.readDateTime(offsets[2]);
   object.createdByDeviceId = reader.readStringOrNull(offsets[3]);
-  object.durationHours = reader.readLong(offsets[4]);
   object.editHistory = reader.readObjectList<EditLog>(
-        offsets[5],
+        offsets[6],
         EditLogSchema.deserialize,
         allOffsets,
         EditLog(),
       ) ??
       [];
-  object.finalizedAt = reader.readDateTimeOrNull(offsets[6]);
+  object.finalizedAt = reader.readDateTimeOrNull(offsets[7]);
+  object.finishTime = reader.readDateTime(offsets[8]);
   object.id = id;
-  object.isFinal = reader.readBool(offsets[7]);
-  object.isSynced = reader.readBool(offsets[8]);
+  object.isFinal = reader.readBool(offsets[9]);
+  object.isSynced = reader.readBool(offsets[10]);
   object.judges = reader.readObjectList<Judge>(
-        offsets[9],
+        offsets[11],
         JudgeSchema.deserialize,
         allOffsets,
         Judge(),
       ) ??
       [];
-  object.lakeName = reader.readString(offsets[10]);
-  object.lastSyncedAt = reader.readDateTimeOrNull(offsets[11]);
-  object.name = reader.readString(offsets[12]);
-  object.organizerName = reader.readString(offsets[13]);
-  object.scoringRules = reader.readString(offsets[14]);
-  object.sectorsCount = reader.readLong(offsets[15]);
-  object.serverId = reader.readStringOrNull(offsets[16]);
-  object.startTime = reader.readDateTime(offsets[17]);
-  object.status = reader.readString(offsets[18]);
-  object.updatedAt = reader.readDateTimeOrNull(offsets[19]);
+  object.lakeName = reader.readString(offsets[12]);
+  object.lastSyncedAt = reader.readDateTimeOrNull(offsets[13]);
+  object.name = reader.readString(offsets[14]);
+  object.organizerName = reader.readString(offsets[15]);
+  object.scoringRules = reader.readString(offsets[16]);
+  object.sectorsCount = reader.readLong(offsets[17]);
+  object.serverId = reader.readStringOrNull(offsets[18]);
+  object.startTime = reader.readDateTime(offsets[19]);
+  object.status = reader.readString(offsets[20]);
+  object.updatedAt = reader.readDateTimeOrNull(offsets[21]);
   return object;
 }
 
@@ -296,6 +308,8 @@ P _competitionLocalDeserializeProp<P>(
     case 4:
       return (reader.readLong(offset)) as P;
     case 5:
+      return (reader.readLong(offset)) as P;
+    case 6:
       return (reader.readObjectList<EditLog>(
             offset,
             EditLogSchema.deserialize,
@@ -303,13 +317,15 @@ P _competitionLocalDeserializeProp<P>(
             EditLog(),
           ) ??
           []) as P;
-    case 6:
-      return (reader.readDateTimeOrNull(offset)) as P;
     case 7:
-      return (reader.readBool(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 8:
-      return (reader.readBool(offset)) as P;
+      return (reader.readDateTime(offset)) as P;
     case 9:
+      return (reader.readBool(offset)) as P;
+    case 10:
+      return (reader.readBool(offset)) as P;
+    case 11:
       return (reader.readObjectList<Judge>(
             offset,
             JudgeSchema.deserialize,
@@ -317,25 +333,25 @@ P _competitionLocalDeserializeProp<P>(
             Judge(),
           ) ??
           []) as P;
-    case 10:
-      return (reader.readString(offset)) as P;
-    case 11:
-      return (reader.readDateTimeOrNull(offset)) as P;
     case 12:
       return (reader.readString(offset)) as P;
     case 13:
-      return (reader.readString(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 14:
       return (reader.readString(offset)) as P;
     case 15:
-      return (reader.readLong(offset)) as P;
-    case 16:
-      return (reader.readStringOrNull(offset)) as P;
-    case 17:
-      return (reader.readDateTime(offset)) as P;
-    case 18:
       return (reader.readString(offset)) as P;
+    case 16:
+      return (reader.readString(offset)) as P;
+    case 17:
+      return (reader.readLong(offset)) as P;
+    case 18:
+      return (reader.readStringOrNull(offset)) as P;
     case 19:
+      return (reader.readDateTime(offset)) as P;
+    case 20:
+      return (reader.readString(offset)) as P;
+    case 21:
       return (reader.readDateTimeOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -1060,6 +1076,62 @@ extension CompetitionLocalQueryFilter
   }
 
   QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      durationDaysEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'durationDays',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      durationDaysGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'durationDays',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      durationDaysLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'durationDays',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      durationDaysBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'durationDays',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
       durationHoursEqualTo(int value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -1270,6 +1342,62 @@ extension CompetitionLocalQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.between(
         property: r'finalizedAt',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      finishTimeEqualTo(DateTime value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'finishTime',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      finishTimeGreaterThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'finishTime',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      finishTimeLessThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'finishTime',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      finishTimeBetween(
+    DateTime lower,
+    DateTime upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'finishTime',
         lower: lower,
         includeLower: includeLower,
         upper: upper,
@@ -2617,6 +2745,20 @@ extension CompetitionLocalQuerySortBy
   }
 
   QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterSortBy>
+      sortByDurationDays() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'durationDays', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterSortBy>
+      sortByDurationDaysDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'durationDays', Sort.desc);
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterSortBy>
       sortByDurationHours() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'durationHours', Sort.asc);
@@ -2641,6 +2783,20 @@ extension CompetitionLocalQuerySortBy
       sortByFinalizedAtDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'finalizedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterSortBy>
+      sortByFinishTime() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'finishTime', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterSortBy>
+      sortByFinishTimeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'finishTime', Sort.desc);
     });
   }
 
@@ -2871,6 +3027,20 @@ extension CompetitionLocalQuerySortThenBy
   }
 
   QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterSortBy>
+      thenByDurationDays() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'durationDays', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterSortBy>
+      thenByDurationDaysDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'durationDays', Sort.desc);
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterSortBy>
       thenByDurationHours() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'durationHours', Sort.asc);
@@ -2895,6 +3065,20 @@ extension CompetitionLocalQuerySortThenBy
       thenByFinalizedAtDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'finalizedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterSortBy>
+      thenByFinishTime() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'finishTime', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterSortBy>
+      thenByFinishTimeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'finishTime', Sort.desc);
     });
   }
 
@@ -3111,6 +3295,13 @@ extension CompetitionLocalQueryWhereDistinct
   }
 
   QueryBuilder<CompetitionLocal, CompetitionLocal, QDistinct>
+      distinctByDurationDays() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'durationDays');
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QDistinct>
       distinctByDurationHours() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'durationHours');
@@ -3121,6 +3312,13 @@ extension CompetitionLocalQueryWhereDistinct
       distinctByFinalizedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'finalizedAt');
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QDistinct>
+      distinctByFinishTime() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'finishTime');
     });
   }
 
@@ -3246,6 +3444,12 @@ extension CompetitionLocalQueryProperty
     });
   }
 
+  QueryBuilder<CompetitionLocal, int, QQueryOperations> durationDaysProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'durationDays');
+    });
+  }
+
   QueryBuilder<CompetitionLocal, int, QQueryOperations>
       durationHoursProperty() {
     return QueryBuilder.apply(this, (query) {
@@ -3264,6 +3468,13 @@ extension CompetitionLocalQueryProperty
       finalizedAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'finalizedAt');
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, DateTime, QQueryOperations>
+      finishTimeProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'finishTime');
     });
   }
 

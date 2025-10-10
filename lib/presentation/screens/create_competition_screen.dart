@@ -9,7 +9,7 @@ import '../providers/competition_provider.dart';
 import '../../data/models/local/competition_local.dart';
 
 class CreateCompetitionScreen extends ConsumerStatefulWidget {
-  final String accessCode; // Код передаётся из EnterCodeScreen
+  final String accessCode;
 
   const CreateCompetitionScreen({
     Key? key,
@@ -30,7 +30,7 @@ class _CreateCompetitionScreenState extends ConsumerState<CreateCompetitionScree
   final _sectorsController = TextEditingController(text: '24');
 
   DateTime _startTime = DateTime.now();
-  int _durationHours = 72;
+  DateTime _finishTime = DateTime.now().add(Duration(hours: 72));
   String _scoringRules = 'total_weight';
 
   final List<Judge> _judges = [];
@@ -43,6 +43,30 @@ class _CreateCompetitionScreenState extends ConsumerState<CreateCompetitionScree
     _organizerController.dispose();
     _sectorsController.dispose();
     super.dispose();
+  }
+
+  int get _durationHours {
+    return _finishTime.difference(_startTime).inHours;
+  }
+
+  int get _durationDays {
+    final startDate = DateTime(_startTime.year, _startTime.month, _startTime.day);
+    final finishDate = DateTime(_finishTime.year, _finishTime.month, _finishTime.day);
+    return finishDate.difference(startDate).inDays + 1;
+  }
+
+  // Функция склонения числительных для русского языка
+  String _pluralize(int count, String one, String few, String many) {
+    final remainder10 = count % 10;
+    final remainder100 = count % 100;
+
+    if (remainder10 == 1 && remainder100 != 11) {
+      return one; // 1 час, 21 час, 1 день
+    } else if (remainder10 >= 2 && remainder10 <= 4 && (remainder100 < 10 || remainder100 >= 20)) {
+      return few; // 2-4 часа, 22-24 часа, 2-4 дня
+    } else {
+      return many; // 5-20 часов, 25-30 часов, 5-20 дней
+    }
   }
 
   @override
@@ -62,7 +86,6 @@ class _CreateCompetitionScreenState extends ConsumerState<CreateCompetitionScree
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Показываем код доступа
                 Container(
                   padding: EdgeInsets.all(AppDimensions.paddingMedium),
                   decoration: BoxDecoration(
@@ -128,10 +151,13 @@ class _CreateCompetitionScreenState extends ConsumerState<CreateCompetitionScree
                 ),
                 SizedBox(height: AppDimensions.paddingLarge),
 
-                _buildDateTimePicker(),
+                _buildStartTimePicker(),
                 SizedBox(height: AppDimensions.paddingMedium),
 
-                _buildDurationSelector(),
+                _buildFinishTimePicker(),
+                SizedBox(height: AppDimensions.paddingMedium),
+
+                _buildDurationInfo(),
                 SizedBox(height: AppDimensions.paddingMedium),
 
                 _buildScoringRulesSelector(),
@@ -155,7 +181,6 @@ class _CreateCompetitionScreenState extends ConsumerState<CreateCompetitionScree
                   ),
                 ),
 
-                // ✅ ДОПОЛНИТЕЛЬНЫЙ ОТСТУП СНИЗУ
                 SizedBox(height: AppDimensions.paddingXLarge),
               ],
             ),
@@ -197,9 +222,9 @@ class _CreateCompetitionScreenState extends ConsumerState<CreateCompetitionScree
     );
   }
 
-  Widget _buildDateTimePicker() {
+  Widget _buildStartTimePicker() {
     return InkWell(
-      onTap: _selectDateTime,
+      onTap: () => _selectDateTime(true),
       child: Container(
         padding: EdgeInsets.all(AppDimensions.paddingMedium),
         decoration: BoxDecoration(
@@ -213,13 +238,11 @@ class _CreateCompetitionScreenState extends ConsumerState<CreateCompetitionScree
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('start_time'.tr(), style: AppTextStyles.caption.copyWith(
-                    color: AppColors.textSecondary)),
+                Text('start_time'.tr(), style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary)),
                 SizedBox(height: 4),
                 Text(
                   DateFormat('dd.MM.yyyy HH:mm').format(_startTime),
-                  style: AppTextStyles.body.copyWith(
-                      color: AppColors.textPrimary),
+                  style: AppTextStyles.body.copyWith(color: AppColors.textPrimary),
                 ),
               ],
             ),
@@ -230,38 +253,59 @@ class _CreateCompetitionScreenState extends ConsumerState<CreateCompetitionScree
     );
   }
 
-  Widget _buildDurationSelector() {
+  Widget _buildFinishTimePicker() {
+    return InkWell(
+      onTap: () => _selectDateTime(false),
+      child: Container(
+        padding: EdgeInsets.all(AppDimensions.paddingMedium),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+          border: Border.all(color: AppColors.divider),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('finish_time'.tr(), style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary)),
+                SizedBox(height: 4),
+                Text(
+                  DateFormat('dd.MM.yyyy HH:mm').format(_finishTime),
+                  style: AppTextStyles.body.copyWith(color: AppColors.textPrimary),
+                ),
+              ],
+            ),
+            Icon(Icons.calendar_today, color: AppColors.primary),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDurationInfo() {
+    final hoursText = _pluralize(_durationHours, 'час', 'часа', 'часов');
+    final daysText = _pluralize(_durationDays, 'день', 'дня', 'дней');
+
     return Container(
       padding: EdgeInsets.all(AppDimensions.paddingMedium),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.primary.withOpacity(0.1),
         borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
-        border: Border.all(color: AppColors.divider),
+        border: Border.all(color: AppColors.primary.withOpacity(0.3)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Text('duration'.tr(), style: AppTextStyles.caption.copyWith(
-              color: AppColors.textSecondary)),
-          SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            children: [48, 72, 96].map((hours) {
-              final isSelected = _durationHours == hours;
-              return ChoiceChip(
-                label: Text('$hours ${'hours'.tr()}'),
-                selected: isSelected,
-                onSelected: (selected) {
-                  setState(() => _durationHours = hours);
-                },
-                backgroundColor: AppColors.surface,
-                selectedColor: AppColors.primary,
-                labelStyle: AppTextStyles.body.copyWith(
-                  color: isSelected ? AppColors.textPrimary : AppColors
-                      .textSecondary,
-                ),
-              );
-            }).toList(),
+          Icon(Icons.access_time, color: AppColors.primary, size: 20),
+          SizedBox(width: 8),
+          Text(
+            '${'duration'.tr()}: ',
+            style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
+          ),
+          Text(
+            '$_durationHours $hoursText ($_durationDays $daysText)',
+            style: AppTextStyles.bodyBold.copyWith(color: AppColors.primary),
           ),
         ],
       ),
@@ -279,8 +323,7 @@ class _CreateCompetitionScreenState extends ConsumerState<CreateCompetitionScree
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('scoring_rules'.tr(), style: AppTextStyles.caption.copyWith(
-              color: AppColors.textSecondary)),
+          Text('scoring_rules'.tr(), style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary)),
           SizedBox(height: 8),
           DropdownButton<String>(
             value: _scoringRules,
@@ -288,8 +331,7 @@ class _CreateCompetitionScreenState extends ConsumerState<CreateCompetitionScree
             dropdownColor: AppColors.surface,
             style: AppTextStyles.body.copyWith(color: AppColors.textPrimary),
             items: [
-              DropdownMenuItem(
-                  value: 'total_weight', child: Text('total_weight'.tr())),
+              DropdownMenuItem(value: 'total_weight', child: Text('total_weight'.tr())),
               DropdownMenuItem(value: 'top_3', child: Text('top_3'.tr())),
               DropdownMenuItem(value: 'top_5', child: Text('top_5'.tr())),
             ],
@@ -317,20 +359,15 @@ class _CreateCompetitionScreenState extends ConsumerState<CreateCompetitionScree
           ],
         ),
         SizedBox(height: 8),
-        ..._judges
-            .asMap()
-            .entries
-            .map((entry) {
+        ..._judges.asMap().entries.map((entry) {
           final index = entry.key;
           final judge = entry.value;
           return Card(
             color: AppColors.surface,
             margin: EdgeInsets.only(bottom: 8),
             child: ListTile(
-              title: Text(judge.fullName, style: AppTextStyles.body.copyWith(
-                  color: AppColors.textPrimary)),
-              subtitle: Text(judge.rank, style: AppTextStyles.caption.copyWith(
-                  color: AppColors.textSecondary)),
+              title: Text(judge.fullName, style: AppTextStyles.body.copyWith(color: AppColors.textPrimary)),
+              subtitle: Text(judge.rank, style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary)),
               trailing: IconButton(
                 icon: Icon(Icons.delete, color: AppColors.error),
                 onPressed: () => _removeJudge(index),
@@ -342,10 +379,12 @@ class _CreateCompetitionScreenState extends ConsumerState<CreateCompetitionScree
     );
   }
 
-  Future<void> _selectDateTime() async {
+  Future<void> _selectDateTime(bool isStart) async {
+    final initialDate = isStart ? _startTime : _finishTime;
+
     final date = await showDatePicker(
       context: context,
-      initialDate: _startTime,
+      initialDate: initialDate,
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(Duration(days: 365)),
       builder: (context, child) {
@@ -364,7 +403,7 @@ class _CreateCompetitionScreenState extends ConsumerState<CreateCompetitionScree
     if (date != null) {
       final time = await showTimePicker(
         context: context,
-        initialTime: TimeOfDay.fromDateTime(_startTime),
+        initialTime: TimeOfDay.fromDateTime(initialDate),
         builder: (context, child) {
           return Theme(
             data: Theme.of(context).copyWith(
@@ -380,8 +419,22 @@ class _CreateCompetitionScreenState extends ConsumerState<CreateCompetitionScree
 
       if (time != null) {
         setState(() {
-          _startTime =
-              DateTime(date.year, date.month, date.day, time.hour, time.minute);
+          final newDateTime = DateTime(date.year, date.month, date.day, time.hour, time.minute);
+
+          if (isStart) {
+            _startTime = newDateTime;
+            if (_startTime.isAfter(_finishTime)) {
+              _finishTime = _startTime.add(Duration(hours: 72));
+            }
+          } else {
+            if (newDateTime.isBefore(_startTime)) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Финиш не может быть раньше старта!')),
+              );
+              return;
+            }
+            _finishTime = newDateTime;
+          }
         });
       }
     }
@@ -390,12 +443,11 @@ class _CreateCompetitionScreenState extends ConsumerState<CreateCompetitionScree
   void _addJudge() {
     showDialog(
       context: context,
-      builder: (context) =>
-          _JudgeDialog(
-            onSave: (judge) {
-              setState(() => _judges.add(judge));
-            },
-          ),
+      builder: (context) => _JudgeDialog(
+        onSave: (judge) {
+          setState(() => _judges.add(judge));
+        },
+      ),
     );
   }
 
@@ -413,15 +465,21 @@ class _CreateCompetitionScreenState extends ConsumerState<CreateCompetitionScree
       return;
     }
 
+    if (_finishTime.isBefore(_startTime) || _finishTime.isAtSameMomentAs(_startTime)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Финиш должен быть позже старта!')),
+      );
+      return;
+    }
+
     try {
-      // Передаём accessCode в провайдер
       await ref.read(competitionProvider.notifier).createCompetition(
         name: _nameController.text,
         cityOrRegion: _cityController.text,
         lakeName: _lakeController.text,
         sectorsCount: int.parse(_sectorsController.text),
         startTime: _startTime,
-        durationHours: _durationHours,
+        finishTime: _finishTime,
         scoringRules: _scoringRules,
         organizerName: _organizerController.text,
         judges: _judges,
@@ -438,7 +496,6 @@ class _CreateCompetitionScreenState extends ConsumerState<CreateCompetitionScree
         ),
       );
     } catch (e) {
-      // Обработка ошибки (код уже использован)
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(

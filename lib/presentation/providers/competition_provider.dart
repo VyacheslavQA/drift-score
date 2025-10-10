@@ -103,7 +103,7 @@ class CompetitionNotifier extends StateNotifier<AsyncValue<List<CompetitionLocal
     required String lakeName,
     required int sectorsCount,
     required DateTime startTime,
-    required int durationHours,
+    required DateTime finishTime,
     required String scoringRules,
     required String organizerName,
     required List<Judge> judges,
@@ -142,7 +142,7 @@ class CompetitionNotifier extends StateNotifier<AsyncValue<List<CompetitionLocal
         ..lakeName = lakeName
         ..sectorsCount = sectorsCount
         ..startTime = startTime
-        ..durationHours = durationHours
+        ..finishTime = finishTime
         ..scoringRules = scoringRules
         ..organizerName = organizerName
         ..judges = judges

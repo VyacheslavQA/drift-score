@@ -8,8 +8,8 @@ import '../../data/models/local/competition_local.dart';
 import '../../data/models/local/team_local.dart';
 import '../providers/team_provider.dart';
 import 'add_team_screen.dart';
-// --- В начало файла, после других импортов ---
 import 'draw_screen.dart';
+import 'weighing_screen.dart';
 
 class CompetitionDetailsScreen extends ConsumerStatefulWidget {
   final CompetitionLocal competition;
@@ -24,7 +24,7 @@ class CompetitionDetailsScreen extends ConsumerStatefulWidget {
 }
 
 class _CompetitionDetailsScreenState extends ConsumerState<CompetitionDetailsScreen> {
-  int _selectedTab = 0; // 0 = Информация, 1 = Команды
+  int _selectedTab = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -427,9 +427,6 @@ class _CompetitionDetailsScreenState extends ConsumerState<CompetitionDetailsScr
       ),
       child: Row(
         children: [
-          // --- НАЙТИ КНОПКУ "Жеребьёвка" ---
-// --- ЗАМЕНИТЬ onPressed ---
-
           Expanded(
             child: OutlinedButton.icon(
               onPressed: () {
@@ -452,12 +449,15 @@ class _CompetitionDetailsScreenState extends ConsumerState<CompetitionDetailsScr
           Expanded(
             child: OutlinedButton.icon(
               onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('weighing'.tr() + ' (${'in_development'.tr()})')),
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => WeighingScreen(competition: widget.competition),
+                  ),
                 );
               },
               icon: Icon(Icons.scale, size: 18),
-              label: Text('weighing'.tr()),
+              label: Text('weighing_title'.tr()),
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.textPrimary,
                 side: BorderSide(color: AppColors.primary),

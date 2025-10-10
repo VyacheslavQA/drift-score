@@ -6,14 +6,15 @@ part 'weighing_local.g.dart';
 class WeighingLocal {
   Id id = Isar.autoIncrement;
 
-  @Index(unique: true)
+  @Index()
   String? serverId;
 
   @Index()
   late int competitionLocalId;
 
-  late int weighingNumber;
-  late DateTime scheduledTime;
+  late int dayNumber; // День соревнования (1, 2, 3...)
+  late DateTime weighingTime; // Точное время взвешивания
+  late int weighingNumber; // Номер взвешивания (1, 2, 3...)
 
   late bool isCompleted;
   DateTime? completedAt;

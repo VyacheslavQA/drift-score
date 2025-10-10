@@ -6,7 +6,7 @@ part 'team_local.g.dart';
 class TeamLocal {
   Id id = Isar.autoIncrement;
 
-  @Index(unique: true)
+  @Index()
   String? serverId;
 
   @Index()

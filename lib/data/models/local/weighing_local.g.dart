@@ -32,29 +32,29 @@ const WeighingLocalSchema = CollectionSchema(
       name: r'createdAt',
       type: IsarType.dateTime,
     ),
-    r'isCompleted': PropertySchema(
+    r'dayNumber': PropertySchema(
       id: 3,
+      name: r'dayNumber',
+      type: IsarType.long,
+    ),
+    r'isCompleted': PropertySchema(
+      id: 4,
       name: r'isCompleted',
       type: IsarType.bool,
     ),
     r'isExtraordinary': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'isExtraordinary',
       type: IsarType.bool,
     ),
     r'isSynced': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'isSynced',
       type: IsarType.bool,
     ),
     r'lastSyncedAt': PropertySchema(
-      id: 6,
-      name: r'lastSyncedAt',
-      type: IsarType.dateTime,
-    ),
-    r'scheduledTime': PropertySchema(
       id: 7,
-      name: r'scheduledTime',
+      name: r'lastSyncedAt',
       type: IsarType.dateTime,
     ),
     r'serverId': PropertySchema(
@@ -71,6 +71,11 @@ const WeighingLocalSchema = CollectionSchema(
       id: 10,
       name: r'weighingNumber',
       type: IsarType.long,
+    ),
+    r'weighingTime': PropertySchema(
+      id: 11,
+      name: r'weighingTime',
+      type: IsarType.dateTime,
     )
   },
   estimateSize: _weighingLocalEstimateSize,
@@ -82,7 +87,7 @@ const WeighingLocalSchema = CollectionSchema(
     r'serverId': IndexSchema(
       id: -7950187970872907662,
       name: r'serverId',
-      unique: true,
+      unique: false,
       replace: false,
       properties: [
         IndexPropertySchema(
@@ -138,14 +143,15 @@ void _weighingLocalSerialize(
   writer.writeLong(offsets[0], object.competitionLocalId);
   writer.writeDateTime(offsets[1], object.completedAt);
   writer.writeDateTime(offsets[2], object.createdAt);
-  writer.writeBool(offsets[3], object.isCompleted);
-  writer.writeBool(offsets[4], object.isExtraordinary);
-  writer.writeBool(offsets[5], object.isSynced);
-  writer.writeDateTime(offsets[6], object.lastSyncedAt);
-  writer.writeDateTime(offsets[7], object.scheduledTime);
+  writer.writeLong(offsets[3], object.dayNumber);
+  writer.writeBool(offsets[4], object.isCompleted);
+  writer.writeBool(offsets[5], object.isExtraordinary);
+  writer.writeBool(offsets[6], object.isSynced);
+  writer.writeDateTime(offsets[7], object.lastSyncedAt);
   writer.writeString(offsets[8], object.serverId);
   writer.writeDateTime(offsets[9], object.updatedAt);
   writer.writeLong(offsets[10], object.weighingNumber);
+  writer.writeDateTime(offsets[11], object.weighingTime);
 }
 
 WeighingLocal _weighingLocalDeserialize(
@@ -158,15 +164,16 @@ WeighingLocal _weighingLocalDeserialize(
   object.competitionLocalId = reader.readLong(offsets[0]);
   object.completedAt = reader.readDateTimeOrNull(offsets[1]);
   object.createdAt = reader.readDateTime(offsets[2]);
+  object.dayNumber = reader.readLong(offsets[3]);
   object.id = id;
-  object.isCompleted = reader.readBool(offsets[3]);
-  object.isExtraordinary = reader.readBool(offsets[4]);
-  object.isSynced = reader.readBool(offsets[5]);
-  object.lastSyncedAt = reader.readDateTimeOrNull(offsets[6]);
-  object.scheduledTime = reader.readDateTime(offsets[7]);
+  object.isCompleted = reader.readBool(offsets[4]);
+  object.isExtraordinary = reader.readBool(offsets[5]);
+  object.isSynced = reader.readBool(offsets[6]);
+  object.lastSyncedAt = reader.readDateTimeOrNull(offsets[7]);
   object.serverId = reader.readStringOrNull(offsets[8]);
   object.updatedAt = reader.readDateTime(offsets[9]);
   object.weighingNumber = reader.readLong(offsets[10]);
+  object.weighingTime = reader.readDateTime(offsets[11]);
   return object;
 }
 
@@ -184,21 +191,23 @@ P _weighingLocalDeserializeProp<P>(
     case 2:
       return (reader.readDateTime(offset)) as P;
     case 3:
-      return (reader.readBool(offset)) as P;
+      return (reader.readLong(offset)) as P;
     case 4:
       return (reader.readBool(offset)) as P;
     case 5:
       return (reader.readBool(offset)) as P;
     case 6:
-      return (reader.readDateTimeOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 7:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 8:
       return (reader.readStringOrNull(offset)) as P;
     case 9:
       return (reader.readDateTime(offset)) as P;
     case 10:
       return (reader.readLong(offset)) as P;
+    case 11:
+      return (reader.readDateTime(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -215,61 +224,6 @@ List<IsarLinkBase<dynamic>> _weighingLocalGetLinks(WeighingLocal object) {
 void _weighingLocalAttach(
     IsarCollection<dynamic> col, Id id, WeighingLocal object) {
   object.id = id;
-}
-
-extension WeighingLocalByIndex on IsarCollection<WeighingLocal> {
-  Future<WeighingLocal?> getByServerId(String? serverId) {
-    return getByIndex(r'serverId', [serverId]);
-  }
-
-  WeighingLocal? getByServerIdSync(String? serverId) {
-    return getByIndexSync(r'serverId', [serverId]);
-  }
-
-  Future<bool> deleteByServerId(String? serverId) {
-    return deleteByIndex(r'serverId', [serverId]);
-  }
-
-  bool deleteByServerIdSync(String? serverId) {
-    return deleteByIndexSync(r'serverId', [serverId]);
-  }
-
-  Future<List<WeighingLocal?>> getAllByServerId(List<String?> serverIdValues) {
-    final values = serverIdValues.map((e) => [e]).toList();
-    return getAllByIndex(r'serverId', values);
-  }
-
-  List<WeighingLocal?> getAllByServerIdSync(List<String?> serverIdValues) {
-    final values = serverIdValues.map((e) => [e]).toList();
-    return getAllByIndexSync(r'serverId', values);
-  }
-
-  Future<int> deleteAllByServerId(List<String?> serverIdValues) {
-    final values = serverIdValues.map((e) => [e]).toList();
-    return deleteAllByIndex(r'serverId', values);
-  }
-
-  int deleteAllByServerIdSync(List<String?> serverIdValues) {
-    final values = serverIdValues.map((e) => [e]).toList();
-    return deleteAllByIndexSync(r'serverId', values);
-  }
-
-  Future<Id> putByServerId(WeighingLocal object) {
-    return putByIndex(r'serverId', object);
-  }
-
-  Id putByServerIdSync(WeighingLocal object, {bool saveLinks = true}) {
-    return putByIndexSync(r'serverId', object, saveLinks: saveLinks);
-  }
-
-  Future<List<Id>> putAllByServerId(List<WeighingLocal> objects) {
-    return putAllByIndex(r'serverId', objects);
-  }
-
-  List<Id> putAllByServerIdSync(List<WeighingLocal> objects,
-      {bool saveLinks = true}) {
-    return putAllByIndexSync(r'serverId', objects, saveLinks: saveLinks);
-  }
 }
 
 extension WeighingLocalQueryWhereSort
@@ -710,6 +664,62 @@ extension WeighingLocalQueryFilter
     });
   }
 
+  QueryBuilder<WeighingLocal, WeighingLocal, QAfterFilterCondition>
+      dayNumberEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'dayNumber',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<WeighingLocal, WeighingLocal, QAfterFilterCondition>
+      dayNumberGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'dayNumber',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<WeighingLocal, WeighingLocal, QAfterFilterCondition>
+      dayNumberLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'dayNumber',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<WeighingLocal, WeighingLocal, QAfterFilterCondition>
+      dayNumberBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'dayNumber',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
   QueryBuilder<WeighingLocal, WeighingLocal, QAfterFilterCondition> idEqualTo(
       Id value) {
     return QueryBuilder.apply(this, (query) {
@@ -860,62 +870,6 @@ extension WeighingLocalQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.between(
         property: r'lastSyncedAt',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-      ));
-    });
-  }
-
-  QueryBuilder<WeighingLocal, WeighingLocal, QAfterFilterCondition>
-      scheduledTimeEqualTo(DateTime value) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'scheduledTime',
-        value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<WeighingLocal, WeighingLocal, QAfterFilterCondition>
-      scheduledTimeGreaterThan(
-    DateTime value, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'scheduledTime',
-        value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<WeighingLocal, WeighingLocal, QAfterFilterCondition>
-      scheduledTimeLessThan(
-    DateTime value, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'scheduledTime',
-        value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<WeighingLocal, WeighingLocal, QAfterFilterCondition>
-      scheduledTimeBetween(
-    DateTime lower,
-    DateTime upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'scheduledTime',
         lower: lower,
         includeLower: includeLower,
         upper: upper,
@@ -1189,6 +1143,62 @@ extension WeighingLocalQueryFilter
       ));
     });
   }
+
+  QueryBuilder<WeighingLocal, WeighingLocal, QAfterFilterCondition>
+      weighingTimeEqualTo(DateTime value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'weighingTime',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<WeighingLocal, WeighingLocal, QAfterFilterCondition>
+      weighingTimeGreaterThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'weighingTime',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<WeighingLocal, WeighingLocal, QAfterFilterCondition>
+      weighingTimeLessThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'weighingTime',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<WeighingLocal, WeighingLocal, QAfterFilterCondition>
+      weighingTimeBetween(
+    DateTime lower,
+    DateTime upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'weighingTime',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
 }
 
 extension WeighingLocalQueryObject
@@ -1236,6 +1246,19 @@ extension WeighingLocalQuerySortBy
       sortByCreatedAtDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'createdAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<WeighingLocal, WeighingLocal, QAfterSortBy> sortByDayNumber() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'dayNumber', Sort.asc);
+    });
+  }
+
+  QueryBuilder<WeighingLocal, WeighingLocal, QAfterSortBy>
+      sortByDayNumberDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'dayNumber', Sort.desc);
     });
   }
 
@@ -1293,20 +1316,6 @@ extension WeighingLocalQuerySortBy
     });
   }
 
-  QueryBuilder<WeighingLocal, WeighingLocal, QAfterSortBy>
-      sortByScheduledTime() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'scheduledTime', Sort.asc);
-    });
-  }
-
-  QueryBuilder<WeighingLocal, WeighingLocal, QAfterSortBy>
-      sortByScheduledTimeDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'scheduledTime', Sort.desc);
-    });
-  }
-
   QueryBuilder<WeighingLocal, WeighingLocal, QAfterSortBy> sortByServerId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'serverId', Sort.asc);
@@ -1344,6 +1353,20 @@ extension WeighingLocalQuerySortBy
       sortByWeighingNumberDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'weighingNumber', Sort.desc);
+    });
+  }
+
+  QueryBuilder<WeighingLocal, WeighingLocal, QAfterSortBy>
+      sortByWeighingTime() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'weighingTime', Sort.asc);
+    });
+  }
+
+  QueryBuilder<WeighingLocal, WeighingLocal, QAfterSortBy>
+      sortByWeighingTimeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'weighingTime', Sort.desc);
     });
   }
 }
@@ -1387,6 +1410,19 @@ extension WeighingLocalQuerySortThenBy
       thenByCreatedAtDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'createdAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<WeighingLocal, WeighingLocal, QAfterSortBy> thenByDayNumber() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'dayNumber', Sort.asc);
+    });
+  }
+
+  QueryBuilder<WeighingLocal, WeighingLocal, QAfterSortBy>
+      thenByDayNumberDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'dayNumber', Sort.desc);
     });
   }
 
@@ -1456,20 +1492,6 @@ extension WeighingLocalQuerySortThenBy
     });
   }
 
-  QueryBuilder<WeighingLocal, WeighingLocal, QAfterSortBy>
-      thenByScheduledTime() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'scheduledTime', Sort.asc);
-    });
-  }
-
-  QueryBuilder<WeighingLocal, WeighingLocal, QAfterSortBy>
-      thenByScheduledTimeDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'scheduledTime', Sort.desc);
-    });
-  }
-
   QueryBuilder<WeighingLocal, WeighingLocal, QAfterSortBy> thenByServerId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'serverId', Sort.asc);
@@ -1509,6 +1531,20 @@ extension WeighingLocalQuerySortThenBy
       return query.addSortBy(r'weighingNumber', Sort.desc);
     });
   }
+
+  QueryBuilder<WeighingLocal, WeighingLocal, QAfterSortBy>
+      thenByWeighingTime() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'weighingTime', Sort.asc);
+    });
+  }
+
+  QueryBuilder<WeighingLocal, WeighingLocal, QAfterSortBy>
+      thenByWeighingTimeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'weighingTime', Sort.desc);
+    });
+  }
 }
 
 extension WeighingLocalQueryWhereDistinct
@@ -1530,6 +1566,12 @@ extension WeighingLocalQueryWhereDistinct
   QueryBuilder<WeighingLocal, WeighingLocal, QDistinct> distinctByCreatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'createdAt');
+    });
+  }
+
+  QueryBuilder<WeighingLocal, WeighingLocal, QDistinct> distinctByDayNumber() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'dayNumber');
     });
   }
 
@@ -1560,13 +1602,6 @@ extension WeighingLocalQueryWhereDistinct
     });
   }
 
-  QueryBuilder<WeighingLocal, WeighingLocal, QDistinct>
-      distinctByScheduledTime() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'scheduledTime');
-    });
-  }
-
   QueryBuilder<WeighingLocal, WeighingLocal, QDistinct> distinctByServerId(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -1584,6 +1619,13 @@ extension WeighingLocalQueryWhereDistinct
       distinctByWeighingNumber() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'weighingNumber');
+    });
+  }
+
+  QueryBuilder<WeighingLocal, WeighingLocal, QDistinct>
+      distinctByWeighingTime() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'weighingTime');
     });
   }
 }
@@ -1616,6 +1658,12 @@ extension WeighingLocalQueryProperty
     });
   }
 
+  QueryBuilder<WeighingLocal, int, QQueryOperations> dayNumberProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'dayNumber');
+    });
+  }
+
   QueryBuilder<WeighingLocal, bool, QQueryOperations> isCompletedProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isCompleted');
@@ -1642,13 +1690,6 @@ extension WeighingLocalQueryProperty
     });
   }
 
-  QueryBuilder<WeighingLocal, DateTime, QQueryOperations>
-      scheduledTimeProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'scheduledTime');
-    });
-  }
-
   QueryBuilder<WeighingLocal, String?, QQueryOperations> serverIdProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'serverId');
@@ -1664,6 +1705,13 @@ extension WeighingLocalQueryProperty
   QueryBuilder<WeighingLocal, int, QQueryOperations> weighingNumberProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'weighingNumber');
+    });
+  }
+
+  QueryBuilder<WeighingLocal, DateTime, QQueryOperations>
+      weighingTimeProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'weighingTime');
     });
   }
 }

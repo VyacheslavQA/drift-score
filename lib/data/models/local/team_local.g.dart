@@ -94,7 +94,7 @@ const TeamLocalSchema = CollectionSchema(
     r'serverId': IndexSchema(
       id: -7950187970872907662,
       name: r'serverId',
-      unique: true,
+      unique: false,
       replace: false,
       properties: [
         IndexPropertySchema(
@@ -292,61 +292,6 @@ List<IsarLinkBase<dynamic>> _teamLocalGetLinks(TeamLocal object) {
 
 void _teamLocalAttach(IsarCollection<dynamic> col, Id id, TeamLocal object) {
   object.id = id;
-}
-
-extension TeamLocalByIndex on IsarCollection<TeamLocal> {
-  Future<TeamLocal?> getByServerId(String? serverId) {
-    return getByIndex(r'serverId', [serverId]);
-  }
-
-  TeamLocal? getByServerIdSync(String? serverId) {
-    return getByIndexSync(r'serverId', [serverId]);
-  }
-
-  Future<bool> deleteByServerId(String? serverId) {
-    return deleteByIndex(r'serverId', [serverId]);
-  }
-
-  bool deleteByServerIdSync(String? serverId) {
-    return deleteByIndexSync(r'serverId', [serverId]);
-  }
-
-  Future<List<TeamLocal?>> getAllByServerId(List<String?> serverIdValues) {
-    final values = serverIdValues.map((e) => [e]).toList();
-    return getAllByIndex(r'serverId', values);
-  }
-
-  List<TeamLocal?> getAllByServerIdSync(List<String?> serverIdValues) {
-    final values = serverIdValues.map((e) => [e]).toList();
-    return getAllByIndexSync(r'serverId', values);
-  }
-
-  Future<int> deleteAllByServerId(List<String?> serverIdValues) {
-    final values = serverIdValues.map((e) => [e]).toList();
-    return deleteAllByIndex(r'serverId', values);
-  }
-
-  int deleteAllByServerIdSync(List<String?> serverIdValues) {
-    final values = serverIdValues.map((e) => [e]).toList();
-    return deleteAllByIndexSync(r'serverId', values);
-  }
-
-  Future<Id> putByServerId(TeamLocal object) {
-    return putByIndex(r'serverId', object);
-  }
-
-  Id putByServerIdSync(TeamLocal object, {bool saveLinks = true}) {
-    return putByIndexSync(r'serverId', object, saveLinks: saveLinks);
-  }
-
-  Future<List<Id>> putAllByServerId(List<TeamLocal> objects) {
-    return putAllByIndex(r'serverId', objects);
-  }
-
-  List<Id> putAllByServerIdSync(List<TeamLocal> objects,
-      {bool saveLinks = true}) {
-    return putAllByIndexSync(r'serverId', objects, saveLinks: saveLinks);
-  }
 }
 
 extension TeamLocalQueryWhereSort

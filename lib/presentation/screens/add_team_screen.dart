@@ -415,11 +415,18 @@ class _AddTeamScreenState extends ConsumerState<AddTeamScreen> {
   }
 
   Future<void> _saveTeam() async {
+    print('🔵 _saveTeam() called');
+    print('   isEditing: $_isEditing');
+    print('   Team name: ${_nameController.text}');
+    print('   Members count: ${_members.length}');
+
     if (!_formKey.currentState!.validate()) {
+      print('❌ Form validation failed');
       return;
     }
 
     if (_members.isEmpty) {
+      print('❌ No members');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('at_least_one_member'.tr())),
       );
