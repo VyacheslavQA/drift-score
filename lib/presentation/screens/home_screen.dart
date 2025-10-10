@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_dimensions.dart';
 import 'enter_code_screen.dart';
+import 'public_competitions_screen.dart';
+import 'my_competitions_screen.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -143,46 +146,34 @@ class HomeScreen extends ConsumerWidget {
 
                 const SizedBox(height: 48),
 
-                // 1. Создать соревнование (главная кнопка)
-                _buildMainButton(
+                // 1. Я организатор
+                _buildRoleButton(
                   context: context,
-                  icon: Icons.add_circle_outline,
-                  label: 'create_competition'.tr(),
+                  icon: Icons.shield_outlined,
+                  title: 'i_am_organizer'.tr(),
+                  subtitle: 'organizer_description'.tr(),
                   borderColor: AppColors.primary,
                   iconBackgroundColor: AppColors.primary,
                   iconColor: AppColors.text,
-                  onPressed: () {
-                    _showCreateCompetitionDialog(context);
-                  },
+                  onPressed: () => _handleOrganizerTap(context),
                 ),
 
                 const SizedBox(height: AppDimensions.paddingMedium),
 
-                // 2. Просмотр протоколов
-                _buildMainButton(
+                // 2. Я спортсмен/зритель
+                _buildRoleButton(
                   context: context,
-                  icon: Icons.list,
-                  label: 'view_protocols'.tr(),
+                  icon: Icons.visibility_outlined,
+                  title: 'i_am_athlete'.tr(),
+                  subtitle: 'athlete_description'.tr(),
                   borderColor: AppColors.secondary,
                   iconBackgroundColor: AppColors.secondary,
                   iconColor: AppColors.background,
                   onPressed: () {
-                    _showNotImplemented(context, 'view_protocols'.tr());
-                  },
-                ),
-
-                const SizedBox(height: AppDimensions.paddingMedium),
-
-                // 3. Статистика
-                _buildMainButton(
-                  context: context,
-                  icon: Icons.bar_chart,
-                  label: 'statistics'.tr(),
-                  borderColor: AppColors.upcoming,
-                  iconBackgroundColor: AppColors.upcoming,
-                  iconColor: AppColors.text,
-                  onPressed: () {
-                    _showNotImplemented(context, 'statistics'.tr());
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const PublicCompetitionsScreen()),
+                    );
                   },
                 ),
 
@@ -228,8 +219,94 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  // Диалог для создания соревнования
-  void _showCreateCompetitionDialog(BuildContext context) {
+  Widget _buildRoleButton({
+    required BuildContext context,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color borderColor,
+    required Color iconBackgroundColor,
+    required Color iconColor,
+    required VoidCallback onPressed,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.shadowBlack,
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: AppColors.surfaceLight,
+        borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
+          child: Container(
+            padding: const EdgeInsets.all(AppDimensions.paddingLarge),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
+              border: Border.all(color: borderColor, width: 3),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: iconBackgroundColor,
+                    borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+                  ),
+                  child: Icon(icon, color: iconColor, size: 32),
+                ),
+                const SizedBox(width: AppDimensions.paddingMedium),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title, style: AppTextStyles.h3),
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.arrow_forward,
+                  color: borderColor,
+                  size: AppDimensions.paddingLarge,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _handleOrganizerTap(BuildContext context) async {
+    final prefs = await SharedPreferences.getInstance();
+    final accessCode = prefs.getString('access_code');
+
+    if (accessCode == null || accessCode.isEmpty) {
+      // НЕТ кода → показать диалог
+      _showCodeRequiredDialog(context);
+    } else {
+      // ЕСТЬ код → открыть список соревнований
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const MyCompetitionsScreen()),
+      );
+    }
+  }
+
+  void _showCodeRequiredDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -255,7 +332,7 @@ class HomeScreen extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
                       ),
                       child: const Icon(
-                        Icons.add_circle_outline,
+                        Icons.lock_outline,
                         color: AppColors.text,
                         size: 28,
                       ),
@@ -263,7 +340,7 @@ class HomeScreen extends ConsumerWidget {
                     const SizedBox(width: AppDimensions.paddingMedium),
                     Expanded(
                       child: Text(
-                        'create_competition'.tr(),
+                        'code_required'.tr(),
                         style: AppTextStyles.h2,
                       ),
                     ),
@@ -281,7 +358,7 @@ class HomeScreen extends ConsumerWidget {
 
                 // Описание
                 Text(
-                  'create_competition_description'.tr(),
+                  'code_required_description'.tr(),
                   style: AppTextStyles.bodyLarge,
                   textAlign: TextAlign.center,
                 ),
@@ -290,12 +367,22 @@ class HomeScreen extends ConsumerWidget {
 
                 // Кнопка: Ввести код
                 OutlinedButton.icon(
-                  onPressed: () {
+                  onPressed: () async {
                     Navigator.pop(context);
-                    Navigator.push(
+                    await Navigator.push(
                       context,
                       MaterialPageRoute(builder: (_) => const EnterCodeScreen()),
                     );
+                    // После возврата проверяем, был ли введён код
+                    final prefs = await SharedPreferences.getInstance();
+                    final accessCode = prefs.getString('access_code');
+                    if (accessCode != null && accessCode.isNotEmpty) {
+                      // Код введён → открываем список соревнований
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const MyCompetitionsScreen()),
+                      );
+                    }
                   },
                   icon: const Icon(Icons.qr_code, size: AppDimensions.iconMedium),
                   label: Text('enter_code'.tr()),
@@ -379,66 +466,6 @@ class HomeScreen extends ConsumerWidget {
           ),
         );
       },
-    );
-  }
-
-  Widget _buildMainButton({
-    required BuildContext context,
-    required IconData icon,
-    required String label,
-    required Color borderColor,
-    required Color iconBackgroundColor,
-    required Color iconColor,
-    required VoidCallback onPressed,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.shadowBlack,
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Material(
-        color: AppColors.surfaceLight,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
-        child: InkWell(
-          onTap: onPressed,
-          borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
-          child: Container(
-            padding: const EdgeInsets.all(AppDimensions.paddingLarge),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
-              border: Border.all(color: borderColor, width: 3),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: AppDimensions.buttonIconSize,
-                  height: AppDimensions.buttonIconSize,
-                  decoration: BoxDecoration(
-                    color: iconBackgroundColor,
-                    borderRadius: BorderRadius.circular(AppDimensions.buttonIconRadius),
-                  ),
-                  child: Icon(icon, color: iconColor, size: AppDimensions.iconLarge),
-                ),
-                const SizedBox(width: AppDimensions.paddingMedium),
-                Expanded(
-                  child: Text(label, style: AppTextStyles.buttonLarge),
-                ),
-                Icon(
-                  Icons.arrow_forward,
-                  color: borderColor,
-                  size: AppDimensions.paddingLarge,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 

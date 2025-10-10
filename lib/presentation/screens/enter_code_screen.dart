@@ -6,7 +6,7 @@ import 'package:firebase_remote_config/firebase_remote_config.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_dimensions.dart';
-import 'create_competition_screen.dart';
+import '../providers/competition_provider.dart';
 
 class EnterCodeScreen extends ConsumerStatefulWidget {
   const EnterCodeScreen({Key? key}) : super(key: key);
@@ -213,19 +213,34 @@ class _EnterCodeScreenState extends ConsumerState<EnterCodeScreen> {
       bool isValid = false;
       bool isAdmin = false;
 
-      // Проверка мастер-кода (с fallback на дефолтное значение)
-      if (code == masterCode || code == 'DS-ADMIN-2025') {
+      // Проверка тестовых кодов
+      if (code == masterCode ||
+          code == 'DS-ADMIN-2025' ||
+          code == 'DS-TEST-2025' ||
+          code == 'DS-JUDGE-2025') {
         isValid = true;
         isAdmin = true;
       }
 
       if (isValid) {
-        // Сохраняем код локально
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('access_code', code);
-        await prefs.setBool('is_admin', isAdmin);
-
         if (!mounted) return;
+
+        // ✅ НОВАЯ ПРОВЕРКА: Существует ли соревнование с этим кодом?
+        print('🔍 Checking if code $code is already used...');
+        final competitionNotifier = ref.read(competitionProvider.notifier);
+        final existingCompetitions = await competitionNotifier.checkCodeExists(code);
+
+        if (existingCompetitions.isNotEmpty) {
+          // ❌ Код уже используется!
+          print('❌ Code $code is already used by ${existingCompetitions.length} competition(s)');
+          setState(() {
+            _isLoading = false;
+            _errorMessage = 'Код $code уже используется! Введите другой код.';
+          });
+          return;
+        }
+
+        print('✅ Code $code is available');
 
         // Показываем успех
         ScaffoldMessenger.of(context).showSnackBar(
@@ -235,11 +250,9 @@ class _EnterCodeScreenState extends ConsumerState<EnterCodeScreen> {
           ),
         );
 
-        // Переход на экран создания соревнования
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const CreateCompetitionScreen()),
-        );
+        // Возвращаем код на предыдущий экран
+        print('🔑 Received code: $code');
+        Navigator.pop(context, code);
       } else {
         setState(() {
           _isLoading = false;

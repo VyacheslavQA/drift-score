@@ -19,8 +19,9 @@ class CompetitionLocal {
   late int durationHours; // 72, 48, 96 и т.д.
 
   late String scoringRules; // 'total_weight' | 'top_3' | 'top_5'
-  late String status; // 'draft' | 'active' | 'completed'
-  late String accessCode;
+  String status = 'draft'; // 'draft' | 'active' | 'completed'
+  String? accessCode; // Код доступа организатора
+  String? createdByDeviceId; // ID устройства, которое создало соревнование (для фильтрации "Мои соревнования")
 
   List<Judge> judges = []; // Список судей
 
@@ -28,23 +29,23 @@ class CompetitionLocal {
   DateTime? finalizedAt; // Когда закрыли
   List<EditLog> editHistory = []; // История редактирований
 
-  late bool isSynced;
+  bool isSynced = false; // ← Инициализировали значением по умолчанию
   DateTime? lastSyncedAt;
 
   late DateTime createdAt;
-  late DateTime updatedAt;
+  DateTime? updatedAt; // ← Сделали nullable (не всегда обновляется сразу)
 }
 
 @embedded
 class Judge {
-  late String id; // UUID
+  String id = ''; // ← Инициализировали пустой строкой
   late String fullName;
   late String rank; // "Главный судья", "Судья", "Помощник судьи" или свободный ввод
 }
 
 @embedded
 class EditLog {
-  late String id; // UUID
+  String id = ''; // ← Инициализировали пустой строкой
   late DateTime timestamp;
   late String judgeId; // Кто редактировал
   late String action; // Описание действия
