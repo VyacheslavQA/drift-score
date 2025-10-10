@@ -9,6 +9,7 @@ import '../providers/competition_provider.dart';
 import '../../data/models/local/competition_local.dart';
 import 'create_competition_screen.dart';
 import 'enter_code_screen.dart';
+import 'competition_details_screen.dart';
 
 class MyCompetitionsScreen extends ConsumerStatefulWidget {
   const MyCompetitionsScreen({Key? key}) : super(key: key);
@@ -216,8 +217,11 @@ class _MyCompetitionsScreenState extends ConsumerState<MyCompetitionsScreen> {
         margin: EdgeInsets.only(bottom: AppDimensions.paddingMedium),
         child: InkWell(
           onTap: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('competition_details_coming_soon'.tr())),
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => CompetitionDetailsScreen(competition: competition),
+              ),
             );
           },
           borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
@@ -497,11 +501,18 @@ class _MyCompetitionsScreenState extends ConsumerState<MyCompetitionsScreen> {
 
                     // Если код введён успешно
                     if (code != null && code.isNotEmpty && mounted) {
-                      // Открываем форму создания с кодом
+                      // ✅ Сохраняем код в SharedPreferences
+                      final prefs = await SharedPreferences.getInstance();
+                      await prefs.setString('access_code', code);
+                      await prefs.setBool('is_admin', true);
+
+                      print('✅ Code saved to SharedPreferences: $code');
+
+                      // Открываем форму создания
                       await Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => CreateCompetitionScreen(accessCode: code),
+                          builder: (_) => CreateCompetitionScreen(accessCode: code), // ✅ ИСПРАВЛЕНО
                         ),
                       );
 

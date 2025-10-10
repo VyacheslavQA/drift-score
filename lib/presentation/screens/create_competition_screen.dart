@@ -54,123 +54,111 @@ class _CreateCompetitionScreenState extends ConsumerState<CreateCompetitionScree
         backgroundColor: AppColors.surface,
         iconTheme: IconThemeData(color: AppColors.textPrimary),
       ),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.all(AppDimensions.paddingLarge),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Показываем код доступа
-              Container(
-                padding: EdgeInsets.all(AppDimensions.paddingMedium),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(
-                      AppDimensions.radiusSmall),
-                  border: Border.all(color: AppColors.primary.withOpacity(0.3)),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.key, color: AppColors.primary, size: 20),
-                    SizedBox(width: 8),
-                    Text(
-                      '${'access_code'.tr()}: ',
-                      style: AppTextStyles.caption.copyWith(
-                          color: AppColors.textSecondary),
-                    ),
-                    Text(
-                      widget.accessCode,
-                      style: AppTextStyles.bodyBold.copyWith(
-                          color: AppColors.primary),
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(height: AppDimensions.paddingLarge),
-
-              _buildTextField(
-                controller: _nameController,
-                label: 'competition_name'.tr(),
-                validator: (v) =>
-                v?.isEmpty ?? true
-                    ? 'field_required'.tr()
-                    : null,
-              ),
-              SizedBox(height: AppDimensions.paddingMedium),
-
-              _buildTextField(
-                controller: _cityController,
-                label: 'city_or_region'.tr(),
-                validator: (v) =>
-                v?.isEmpty ?? true
-                    ? 'field_required'.tr()
-                    : null,
-              ),
-              SizedBox(height: AppDimensions.paddingMedium),
-
-              _buildTextField(
-                controller: _lakeController,
-                label: 'lake_name'.tr(),
-                validator: (v) =>
-                v?.isEmpty ?? true
-                    ? 'field_required'.tr()
-                    : null,
-              ),
-              SizedBox(height: AppDimensions.paddingMedium),
-
-              _buildTextField(
-                controller: _organizerController,
-                label: 'organizer_name'.tr(),
-                validator: (v) =>
-                v?.isEmpty ?? true
-                    ? 'field_required'.tr()
-                    : null,
-              ),
-              SizedBox(height: AppDimensions.paddingMedium),
-
-              _buildTextField(
-                controller: _sectorsController,
-                label: 'sectors_count'.tr(),
-                keyboardType: TextInputType.number,
-                validator: (v) {
-                  if (v?.isEmpty ?? true) return 'field_required'.tr();
-                  final num = int.tryParse(v!);
-                  if (num == null || num <= 0) return 'invalid_number'.tr();
-                  return null;
-                },
-              ),
-              SizedBox(height: AppDimensions.paddingLarge),
-
-              _buildDateTimePicker(),
-              SizedBox(height: AppDimensions.paddingMedium),
-
-              _buildDurationSelector(),
-              SizedBox(height: AppDimensions.paddingMedium),
-
-              _buildScoringRulesSelector(),
-              SizedBox(height: AppDimensions.paddingLarge),
-
-              _buildJudgesSection(),
-              SizedBox(height: AppDimensions.paddingXLarge),
-
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _submitForm,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    padding: EdgeInsets.symmetric(
-                        vertical: AppDimensions.paddingMedium),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(
-                          AppDimensions.radiusMedium),
-                    ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: EdgeInsets.all(AppDimensions.paddingLarge),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Показываем код доступа
+                Container(
+                  padding: EdgeInsets.all(AppDimensions.paddingMedium),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+                    border: Border.all(color: AppColors.primary.withOpacity(0.3)),
                   ),
-                  child: Text('create'.tr(), style: AppTextStyles.button),
+                  child: Row(
+                    children: [
+                      Icon(Icons.key, color: AppColors.primary, size: 20),
+                      SizedBox(width: 8),
+                      Text(
+                        '${'access_code'.tr()}: ',
+                        style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
+                      ),
+                      Text(
+                        widget.accessCode,
+                        style: AppTextStyles.bodyBold.copyWith(color: AppColors.primary),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+                SizedBox(height: AppDimensions.paddingLarge),
+
+                _buildTextField(
+                  controller: _nameController,
+                  label: 'competition_name'.tr(),
+                  validator: (v) => v?.isEmpty ?? true ? 'field_required'.tr() : null,
+                ),
+                SizedBox(height: AppDimensions.paddingMedium),
+
+                _buildTextField(
+                  controller: _cityController,
+                  label: 'city_or_region'.tr(),
+                  validator: (v) => v?.isEmpty ?? true ? 'field_required'.tr() : null,
+                ),
+                SizedBox(height: AppDimensions.paddingMedium),
+
+                _buildTextField(
+                  controller: _lakeController,
+                  label: 'lake_name'.tr(),
+                  validator: (v) => v?.isEmpty ?? true ? 'field_required'.tr() : null,
+                ),
+                SizedBox(height: AppDimensions.paddingMedium),
+
+                _buildTextField(
+                  controller: _organizerController,
+                  label: 'organizer_name'.tr(),
+                  validator: (v) => v?.isEmpty ?? true ? 'field_required'.tr() : null,
+                ),
+                SizedBox(height: AppDimensions.paddingMedium),
+
+                _buildTextField(
+                  controller: _sectorsController,
+                  label: 'sectors_count'.tr(),
+                  keyboardType: TextInputType.number,
+                  validator: (v) {
+                    if (v?.isEmpty ?? true) return 'field_required'.tr();
+                    final num = int.tryParse(v!);
+                    if (num == null || num <= 0) return 'invalid_number'.tr();
+                    return null;
+                  },
+                ),
+                SizedBox(height: AppDimensions.paddingLarge),
+
+                _buildDateTimePicker(),
+                SizedBox(height: AppDimensions.paddingMedium),
+
+                _buildDurationSelector(),
+                SizedBox(height: AppDimensions.paddingMedium),
+
+                _buildScoringRulesSelector(),
+                SizedBox(height: AppDimensions.paddingLarge),
+
+                _buildJudgesSection(),
+                SizedBox(height: AppDimensions.paddingXLarge),
+
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _submitForm,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      padding: EdgeInsets.symmetric(vertical: AppDimensions.paddingMedium),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+                      ),
+                    ),
+                    child: Text('create'.tr(), style: AppTextStyles.button),
+                  ),
+                ),
+
+                // ✅ ДОПОЛНИТЕЛЬНЫЙ ОТСТУП СНИЗУ
+                SizedBox(height: AppDimensions.paddingXLarge),
+              ],
+            ),
           ),
         ),
       ),

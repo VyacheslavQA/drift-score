@@ -291,19 +291,11 @@ class HomeScreen extends ConsumerWidget {
   }
 
   Future<void> _handleOrganizerTap(BuildContext context) async {
-    final prefs = await SharedPreferences.getInstance();
-    final accessCode = prefs.getString('access_code');
-
-    if (accessCode == null || accessCode.isEmpty) {
-      // НЕТ кода → показать диалог
-      _showCodeRequiredDialog(context);
-    } else {
-      // ЕСТЬ код → открыть список соревнований
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const MyCompetitionsScreen()),
-      );
-    }
+    // Сразу открываем список соревнований
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const MyCompetitionsScreen()),
+    );
   }
 
   void _showCodeRequiredDialog(BuildContext context) {
