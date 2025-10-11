@@ -24,8 +24,13 @@ class WeighingNotifier extends StateNotifier<AsyncValue<List<WeighingLocal>>> {
     state = const AsyncValue.loading();
     try {
       final weighings = await _isarService.getWeighingsByCompetition(competitionId);
+      print('✅ Weighings loaded for competition $competitionId: ${weighings.length} items');
+      for (var w in weighings) {
+        print('  - Day ${w.dayNumber}, #${w.weighingNumber}, id=${w.id}');
+      }
       state = AsyncValue.data(weighings);
     } catch (e, stack) {
+      print('❌ Error loading weighings: $e');
       state = AsyncValue.error(e, stack);
     }
   }
@@ -100,7 +105,6 @@ class WeighingResultNotifier extends StateNotifier<AsyncValue<List<WeighingResul
       state = AsyncValue.error(e, stack);
     }
   }
-
   Future<bool> saveTeamResult({
     required int teamId,
     required List<FishCatch> fishes,
@@ -108,12 +112,18 @@ class WeighingResultNotifier extends StateNotifier<AsyncValue<List<WeighingResul
     String? signature,
   }) async {
     try {
+      print('💾 Saving team result: teamId=$teamId, weighingId=$weighingId, fishCount=${fishes.length}');
+
       final existing = await _isarService.getResultByTeamAndWeighing(teamId, weighingId);
+      print('💾 Existing result: ${existing != null ? "found (id=${existing.id})" : "not found"}');
 
       final totalWeight = fishes.fold(0.0, (sum, f) => sum + f.weight);
       final averageWeight = fishes.isEmpty ? 0.0 : totalWeight / fishes.length;
 
+      print('💾 Calculated: totalWeight=$totalWeight, avgWeight=$averageWeight, fishCount=${fishes.length}');
+
       if (existing != null) {
+        print('💾 Updating existing result...');
         existing.fishes = fishes;
         existing.totalWeight = totalWeight;
         existing.averageWeight = averageWeight;
@@ -125,6 +135,7 @@ class WeighingResultNotifier extends StateNotifier<AsyncValue<List<WeighingResul
 
         await _isarService.updateWeighingResult(existing);
       } else {
+        print('💾 Creating new result...');
         final result = WeighingResultLocal()
           ..weighingLocalId = weighingId
           ..teamLocalId = teamId
@@ -142,17 +153,19 @@ class WeighingResultNotifier extends StateNotifier<AsyncValue<List<WeighingResul
       }
 
       await loadResults();
+      print('✅ Team result saved successfully');
       return true;
-    } catch (e) {
-      print('Error saving team result: $e');
+    } catch (e, stack) {
+      print('❌ Error saving team result: $e');
+      print('Stack trace: $stack');
       return false;
     }
   }
 
   FishCatch createEmptyFish() {
-    const uuid = Uuid();
     return FishCatch()
-      ..id = uuid.v4()
+      ..id = const Uuid().v4()
+      ..fishType = ''
       ..weight = 0.0
       ..length = 0.0;
   }

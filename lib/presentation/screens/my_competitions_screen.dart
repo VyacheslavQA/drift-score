@@ -10,6 +10,7 @@ import '../../data/models/local/competition_local.dart';
 import 'create_competition_screen.dart';
 import 'enter_code_screen.dart';
 import 'competition_details_screen.dart';
+import '../../data/services/isar_service.dart';
 
 class MyCompetitionsScreen extends ConsumerStatefulWidget {
   const MyCompetitionsScreen({Key? key}) : super(key: key);
@@ -85,9 +86,21 @@ class _MyCompetitionsScreenState extends ConsumerState<MyCompetitionsScreen> {
                 );
 
                 // Очистить Isar
-                await ref.read(isarProvider).writeTxn(() async {
-                  await ref.read(isarProvider).competitionLocals.clear();
-                });
+                try {
+                  final isarService = IsarService();
+
+                  // Получаем все соревнования
+                  final allCompetitions = await isarService.getAllCompetitions();
+
+                  // Удаляем каждое соревнование (каскадно)
+                  for (var comp in allCompetitions) {
+                    await isarService.deleteCompetition(comp.id!);
+                  }
+
+                  print('✅ Deleted ${allCompetitions.length} competitions with cascade');
+                } catch (e) {
+                  print('❌ Delete error: $e');
+                }
 
                 // Закрыть диалог загрузки
                 Navigator.of(context).pop();

@@ -9,7 +9,8 @@ import '../../data/models/local/team_local.dart';
 import '../providers/team_provider.dart';
 import 'add_team_screen.dart';
 import 'draw_screen.dart';
-import 'weighing_screen.dart';
+import 'weighing_list_screen.dart';
+import 'protocol_list_screen.dart';
 
 class CompetitionDetailsScreen extends ConsumerStatefulWidget {
   final CompetitionLocal competition;
@@ -452,7 +453,7 @@ class _CompetitionDetailsScreenState extends ConsumerState<CompetitionDetailsScr
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => WeighingScreen(competition: widget.competition),
+                    builder: (_) => WeighingListScreen(competition: widget.competition),
                   ),
                 );
               },
@@ -468,14 +469,17 @@ class _CompetitionDetailsScreenState extends ConsumerState<CompetitionDetailsScr
           Expanded(
             child: ElevatedButton.icon(
               onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('protocols'.tr() + ' (${'in_development'.tr()})')),
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ProtocolListScreen(competition: widget.competition),
+                  ),
                 );
               },
               icon: Icon(Icons.description, size: 18),
-              label: Text('protocols'.tr()),
+              label: Text('protocols_title'.tr()),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
+                backgroundColor: Colors.green,
                 foregroundColor: AppColors.text,
               ),
             ),

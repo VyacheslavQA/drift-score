@@ -6,6 +6,7 @@ import '../models/local/weighing_local.dart';
 import '../models/local/weighing_result_local.dart';
 import '../models/local/result_local.dart';
 import '../models/local/operation_queue.dart';
+import '../models/local/protocol_local.dart';
 
 class IsarService {
   static Isar? _isar;
@@ -26,6 +27,7 @@ class IsarService {
         WeighingResultLocalSchema,
         ResultLocalSchema,
         OperationQueueSchema,
+        ProtocolLocalSchema,
       ],
       directory: dir.path,
       name: 'drift_score',
@@ -70,8 +72,60 @@ class IsarService {
 
   Future<void> deleteCompetition(int id) async {
     final isar = await getInstance();
+
     await isar.writeTxn(() async {
+      // 1. Получаем все взвешивания этого соревнования
+      final weighings = await isar.weighingLocals
+          .filter()
+          .competitionLocalIdEqualTo(id)
+          .findAll();
+
+      int deletedResults = 0;
+
+      // 2. Для каждого взвешивания удаляем его результаты
+      for (var weighing in weighings) {
+        final results = await isar.weighingResultLocals
+            .filter()
+            .weighingLocalIdEqualTo(weighing.id!)
+            .findAll();
+
+        for (var result in results) {
+          await isar.weighingResultLocals.delete(result.id!);
+          deletedResults++;
+        }
+
+        // Удаляем само взвешивание
+        await isar.weighingLocals.delete(weighing.id!);
+      }
+
+      // 3. Удаляем все команды соревнования
+      final teams = await isar.teamLocals
+          .filter()
+          .competitionLocalIdEqualTo(id)
+          .findAll();
+
+      for (var team in teams) {
+        await isar.teamLocals.delete(team.id!);
+      }
+
+      // 4. Удаляем все протоколы соревнования
+      final protocols = await isar.protocolLocals
+          .filter()
+          .competitionIdEqualTo(id.toString())
+          .findAll();
+
+      for (var protocol in protocols) {
+        await isar.protocolLocals.delete(protocol.id);
+      }
+
+      // 5. Удаляем само соревнование
       await isar.competitionLocals.delete(id);
+
+      print('✅ Deleted competition $id with all related data:');
+      print('   - Weighings: ${weighings.length}');
+      print('   - Teams: ${teams.length}');
+      print('   - Results: $deletedResults');
+      print('   - Protocols: ${protocols.length}');
     });
   }
 
@@ -107,7 +161,20 @@ class IsarService {
   Future<void> deleteTeam(int id) async {
     final isar = await getInstance();
     await isar.writeTxn(() async {
+      // Удаляем все результаты этой команды
+      final results = await isar.weighingResultLocals
+          .filter()
+          .teamLocalIdEqualTo(id)
+          .findAll();
+
+      for (var result in results) {
+        await isar.weighingResultLocals.delete(result.id!);
+      }
+
+      // Удаляем саму команду
       await isar.teamLocals.delete(id);
+
+      print('✅ Deleted team $id with ${results.length} results');
     });
   }
 
@@ -115,8 +182,24 @@ class IsarService {
 
   Future<int> saveWeighing(WeighingLocal weighing) async {
     final isar = await getInstance();
+
+    // Проверяем, есть ли уже взвешивание с такими параметрами
+    final existing = await isar.weighingLocals
+        .filter()
+        .competitionLocalIdEqualTo(weighing.competitionLocalId)
+        .dayNumberEqualTo(weighing.dayNumber)
+        .weighingNumberEqualTo(weighing.weighingNumber)
+        .findFirst();
+
+    if (existing != null && weighing.id == null) {
+      print('⚠️ Weighing already exists: Day ${weighing.dayNumber}, #${weighing.weighingNumber}, id=${existing.id}');
+      return existing.id!;
+    }
+
     return await isar.writeTxn(() async {
-      return await isar.weighingLocals.put(weighing);
+      final id = await isar.weighingLocals.put(weighing);
+      print('✅ Saved weighing: Day ${weighing.dayNumber}, #${weighing.weighingNumber}, id=$id');
+      return id;
     });
   }
 
@@ -144,8 +227,128 @@ class IsarService {
   Future<void> deleteWeighing(int id) async {
     final isar = await getInstance();
     await isar.writeTxn(() async {
+      // Удаляем все результаты этого взвешивания
+      final results = await isar.weighingResultLocals
+          .filter()
+          .weighingLocalIdEqualTo(id)
+          .findAll();
+
+      for (var result in results) {
+        await isar.weighingResultLocals.delete(result.id!);
+      }
+
+      // Удаляем само взвешивание
       await isar.weighingLocals.delete(id);
+
+      print('✅ Deleted weighing $id with ${results.length} results');
     });
+  }
+
+  /// Удалить дубликаты взвешиваний (оставляет только первое)
+  Future<int> removeDuplicateWeighings(int competitionId) async {
+    final isar = await getInstance();
+
+    final allWeighings = await isar.weighingLocals
+        .filter()
+        .competitionLocalIdEqualTo(competitionId)
+        .findAll();
+
+    // Группируем по ключу: day_number + weighing_number
+    final Map<String, List<WeighingLocal>> groups = {};
+
+    for (var w in allWeighings) {
+      final key = '${w.dayNumber}_${w.weighingNumber}';
+      groups.putIfAbsent(key, () => []).add(w);
+    }
+
+    int deletedCount = 0;
+
+    await isar.writeTxn(() async {
+      for (var group in groups.values) {
+        if (group.length > 1) {
+          // Сортируем по ID, оставляем первое
+          group.sort((a, b) => a.id!.compareTo(b.id!));
+
+          // Удаляем все кроме первого
+          for (int i = 1; i < group.length; i++) {
+            // Удаляем результаты дубликата
+            final results = await isar.weighingResultLocals
+                .filter()
+                .weighingLocalIdEqualTo(group[i].id!)
+                .findAll();
+
+            for (var result in results) {
+              await isar.weighingResultLocals.delete(result.id!);
+            }
+
+            await isar.weighingLocals.delete(group[i].id!);
+            deletedCount++;
+            print('🗑️ Deleted duplicate weighing id=${group[i].id}');
+          }
+        }
+      }
+    });
+
+    print('✅ Removed $deletedCount duplicate weighings');
+    return deletedCount;
+  }
+
+  /// Очистить мусор в базе данных (orphaned records)
+  Future<Map<String, int>> cleanOrphanedRecords() async {
+    final isar = await getInstance();
+
+    int orphanedTeams = 0;
+    int orphanedWeighings = 0;
+    int orphanedResults = 0;
+
+    await isar.writeTxn(() async {
+      // Получаем все ID существующих соревнований
+      final competitionIds = (await isar.competitionLocals.where().findAll())
+          .map((c) => c.id!)
+          .toSet();
+
+      // Удаляем команды без соревнований
+      final allTeams = await isar.teamLocals.where().findAll();
+      for (var team in allTeams) {
+        if (!competitionIds.contains(team.competitionLocalId)) {
+          await isar.teamLocals.delete(team.id!);
+          orphanedTeams++;
+        }
+      }
+
+      // Удаляем взвешивания без соревнований
+      final allWeighings = await isar.weighingLocals.where().findAll();
+      final validWeighingIds = <int>{};
+
+      for (var weighing in allWeighings) {
+        if (!competitionIds.contains(weighing.competitionLocalId)) {
+          await isar.weighingLocals.delete(weighing.id!);
+          orphanedWeighings++;
+        } else {
+          validWeighingIds.add(weighing.id!);
+        }
+      }
+
+      // Удаляем результаты без взвешиваний
+      final allResults = await isar.weighingResultLocals.where().findAll();
+      for (var result in allResults) {
+        if (!validWeighingIds.contains(result.weighingLocalId)) {
+          await isar.weighingResultLocals.delete(result.id!);
+          orphanedResults++;
+        }
+      }
+    });
+
+    print('🧹 Database cleanup completed:');
+    print('   - Orphaned teams: $orphanedTeams');
+    print('   - Orphaned weighings: $orphanedWeighings');
+    print('   - Orphaned results: $orphanedResults');
+
+    return {
+      'teams': orphanedTeams,
+      'weighings': orphanedWeighings,
+      'results': orphanedResults,
+    };
   }
 
   // ========== WeighingResultLocal ==========
@@ -191,6 +394,126 @@ class IsarService {
     final isar = await getInstance();
     await isar.writeTxn(() async {
       await isar.weighingResultLocals.delete(id);
+    });
+  }
+
+  // ============================================================
+  // PROTOCOL METHODS
+  // ============================================================
+
+  /// Сохранить протокол
+  Future<int> saveProtocol(ProtocolLocal protocol) async {
+    final isar = await getInstance();
+    return await isar.writeTxn(() async {
+      return await isar.protocolLocals.put(protocol);
+    });
+  }
+
+  /// Получить все протоколы соревнования
+  Future<List<ProtocolLocal>> getProtocolsByCompetition(int competitionId) async {
+    final isar = await getInstance();
+    return await isar.protocolLocals
+        .filter()
+        .competitionIdEqualTo(competitionId.toString())
+        .sortByCreatedAtDesc()
+        .findAll();
+  }
+
+  /// Получить протоколы по типу
+  Future<List<ProtocolLocal>> getProtocolsByType(
+      int competitionId,
+      String type,
+      ) async {
+    final isar = await getInstance();
+    return await isar.protocolLocals
+        .filter()
+        .competitionIdEqualTo(competitionId.toString())
+        .typeEqualTo(type)
+        .sortByCreatedAtDesc()
+        .findAll();
+  }
+
+  /// Получить протокол взвешивания
+  Future<ProtocolLocal?> getWeighingProtocol(
+      int competitionId,
+      String weighingId,
+      ) async {
+    final isar = await getInstance();
+    return await isar.protocolLocals
+        .filter()
+        .competitionIdEqualTo(competitionId.toString())
+        .typeEqualTo('weighing')
+        .weighingIdEqualTo(weighingId)
+        .findFirst();
+  }
+
+  /// Получить промежуточный протокол по номеру взвешивания
+  Future<ProtocolLocal?> getIntermediateProtocol(
+      int competitionId,
+      int weighingNumber,
+      ) async {
+    final isar = await getInstance();
+    return await isar.protocolLocals
+        .filter()
+        .competitionIdEqualTo(competitionId.toString())
+        .typeEqualTo('intermediate')
+        .weighingNumberEqualTo(weighingNumber)
+        .findFirst();
+  }
+
+  /// Получить протокол Big Fish по дню
+  Future<ProtocolLocal?> getBigFishProtocol(
+      int competitionId,
+      int bigFishDay,
+      ) async {
+    final isar = await getInstance();
+    return await isar.protocolLocals
+        .filter()
+        .competitionIdEqualTo(competitionId.toString())
+        .typeEqualTo('big_fish')
+        .bigFishDayEqualTo(bigFishDay)
+        .findFirst();
+  }
+
+  /// Получить сводный протокол
+  Future<ProtocolLocal?> getSummaryProtocol(int competitionId) async {
+    final isar = await getInstance();
+    return await isar.protocolLocals
+        .filter()
+        .competitionIdEqualTo(competitionId.toString())
+        .typeEqualTo('summary')
+        .sortByCreatedAtDesc()
+        .findFirst();
+  }
+
+  /// Получить финальный протокол
+  Future<ProtocolLocal?> getFinalProtocol(int competitionId) async {
+    final isar = await getInstance();
+    return await isar.protocolLocals
+        .filter()
+        .competitionIdEqualTo(competitionId.toString())
+        .typeEqualTo('final')
+        .findFirst();
+  }
+
+  /// Удалить протокол
+  Future<bool> deleteProtocol(int id) async {
+    final isar = await getInstance();
+    return await isar.writeTxn(() async {
+      return await isar.protocolLocals.delete(id);
+    });
+  }
+
+  /// Удалить все протоколы соревнования
+  Future<int> deleteProtocolsByCompetition(int competitionId) async {
+    final isar = await getInstance();
+    return await isar.writeTxn(() async {
+      final protocols = await isar.protocolLocals
+          .filter()
+          .competitionIdEqualTo(competitionId.toString())
+          .findAll();
+      final ids = protocols.map((p) => p.id).toList();
+      return await isar.protocolLocals.deleteAll(ids);
     });
   }
 }
