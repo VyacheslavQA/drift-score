@@ -105,11 +105,12 @@ class WeighingResultNotifier extends StateNotifier<AsyncValue<List<WeighingResul
       state = AsyncValue.error(e, stack);
     }
   }
+
   Future<bool> saveTeamResult({
     required int teamId,
     required List<FishCatch> fishes,
+    String? signatureBase64,
     String? qrCode,
-    String? signature,
   }) async {
     try {
       print('💾 Saving team result: teamId=$teamId, weighingId=$weighingId, fishCount=${fishes.length}');
@@ -121,6 +122,7 @@ class WeighingResultNotifier extends StateNotifier<AsyncValue<List<WeighingResul
       final averageWeight = fishes.isEmpty ? 0.0 : totalWeight / fishes.length;
 
       print('💾 Calculated: totalWeight=$totalWeight, avgWeight=$averageWeight, fishCount=${fishes.length}');
+      print('💾 Signature: ${signatureBase64 != null ? "provided (${signatureBase64.length} chars)" : "not provided"}');
 
       if (existing != null) {
         print('💾 Updating existing result...');
@@ -129,7 +131,7 @@ class WeighingResultNotifier extends StateNotifier<AsyncValue<List<WeighingResul
         existing.averageWeight = averageWeight;
         existing.fishCount = fishes.length;
         existing.qrCode = qrCode;
-        existing.signatureBase64 = signature;
+        existing.signatureBase64 = signatureBase64;
         existing.updatedAt = DateTime.now();
         existing.isSynced = false;
 
@@ -144,7 +146,7 @@ class WeighingResultNotifier extends StateNotifier<AsyncValue<List<WeighingResul
           ..averageWeight = averageWeight
           ..fishCount = fishes.length
           ..qrCode = qrCode
-          ..signatureBase64 = signature
+          ..signatureBase64 = signatureBase64
           ..isSynced = false
           ..createdAt = DateTime.now()
           ..updatedAt = DateTime.now();

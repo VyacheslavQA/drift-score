@@ -401,4 +401,5 @@
   "protocols_insufficient_data": "Недостаточно данных для генерации",
   "protocols_generation_error": "Ошибка генерации: {error}",
   "protocols_export_type": "Экспорт протокола: {type}"
+
 }
