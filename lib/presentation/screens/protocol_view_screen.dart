@@ -57,16 +57,6 @@ class _ProtocolViewScreenState extends State<ProtocolViewScreen> {
                   ],
                 ),
               ),
-              PopupMenuItem(
-                value: 'word',
-                child: Row(
-                  children: [
-                    const Icon(Icons.description, color: Colors.blue),
-                    const SizedBox(width: 8),
-                    Text('download_word'.tr()),
-                  ],
-                ),
-              ),
             ],
           ),
         ],
@@ -122,9 +112,6 @@ class _ProtocolViewScreenState extends State<ProtocolViewScreen> {
           break;
         case 'excel':
           await _exportService.exportToExcel(widget.protocol, data);
-          break;
-        case 'word':
-          await _exportService.exportToWord(widget.protocol, data);
           break;
       }
 

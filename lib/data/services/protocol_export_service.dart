@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 import 'package:syncfusion_flutter_xlsio/xlsio.dart' as xlsio;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -8,11 +9,33 @@ import 'package:intl/intl.dart';
 import '../models/local/protocol_local.dart';
 
 class ProtocolExportService {
+  // Кэш для шрифта
+  pw.Font? _regularFont;
+  pw.Font? _boldFont;
+
+  // Загрузка шрифтов с поддержкой кириллицы
+  Future<pw.Font> _loadRegularFont() async {
+    if (_regularFont != null) return _regularFont!;
+
+    final fontData = await PdfGoogleFonts.robotoRegular();
+    _regularFont = fontData;
+    return _regularFont!;
+  }
+
+  Future<pw.Font> _loadBoldFont() async {
+    if (_boldFont != null) return _boldFont!;
+
+    final fontData = await PdfGoogleFonts.robotoBold();
+    _boldFont = fontData;
+    return _boldFont!;
+  }
+
   // Экспорт в PDF
   Future<void> exportToPdf(ProtocolLocal protocol, Map<String, dynamic> data) async {
     final pdf = pw.Document();
+    final font = await _loadRegularFont();
+    final fontBold = await _loadBoldFont();
 
-    // Добавляем страницу с протоколом
     pdf.addPage(
       pw.Page(
         pageFormat: PdfPageFormat.a4,
@@ -20,84 +43,46 @@ class ProtocolExportService {
           return pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              // Шапка протокола
-              _buildPdfHeader(protocol, data),
+              _buildPdfHeader(protocol, data, font, fontBold),
               pw.SizedBox(height: 20),
-
-              // Содержимое протокола
-              _buildPdfContent(protocol, data),
-
+              _buildPdfContent(protocol, data, font, fontBold),
               pw.Spacer(),
-
-              // Подпись судьи внизу
-              _buildPdfSignature(data),
+              _buildPdfSignature(data, font, fontBold),
             ],
           );
         },
       ),
     );
 
-    // Сохраняем и делимся файлом
     await _savePdf(pdf, protocol);
   }
 
   // Экспорт в Excel
   Future<void> exportToExcel(ProtocolLocal protocol, Map<String, dynamic> data) async {
-    // Создаём новый Excel файл
     final xlsio.Workbook workbook = xlsio.Workbook();
     final xlsio.Worksheet sheet = workbook.worksheets[0];
     sheet.name = 'Protocol';
 
     int currentRow = 1;
 
-    // Шапка
     currentRow = _addExcelHeader(sheet, protocol, data, currentRow);
     currentRow += 2;
 
-    // Таблица данных
     currentRow = _addExcelTable(sheet, protocol, data, currentRow);
     currentRow += 2;
 
-    // Подпись
     _addExcelSignature(sheet, data, currentRow);
 
-    // Автоматическая ширина колонок
     for (int i = 1; i <= 12; i++) {
       sheet.autoFitColumn(i);
     }
 
-    // Сохраняем и делимся файлом
     await _saveExcel(workbook, protocol);
-  }
-
-  // Экспорт в Word (через PDF с расширением .doc)
-  Future<void> exportToWord(ProtocolLocal protocol, Map<String, dynamic> data) async {
-    final pdf = pw.Document();
-
-    pdf.addPage(
-      pw.Page(
-        pageFormat: PdfPageFormat.a4,
-        build: (pw.Context context) {
-          return pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              _buildPdfHeader(protocol, data),
-              pw.SizedBox(height: 20),
-              _buildPdfContent(protocol, data),
-              pw.Spacer(),
-              _buildPdfSignature(data),
-            ],
-          );
-        },
-      ),
-    );
-
-    await _saveAsWord(pdf, protocol);
   }
 
   // ===== PDF HELPERS =====
 
-  pw.Widget _buildPdfHeader(ProtocolLocal protocol, Map<String, dynamic> data) {
+  pw.Widget _buildPdfHeader(ProtocolLocal protocol, Map<String, dynamic> data, pw.Font font, pw.Font fontBold) {
     return pw.Container(
       padding: const pw.EdgeInsets.all(10),
       decoration: pw.BoxDecoration(
@@ -108,51 +93,51 @@ class ProtocolExportService {
         children: [
           pw.Text(
             _getProtocolTitle(protocol),
-            style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold),
+            style: pw.TextStyle(fontSize: 18, font: fontBold),
           ),
           pw.SizedBox(height: 10),
           if (data['city'] != null)
-            pw.Text('Город: ${data['city']}', style: const pw.TextStyle(fontSize: 12)),
+            pw.Text('Город: ${data['city']}', style: pw.TextStyle(fontSize: 12, font: font)),
           if (data['lake'] != null)
-            pw.Text('Озеро: ${data['lake']}', style: const pw.TextStyle(fontSize: 12)),
+            pw.Text('Озеро: ${data['lake']}', style: pw.TextStyle(fontSize: 12, font: font)),
           if (data['organizer'] != null)
-            pw.Text('Организатор: ${data['organizer']}', style: const pw.TextStyle(fontSize: 12)),
+            pw.Text('Организатор: ${data['organizer']}', style: pw.TextStyle(fontSize: 12, font: font)),
           if (data['weighingTime'] != null)
             pw.Text(
               'Время: ${DateFormat('dd.MM.yyyy HH:mm').format(DateTime.parse(data['weighingTime']))}',
-              style: const pw.TextStyle(fontSize: 12),
+              style: pw.TextStyle(fontSize: 12, font: font),
             ),
         ],
       ),
     );
   }
 
-  pw.Widget _buildPdfContent(ProtocolLocal protocol, Map<String, dynamic> data) {
+  pw.Widget _buildPdfContent(ProtocolLocal protocol, Map<String, dynamic> data, pw.Font font, pw.Font fontBold) {
     switch (protocol.type) {
       case 'weighing':
       case 'intermediate':
-        return _buildPdfWeighingTable(data, protocol.type == 'intermediate');
+        return _buildPdfWeighingTable(data, protocol.type == 'intermediate', font, fontBold);
       case 'big_fish':
-        return _buildPdfBigFishTable(data);
+        return _buildPdfBigFishTable(data, font, fontBold);
       case 'summary':
-        return _buildPdfSummaryTable(data);
+        return _buildPdfSummaryTable(data, font, fontBold);
       case 'final':
-        return _buildPdfFinalTable(data);
+        return _buildPdfFinalTable(data, font, fontBold);
       default:
-        return pw.Text('Тип протокола не поддерживается');
+        return pw.Text('Тип протокола не поддерживается', style: pw.TextStyle(font: font));
     }
   }
 
-  pw.Widget _buildPdfWeighingTable(Map<String, dynamic> data, bool showPlace) {
+  pw.Widget _buildPdfWeighingTable(Map<String, dynamic> data, bool showPlace, pw.Font font, pw.Font fontBold) {
     final tableData = data['tableData'] as List<dynamic>? ?? [];
 
     if (tableData.isEmpty) {
-      return pw.Text('Нет данных');
+      return pw.Text('Нет данных', style: pw.TextStyle(font: font));
     }
 
     return pw.Table.fromTextArray(
-      headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10),
-      cellStyle: const pw.TextStyle(fontSize: 9),
+      headerStyle: pw.TextStyle(font: fontBold, fontSize: 10),
+      cellStyle: pw.TextStyle(fontSize: 9, font: font),
       headerDecoration: const pw.BoxDecoration(color: PdfColors.grey300),
       cellAlignment: pw.Alignment.centerLeft,
       headers: [
@@ -183,16 +168,16 @@ class ProtocolExportService {
     );
   }
 
-  pw.Widget _buildPdfBigFishTable(Map<String, dynamic> data) {
+  pw.Widget _buildPdfBigFishTable(Map<String, dynamic> data, pw.Font font, pw.Font fontBold) {
     final bigFish = data['bigFish'] as Map<String, dynamic>?;
 
     if (bigFish == null) {
-      return pw.Text('Нет данных');
+      return pw.Text('Нет данных', style: pw.TextStyle(font: font));
     }
 
     return pw.Table.fromTextArray(
-      headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10),
-      cellStyle: const pw.TextStyle(fontSize: 9),
+      headerStyle: pw.TextStyle(font: fontBold, fontSize: 10),
+      cellStyle: pw.TextStyle(fontSize: 9, font: font),
       headerDecoration: const pw.BoxDecoration(color: PdfColors.amber100),
       headers: ['Команда', 'Вид рыбы', 'Вес (кг)', 'Длина (см)', 'Сектор', 'Время'],
       data: [
@@ -210,16 +195,16 @@ class ProtocolExportService {
     );
   }
 
-  pw.Widget _buildPdfSummaryTable(Map<String, dynamic> data) {
+  pw.Widget _buildPdfSummaryTable(Map<String, dynamic> data, pw.Font font, pw.Font fontBold) {
     final summaryData = data['summaryData'] as List<dynamic>? ?? [];
 
     if (summaryData.isEmpty) {
-      return pw.Text('Нет данных');
+      return pw.Text('Нет данных', style: pw.TextStyle(font: font));
     }
 
     return pw.Table.fromTextArray(
-      headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 8),
-      cellStyle: const pw.TextStyle(fontSize: 7),
+      headerStyle: pw.TextStyle(font: fontBold, fontSize: 8),
+      cellStyle: pw.TextStyle(fontSize: 7, font: font),
       headerDecoration: const pw.BoxDecoration(color: PdfColors.grey300),
       headers: [
         'Команда',
@@ -259,16 +244,16 @@ class ProtocolExportService {
     );
   }
 
-  pw.Widget _buildPdfFinalTable(Map<String, dynamic> data) {
+  pw.Widget _buildPdfFinalTable(Map<String, dynamic> data, pw.Font font, pw.Font fontBold) {
     final finalData = data['finalData'] as List<dynamic>? ?? [];
 
     if (finalData.isEmpty) {
-      return pw.Text('Нет данных');
+      return pw.Text('Нет данных', style: pw.TextStyle(font: font));
     }
 
     return pw.Table.fromTextArray(
-      headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 7),
-      cellStyle: const pw.TextStyle(fontSize: 6),
+      headerStyle: pw.TextStyle(font: fontBold, fontSize: 7),
+      cellStyle: pw.TextStyle(fontSize: 6, font: font),
       headerDecoration: const pw.BoxDecoration(color: PdfColors.grey300),
       headers: [
         'Команда',
@@ -312,13 +297,13 @@ class ProtocolExportService {
     );
   }
 
-  pw.Widget _buildPdfSignature(Map<String, dynamic> data) {
+  pw.Widget _buildPdfSignature(Map<String, dynamic> data, pw.Font font, pw.Font fontBold) {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
         pw.Divider(),
         pw.SizedBox(height: 10),
-        pw.Text('Подписи судей:', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+        pw.Text('Подписи судей:', style: pw.TextStyle(font: fontBold)),
         pw.SizedBox(height: 20),
         if (data['judges'] != null)
           ...((data['judges'] as List<dynamic>).map((judge) {
@@ -330,7 +315,7 @@ class ProtocolExportService {
                 children: [
                   pw.Text(
                     '${judgeMap['name'] ?? ''} (${judgeMap['rank'] ?? ''})',
-                    style: const pw.TextStyle(fontSize: 10),
+                    style: pw.TextStyle(fontSize: 10, font: font),
                   ),
                   pw.Container(
                     width: 150,
@@ -346,7 +331,7 @@ class ProtocolExportService {
         pw.SizedBox(height: 10),
         pw.Text(
           'Дата: ${DateFormat('dd.MM.yyyy').format(DateTime.now())}',
-          style: const pw.TextStyle(fontSize: 10),
+          style: pw.TextStyle(fontSize: 10, font: font),
         ),
       ],
     );
@@ -355,7 +340,6 @@ class ProtocolExportService {
   // ===== EXCEL HELPERS =====
 
   int _addExcelHeader(xlsio.Worksheet sheet, ProtocolLocal protocol, Map<String, dynamic> data, int row) {
-    // Заголовок протокола
     sheet.getRangeByIndex(row, 1).setText(_getProtocolTitle(protocol));
     sheet.getRangeByIndex(row, 1).cellStyle.bold = true;
     sheet.getRangeByIndex(row, 1).cellStyle.fontSize = 16;
@@ -380,7 +364,6 @@ class ProtocolExportService {
   }
 
   int _addExcelTable(xlsio.Worksheet sheet, ProtocolLocal protocol, Map<String, dynamic> data, int row) {
-    // Заголовки таблицы
     final headers = _getExcelHeaders(protocol.type);
     for (int i = 0; i < headers.length; i++) {
       final cell = sheet.getRangeByIndex(row, i + 1);
@@ -390,7 +373,6 @@ class ProtocolExportService {
     }
     row++;
 
-    // Данные таблицы
     final tableData = _getExcelData(protocol, data);
     for (final rowData in tableData) {
       for (int i = 0; i < rowData.length; i++) {
@@ -564,22 +546,6 @@ class ProtocolExportService {
       );
     } catch (e) {
       print('Error saving Excel: $e');
-      rethrow;
-    }
-  }
-
-  Future<void> _saveAsWord(pw.Document pdf, ProtocolLocal protocol) async {
-    try {
-      final output = await getTemporaryDirectory();
-      final file = File('${output.path}/protocol_${protocol.id}_${DateTime.now().millisecondsSinceEpoch}.doc');
-      await file.writeAsBytes(await pdf.save());
-
-      await Share.shareXFiles(
-        [XFile(file.path)],
-        subject: _getProtocolTitle(protocol),
-      );
-    } catch (e) {
-      print('Error saving Word: $e');
       rethrow;
     }
   }

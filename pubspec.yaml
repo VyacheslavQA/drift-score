@@ -39,6 +39,7 @@ dependencies:
   # Documents Export
   pdf: ^3.11.3
   printing: ^5.14.2
+  google_fonts: ^6.2.1  # Добавлено для PdfGoogleFonts
   syncfusion_flutter_xlsio: ^29.2.11
   share_plus: ^7.2.2
 
