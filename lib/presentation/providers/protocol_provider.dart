@@ -36,6 +36,24 @@ class ProtocolNotifier extends StateNotifier<ProtocolState> {
 
   ProtocolNotifier(this._isarService) : super(ProtocolState());
 
+  // Функция перевода вида рыбы
+  String _getFishTypeName(String fishType) {
+    switch (fishType.toLowerCase()) {
+      case 'carp':
+        return 'Карп';
+      case 'mirror_carp':
+        return 'Зеркальный карп';
+      case 'grass_carp':
+        return 'Амур';
+      case 'silver_carp':
+        return 'Толстолобик';
+      case 'other':
+        return 'Другое';
+      default:
+        return fishType; // Если свой вариант
+    }
+  }
+
   Future<void> loadProtocols(int competitionId) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
@@ -280,7 +298,7 @@ class ProtocolNotifier extends StateNotifier<ProtocolState> {
           for (var fish in result.fishes) {
             allFish.add({
               'teamName': team.name,
-              'fishType': fish.fishType,
+              'fishType': _getFishTypeName(fish.fishType),
               'weight': fish.weight,
               'length': fish.length,
               'sector': team.sector ?? 0,
@@ -299,21 +317,47 @@ class ProtocolNotifier extends StateNotifier<ProtocolState> {
         return null;
       }
 
-      final protocol = ProtocolLocal()
-        ..competitionId = competitionId.toString()
-        ..type = 'big_fish'
-        ..bigFishDay = dayNumber
-        ..createdAt = DateTime.now()
-        ..dataJson = jsonEncode({
-          'competitionName': competition.name,
-          'dayNumber': dayNumber,
-          'dayStart': dayStart.toIso8601String(),
-          'dayEnd': dayEnd.toIso8601String(),
-          'bigFish': bigFishData,
-        });
+      // ✅ ПРОВЕРЯЕМ: есть ли уже протокол Big Fish для этого дня?
+      final existingProtocols = await _isarService.getProtocolsByCompetition(competitionId);
+      final existingBigFish = existingProtocols.firstWhere(
+            (p) => p.type == 'big_fish' && p.bigFishDay == dayNumber,
+        orElse: () => ProtocolLocal(),
+      );
+
+      final protocolData = {
+        'competitionName': competition.name,
+        'dayNumber': dayNumber,
+        'dayStart': dayStart.toIso8601String(),
+        'dayEnd': dayEnd.toIso8601String(),
+        'bigFish': bigFishData,
+      };
+
+      ProtocolLocal protocol;
+
+      if (existingBigFish.id != null) {
+        // ✅ ОБНОВЛЯЕМ существующий протокол
+        print('🔄 Updating existing Big Fish protocol for day $dayNumber (ID: ${existingBigFish.id})');
+        protocol = existingBigFish
+          ..dataJson = jsonEncode(protocolData)
+          ..createdAt = DateTime.now(); // Обновляем время создания
+      } else {
+        // ✅ СОЗДАЁМ новый протокол
+        print('➕ Creating new Big Fish protocol for day $dayNumber');
+        protocol = ProtocolLocal()
+          ..competitionId = competitionId.toString()
+          ..type = 'big_fish'
+          ..bigFishDay = dayNumber
+          ..createdAt = DateTime.now()
+          ..dataJson = jsonEncode(protocolData);
+      }
 
       await _isarService.saveProtocol(protocol);
-      print('✅ Big Fish protocol generated for day $dayNumber');
+
+      if (existingBigFish.id != null) {
+        print('✅ Big Fish protocol updated for day $dayNumber');
+      } else {
+        print('✅ Big Fish protocol created for day $dayNumber');
+      }
 
       return protocol;
     } catch (e) {
@@ -338,7 +382,7 @@ class ProtocolNotifier extends StateNotifier<ProtocolState> {
       for (var team in teams) {
         final members = team.members.map((m) => {
           'fullName': m.fullName,
-          'rank': m.rank.isEmpty ? 'б/р' : m.rank,
+          'rank': m.rank.isEmpty || m.rank == 'none' ? 'б/р' : m.rank,
         }).toList();
 
         final Map<String, dynamic> teamData = {
@@ -422,8 +466,8 @@ class ProtocolNotifier extends StateNotifier<ProtocolState> {
     try {
       final competition = await _isarService.getCompetition(competitionId);
 
-      if (competition == null || competition.status != 'completed') {
-        print('❌ Competition not completed');
+      if (competition == null) {
+        print('❌ Competition not found');
         return null;
       }
 
@@ -445,7 +489,7 @@ class ProtocolNotifier extends StateNotifier<ProtocolState> {
           'sector': team.sector ?? 0,
           'members': team.members.map((m) => {
             'fullName': m.fullName,
-            'rank': m.rank.isEmpty ? 'б/р' : m.rank,
+            'rank': m.rank.isEmpty || m.rank == 'none' ? 'б/р' : m.rank,
             'isCaptain': m.isCaptain,
           }).toList(),
           'totalFishCount': 0,

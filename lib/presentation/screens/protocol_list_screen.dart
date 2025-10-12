@@ -31,7 +31,6 @@ class _ProtocolListScreenState extends ConsumerState<ProtocolListScreen>
     super.initState();
     _tabController = TabController(length: 5, vsync: this);
 
-    // ✅ Используем Future.microtask для загрузки
     Future.microtask(() {
       _loadProtocols();
     });
@@ -88,16 +87,11 @@ class _ProtocolListScreenState extends ConsumerState<ProtocolListScreen>
     );
   }
 
-  // ============================================================
-  // 1. ПРОТОКОЛЫ ВЗВЕШИВАНИЯ
-  // ============================================================
-
   Widget _buildWeighingProtocolsTab(List<ProtocolLocal> allProtocols) {
     final protocols = allProtocols.where((p) => p.type == 'weighing').toList();
 
     return Column(
       children: [
-        // Кнопка генерации
         Padding(
           padding: EdgeInsets.all(AppDimensions.paddingMedium),
           child: SizedBox(
@@ -105,7 +99,7 @@ class _ProtocolListScreenState extends ConsumerState<ProtocolListScreen>
             child: ElevatedButton.icon(
               onPressed: () => _generateAllWeighingProtocols(),
               icon: const Icon(Icons.auto_fix_high, size: 18),
-              label: const Text('Сгенерировать все протоколы взвешивания'),
+              label: Text('protocols_generate_all_weighing'.tr()),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
@@ -142,16 +136,11 @@ class _ProtocolListScreenState extends ConsumerState<ProtocolListScreen>
     );
   }
 
-  // ============================================================
-  // 2. ПРОМЕЖУТОЧНЫЕ ПРОТОКОЛЫ
-  // ============================================================
-
   Widget _buildIntermediateProtocolsTab(List<ProtocolLocal> allProtocols) {
     final protocols = allProtocols.where((p) => p.type == 'intermediate').toList();
 
     return Column(
       children: [
-        // Кнопка генерации
         Padding(
           padding: EdgeInsets.all(AppDimensions.paddingMedium),
           child: SizedBox(
@@ -159,7 +148,7 @@ class _ProtocolListScreenState extends ConsumerState<ProtocolListScreen>
             child: ElevatedButton.icon(
               onPressed: () => _generateAllIntermediateProtocols(),
               icon: const Icon(Icons.auto_fix_high, size: 18),
-              label: const Text('Сгенерировать все промежуточные протоколы'),
+              label: Text('protocols_generate_all_intermediate'.tr()),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.orange,
                 foregroundColor: Colors.white,
@@ -195,16 +184,11 @@ class _ProtocolListScreenState extends ConsumerState<ProtocolListScreen>
     );
   }
 
-  // ============================================================
-  // 3. BIG FISH ПРОТОКОЛЫ
-  // ============================================================
-
   Widget _buildBigFishProtocolsTab(List<ProtocolLocal> allProtocols) {
     final protocols = allProtocols.where((p) => p.type == 'big_fish').toList();
 
     return Column(
       children: [
-        // Кнопка генерации
         Padding(
           padding: EdgeInsets.all(AppDimensions.paddingMedium),
           child: SizedBox(
@@ -212,7 +196,7 @@ class _ProtocolListScreenState extends ConsumerState<ProtocolListScreen>
             child: ElevatedButton.icon(
               onPressed: () => _generateAllBigFishProtocols(),
               icon: const Icon(Icons.auto_fix_high, size: 18),
-              label: const Text('Сгенерировать все Big Fish протоколы'),
+              label: Text('protocols_generate_all_big_fish'.tr()),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.amber,
                 foregroundColor: Colors.white,
@@ -248,16 +232,11 @@ class _ProtocolListScreenState extends ConsumerState<ProtocolListScreen>
     );
   }
 
-  // ============================================================
-  // 4. СВОДНЫЙ ПРОТОКОЛ
-  // ============================================================
-
   Widget _buildSummaryProtocolTab(List<ProtocolLocal> allProtocols) {
     final protocol = allProtocols.where((p) => p.type == 'summary').firstOrNull;
 
     return Column(
       children: [
-        // Кнопка генерации
         Padding(
           padding: EdgeInsets.all(AppDimensions.paddingMedium),
           child: SizedBox(
@@ -265,7 +244,7 @@ class _ProtocolListScreenState extends ConsumerState<ProtocolListScreen>
             child: ElevatedButton.icon(
               onPressed: () => _generateSummaryProtocol(),
               icon: const Icon(Icons.auto_fix_high, size: 18),
-              label: const Text('Сгенерировать сводный протокол'),
+              label: Text('protocols_generate_summary'.tr()),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.green,
                 foregroundColor: Colors.white,
@@ -297,16 +276,11 @@ class _ProtocolListScreenState extends ConsumerState<ProtocolListScreen>
     );
   }
 
-  // ============================================================
-  // 5. ФИНАЛЬНЫЙ ПРОТОКОЛ
-  // ============================================================
-
   Widget _buildFinalProtocolTab(List<ProtocolLocal> allProtocols) {
     final protocol = allProtocols.where((p) => p.type == 'final').firstOrNull;
 
     return Column(
       children: [
-        // Кнопка генерации
         Padding(
           padding: EdgeInsets.all(AppDimensions.paddingMedium),
           child: SizedBox(
@@ -314,7 +288,7 @@ class _ProtocolListScreenState extends ConsumerState<ProtocolListScreen>
             child: ElevatedButton.icon(
               onPressed: () => _generateFinalProtocol(),
               icon: const Icon(Icons.auto_fix_high, size: 18),
-              label: const Text('Сгенерировать финальный протокол'),
+              label: Text('protocols_generate_final'.tr()),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red,
                 foregroundColor: Colors.white,
@@ -345,10 +319,6 @@ class _ProtocolListScreenState extends ConsumerState<ProtocolListScreen>
       ],
     );
   }
-
-  // ============================================================
-  // UI HELPERS
-  // ============================================================
 
   Widget _buildProtocolCard({
     required ProtocolLocal protocol,
@@ -415,12 +385,8 @@ class _ProtocolListScreenState extends ConsumerState<ProtocolListScreen>
     );
   }
 
-  // ============================================================
-  // ACTIONS - ГЕНЕРАЦИЯ ПРОТОКОЛОВ
-  // ============================================================
-
   Future<void> _generateAllWeighingProtocols() async {
-    _showLoadingDialog('Генерация протоколов взвешивания...');
+    _showLoadingDialog('protocols_generating_weighing'.tr());
 
     try {
       final isarService = IsarService();
@@ -428,7 +394,7 @@ class _ProtocolListScreenState extends ConsumerState<ProtocolListScreen>
 
       if (weighings.isEmpty) {
         Navigator.pop(context);
-        _showSnackBar('Нет взвешиваний для генерации протоколов');
+        _showSnackBar('protocols_no_weighings_to_generate'.tr());
         return;
       }
 
@@ -441,15 +407,15 @@ class _ProtocolListScreenState extends ConsumerState<ProtocolListScreen>
 
       Navigator.pop(context);
       await _loadProtocols();
-      _showSnackBar('Сгенерировано $generated протоколов взвешивания');
+      _showSnackBar('protocols_generated_weighing'.tr(namedArgs: {'count': generated.toString()}));
     } catch (e) {
       Navigator.pop(context);
-      _showSnackBar('Ошибка генерации: $e', isError: true);
+      _showSnackBar('protocols_generation_error'.tr(namedArgs: {'error': e.toString()}), isError: true);
     }
   }
 
   Future<void> _generateAllIntermediateProtocols() async {
-    _showLoadingDialog('Генерация промежуточных протоколов...');
+    _showLoadingDialog('protocols_generating_intermediate'.tr());
 
     try {
       final isarService = IsarService();
@@ -457,11 +423,10 @@ class _ProtocolListScreenState extends ConsumerState<ProtocolListScreen>
 
       if (weighings.isEmpty) {
         Navigator.pop(context);
-        _showSnackBar('Нет взвешиваний для генерации протоколов');
+        _showSnackBar('protocols_no_weighings_to_generate'.tr());
         return;
       }
 
-      // Получаем максимальный номер взвешивания
       final maxWeighingNumber = weighings.map((w) => w.weighingNumber).reduce((a, b) => a > b ? a : b);
 
       int generated = 0;
@@ -473,18 +438,17 @@ class _ProtocolListScreenState extends ConsumerState<ProtocolListScreen>
 
       Navigator.pop(context);
       await _loadProtocols();
-      _showSnackBar('Сгенерировано $generated промежуточных протоколов');
+      _showSnackBar('protocols_generated_intermediate'.tr(namedArgs: {'count': generated.toString()}));
     } catch (e) {
       Navigator.pop(context);
-      _showSnackBar('Ошибка генерации: $e', isError: true);
+      _showSnackBar('protocols_generation_error'.tr(namedArgs: {'error': e.toString()}), isError: true);
     }
   }
 
   Future<void> _generateAllBigFishProtocols() async {
-    _showLoadingDialog('Генерация Big Fish протоколов...');
+    _showLoadingDialog('protocols_generating_big_fish'.tr());
 
     try {
-      // Рассчитываем количество дней соревнования
       final daysCount = widget.competition.durationDays;
 
       int generated = 0;
@@ -496,15 +460,15 @@ class _ProtocolListScreenState extends ConsumerState<ProtocolListScreen>
 
       Navigator.pop(context);
       await _loadProtocols();
-      _showSnackBar('Сгенерировано $generated Big Fish протоколов');
+      _showSnackBar('protocols_generated_big_fish'.tr(namedArgs: {'count': generated.toString()}));
     } catch (e) {
       Navigator.pop(context);
-      _showSnackBar('Ошибка генерации: $e', isError: true);
+      _showSnackBar('protocols_generation_error'.tr(namedArgs: {'error': e.toString()}), isError: true);
     }
   }
 
   Future<void> _generateSummaryProtocol() async {
-    _showLoadingDialog('Генерация сводного протокола...');
+    _showLoadingDialog('protocols_generating_summary'.tr());
 
     try {
       final protocol = await ref.read(protocolProvider.notifier)
@@ -514,18 +478,18 @@ class _ProtocolListScreenState extends ConsumerState<ProtocolListScreen>
 
       if (protocol != null) {
         await _loadProtocols();
-        _showSnackBar('Сводный протокол сгенерирован');
+        _showSnackBar('protocols_generated_summary_success'.tr());
       } else {
-        _showSnackBar('Недостаточно данных для генерации', isError: true);
+        _showSnackBar('protocols_insufficient_data'.tr(), isError: true);
       }
     } catch (e) {
       Navigator.pop(context);
-      _showSnackBar('Ошибка генерации: $e', isError: true);
+      _showSnackBar('protocols_generation_error'.tr(namedArgs: {'error': e.toString()}), isError: true);
     }
   }
 
   Future<void> _generateFinalProtocol() async {
-    _showLoadingDialog('Генерация финального протокола...');
+    _showLoadingDialog('protocols_generating_final'.tr());
 
     try {
       final protocol = await ref.read(protocolProvider.notifier)
@@ -535,19 +499,15 @@ class _ProtocolListScreenState extends ConsumerState<ProtocolListScreen>
 
       if (protocol != null) {
         await _loadProtocols();
-        _showSnackBar('Финальный протокол сгенерирован');
+        _showSnackBar('protocols_generated_final_success'.tr());
       } else {
-        _showSnackBar('Недостаточно данных для генерации', isError: true);
+        _showSnackBar('protocols_insufficient_data'.tr(), isError: true);
       }
     } catch (e) {
       Navigator.pop(context);
-      _showSnackBar('Ошибка генерации: $e', isError: true);
+      _showSnackBar('protocols_generation_error'.tr(namedArgs: {'error': e.toString()}), isError: true);
     }
   }
-
-  // ============================================================
-  // ACTIONS - ПРОЧЕЕ
-  // ============================================================
 
   void _viewProtocol(ProtocolLocal protocol) {
     Navigator.push(
@@ -559,7 +519,7 @@ class _ProtocolListScreenState extends ConsumerState<ProtocolListScreen>
   }
 
   void _shareProtocol(ProtocolLocal protocol) {
-    _showSnackBar('Экспорт протокола: ${protocol.type}');
+    _showSnackBar('protocols_export_type'.tr(namedArgs: {'type': protocol.type}));
     // TODO: Реализовать экспорт в PDF/Excel/Word
   }
 
@@ -588,10 +548,6 @@ class _ProtocolListScreenState extends ConsumerState<ProtocolListScreen>
       _showSnackBar('protocols_deleted'.tr());
     }
   }
-
-  // ============================================================
-  // UTILS
-  // ============================================================
 
   void _showLoadingDialog(String message) {
     showDialog(

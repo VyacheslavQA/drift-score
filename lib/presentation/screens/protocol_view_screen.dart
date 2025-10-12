@@ -28,7 +28,7 @@ class ProtocolViewScreen extends StatelessWidget {
             icon: const Icon(Icons.share),
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Экспорт - в разработке')),
+                SnackBar(content: Text('protocol_export_in_development'.tr())),
               );
             },
           ),
@@ -53,21 +53,41 @@ class ProtocolViewScreen extends StatelessWidget {
   String _getProtocolTitle() {
     switch (protocol.type) {
       case 'weighing':
-        return 'Протокол взвешивания День ${protocol.dayNumber}, №${protocol.weighingNumber}';
+        return 'protocol_weighing_title'.tr(namedArgs: {
+          'day': protocol.dayNumber.toString(),
+          'number': protocol.weighingNumber.toString(),
+        });
       case 'intermediate':
-        return 'Промежуточный протокол №${protocol.weighingNumber}';
+        return 'protocol_intermediate_title'.tr(namedArgs: {
+          'number': protocol.weighingNumber.toString(),
+        });
       case 'big_fish':
-        return 'Big Fish - День ${protocol.bigFishDay}';
+        return 'protocol_big_fish_title'.tr(namedArgs: {
+          'day': protocol.bigFishDay.toString(),
+        });
       case 'summary':
-        return 'Сводный протокол';
+        return 'protocol_summary_title'.tr();
       case 'final':
-        return 'Финальный протокол';
+        return 'protocol_final_title'.tr();
       default:
-        return 'Протокол';
+        return 'protocol_title'.tr();
     }
   }
 
   Widget _buildHeader(Map<String, dynamic> data) {
+    // Проверяем, есть ли хоть какие-то данные для отображения
+    final hasCity = data['city'] != null;
+    final hasLake = data['lake'] != null;
+    final hasOrganizer = data['organizer'] != null && (protocol.type == 'summary' || protocol.type == 'final');
+    final hasWeighingTime = data['weighingTime'] != null;
+    final hasTimeRange = data['startTime'] != null && data['finishTime'] != null;
+    final hasJudges = data['judges'] != null && (protocol.type == 'summary' || protocol.type == 'final');
+
+    // Если нет данных, не показываем карточку
+    if (!hasCity && !hasLake && !hasOrganizer && !hasWeighingTime && !hasTimeRange && !hasJudges) {
+      return SizedBox.shrink();
+    }
+
     return Card(
       color: AppColors.surface,
       child: Padding(
@@ -75,30 +95,25 @@ class ProtocolViewScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              data['competitionName'] ?? '',
-              style: AppTextStyles.h2,
-            ),
-            SizedBox(height: AppDimensions.paddingSmall),
-            if (data['city'] != null)
+            if (hasCity)
               _buildInfoRow(Icons.location_on, data['city']),
-            if (data['lake'] != null)
+            if (hasLake)
               _buildInfoRow(Icons.water, data['lake']),
-            if (data['organizer'] != null && (protocol.type == 'summary' || protocol.type == 'final'))
-              _buildInfoRow(Icons.person, 'Организатор: ${data['organizer']}'),
-            if (data['weighingTime'] != null)
+            if (hasOrganizer)
+              _buildInfoRow(Icons.person, '${'protocol_organizer'.tr()}: ${data['organizer']}'),
+            if (hasWeighingTime)
               _buildInfoRow(
                 Icons.access_time,
                 DateFormat('dd.MM.yyyy HH:mm').format(
                   DateTime.parse(data['weighingTime']),
                 ),
               ),
-            if (data['startTime'] != null && data['finishTime'] != null)
+            if (hasTimeRange)
               _buildInfoRow(
                 Icons.calendar_today,
                 '${DateFormat('dd.MM.yyyy HH:mm').format(DateTime.parse(data['startTime']))} - ${DateFormat('dd.MM.yyyy HH:mm').format(DateTime.parse(data['finishTime']))}',
               ),
-            if (data['judges'] != null && (protocol.type == 'summary' || protocol.type == 'final'))
+            if (hasJudges)
               _buildJudges(data['judges'] as List<dynamic>),
           ],
         ),
@@ -133,7 +148,7 @@ class ProtocolViewScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Судьи:',
+            '${'protocol_judges'.tr()}:',
             style: AppTextStyles.bodyBold.copyWith(color: AppColors.textSecondary),
           ),
           SizedBox(height: 4),
@@ -161,7 +176,7 @@ class ProtocolViewScreen extends StatelessWidget {
       case 'final':
         return _buildFinalContent(data);
       default:
-        return const Text('Тип протокола не поддерживается');
+        return Center(child: Text('protocol_type_not_supported'.tr()));
     }
   }
 
@@ -169,7 +184,7 @@ class ProtocolViewScreen extends StatelessWidget {
     final tableData = data['tableData'] as List<dynamic>? ?? [];
 
     if (tableData.isEmpty) {
-      return const Center(child: Text('Нет данных'));
+      return Center(child: Text('protocol_no_data'.tr()));
     }
 
     return Card(
@@ -181,22 +196,28 @@ class ProtocolViewScreen extends StatelessWidget {
             AppColors.primary.withOpacity(0.1),
           ),
           columns: [
-            DataColumn(label: Text('№', style: AppTextStyles.bodyBold)),
-            DataColumn(label: Text('Команда', style: AppTextStyles.bodyBold)),
-            DataColumn(label: Text('Сектор', style: AppTextStyles.bodyBold)),
-            DataColumn(label: Text('Кол-во', style: AppTextStyles.bodyBold)),
-            DataColumn(label: Text('Вес (кг)', style: AppTextStyles.bodyBold)),
+            DataColumn(label: Text('protocol_table_number'.tr(), style: AppTextStyles.bodyBold)),
+            DataColumn(label: Text('protocol_table_team'.tr(), style: AppTextStyles.bodyBold)),
+            DataColumn(label: Text('protocol_table_sector'.tr(), style: AppTextStyles.bodyBold)),
+            DataColumn(label: Text('protocol_table_count'.tr(), style: AppTextStyles.bodyBold)),
+            DataColumn(label: Text('protocol_table_total_weight'.tr(), style: AppTextStyles.bodyBold)),
+            DataColumn(label: Text('protocol_table_avg_weight'.tr(), style: AppTextStyles.bodyBold)),
             if (protocol.type == 'intermediate')
-              DataColumn(label: Text('Место', style: AppTextStyles.bodyBold)),
+              DataColumn(label: Text('protocol_table_place'.tr(), style: AppTextStyles.bodyBold)),
           ],
           rows: tableData.map<DataRow>((row) {
+            final totalWeight = row['totalWeight'] as num;
+            final fishCount = row['fishCount'] as int;
+            final avgWeight = fishCount > 0 ? totalWeight / fishCount : 0.0;
+
             return DataRow(
               cells: [
                 DataCell(Text('${row['order']}')),
                 DataCell(Text(row['teamName'] ?? '')),
                 DataCell(Text('${row['sector']}')),
-                DataCell(Text('${row['fishCount']}')),
-                DataCell(Text('${(row['totalWeight'] as num).toStringAsFixed(3)}')),
+                DataCell(Text('$fishCount')),
+                DataCell(Text('${totalWeight.toStringAsFixed(3)}')),
+                DataCell(Text('${avgWeight.toStringAsFixed(3)}')),
                 if (protocol.type == 'intermediate')
                   DataCell(
                     Container(
@@ -228,43 +249,95 @@ class ProtocolViewScreen extends StatelessWidget {
     final bigFish = data['bigFish'] as Map<String, dynamic>?;
 
     if (bigFish == null) {
-      return const Center(child: Text('Нет данных о самой крупной рыбе'));
+      return Center(child: Text('protocol_big_fish_no_data'.tr()));
     }
 
-    return Card(
-      color: AppColors.surface,
-      child: Padding(
-        padding: EdgeInsets.all(AppDimensions.paddingMedium),
-        child: Column(
-          children: [
-            Icon(
-              Icons.emoji_events,
-              size: 64,
-              color: Colors.amber,
+    // Информация о периоде
+    final dayNumber = data['dayNumber'];
+    final dayStart = DateTime.parse(data['dayStart']);
+    final dayEnd = DateTime.parse(data['dayEnd']);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Период времени
+        Card(
+          color: AppColors.primary.withOpacity(0.1),
+          child: Padding(
+            padding: EdgeInsets.all(AppDimensions.paddingMedium),
+            child: Row(
+              children: [
+                Icon(Icons.calendar_today, color: AppColors.primary),
+                SizedBox(width: AppDimensions.paddingSmall),
+                Text(
+                  '${'protocol_period'.tr()}: ${DateFormat('dd.MM HH:mm').format(dayStart)} - ${DateFormat('dd.MM HH:mm').format(dayEnd)}',
+                  style: AppTextStyles.bodyBold,
+                ),
+              ],
             ),
-            SizedBox(height: AppDimensions.paddingMedium),
-            Text(
-              bigFish['teamName'] ?? '',
-              style: AppTextStyles.h2,
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: AppDimensions.paddingSmall),
-            Text(
-              '${(bigFish['weight'] as num).toStringAsFixed(3)} кг',
-              style: AppTextStyles.h1.copyWith(
-                color: Colors.amber,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            SizedBox(height: AppDimensions.paddingMedium),
-            Divider(),
-            SizedBox(height: AppDimensions.paddingSmall),
-            _buildBigFishRow('Вид', bigFish['fishType'] ?? ''),
-            _buildBigFishRow('Длина', '${bigFish['length']} см'),
-            _buildBigFishRow('Сектор', '${bigFish['sector']}'),
-          ],
+          ),
         ),
-      ),
+        SizedBox(height: AppDimensions.paddingMedium),
+
+        // Таблица Big Fish
+        Card(
+          color: AppColors.surface,
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: DataTable(
+              headingRowColor: WidgetStateProperty.all(
+                Colors.amber.withOpacity(0.2),
+              ),
+              columns: [
+                DataColumn(label: Text('🏆 ${'protocol_table_team'.tr()}', style: AppTextStyles.bodyBold)),
+                DataColumn(label: Text('protocol_table_fish_type'.tr(), style: AppTextStyles.bodyBold)),
+                DataColumn(label: Text('protocol_table_weight'.tr(), style: AppTextStyles.bodyBold)),
+                DataColumn(label: Text('protocol_table_length'.tr(), style: AppTextStyles.bodyBold)),
+                DataColumn(label: Text('protocol_table_sector'.tr(), style: AppTextStyles.bodyBold)),
+                DataColumn(label: Text('protocol_table_weighing_time'.tr(), style: AppTextStyles.bodyBold)),
+              ],
+              rows: [
+                DataRow(
+                  color: WidgetStateProperty.all(Colors.amber.withOpacity(0.1)),
+                  cells: [
+                    DataCell(
+                      Row(
+                        children: [
+                          Icon(Icons.emoji_events, color: Colors.amber, size: 20),
+                          SizedBox(width: 8),
+                          Text(
+                            bigFish['teamName'] ?? '',
+                            style: AppTextStyles.bodyBold.copyWith(color: Colors.amber.shade800),
+                          ),
+                        ],
+                      ),
+                    ),
+                    DataCell(Text(bigFish['fishType'] ?? '')),
+                    DataCell(
+                      Text(
+                        '${(bigFish['weight'] as num).toStringAsFixed(3)}',
+                        style: AppTextStyles.bodyBold.copyWith(
+                          color: Colors.amber.shade800,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                    DataCell(Text('${bigFish['length']}')),
+                    DataCell(Text('${bigFish['sector']}')),
+                    DataCell(
+                      Text(
+                        DateFormat('dd.MM HH:mm').format(
+                          DateTime.parse(bigFish['weighingTime']),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -272,109 +345,7 @@ class ProtocolViewScreen extends StatelessWidget {
     final summaryData = data['summaryData'] as List<dynamic>? ?? [];
 
     if (summaryData.isEmpty) {
-      return const Center(child: Text('Нет данных'));
-    }
-
-    return Column(
-      children: summaryData.map<Widget>((teamData) {
-        return Card(
-          color: AppColors.surface,
-          margin: EdgeInsets.only(bottom: AppDimensions.paddingMedium),
-          child: ExpansionTile(
-            leading: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: _getPlaceColor(teamData['place']).withOpacity(0.2),
-                borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
-              ),
-              child: Center(
-                child: Text(
-                  '${teamData['place']}',
-                  style: AppTextStyles.h3.copyWith(
-                    color: _getPlaceColor(teamData['place']),
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-            title: Text(
-              teamData['teamName'] ?? '',
-              style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold),
-            ),
-            subtitle: Text(
-              'Сектор ${teamData['sector']} • ${teamData['totalWeight'].toStringAsFixed(3)} кг',
-              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
-            ),
-            children: [
-              Padding(
-                padding: EdgeInsets.all(AppDimensions.paddingMedium),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Участники:', style: AppTextStyles.bodyBold),
-                    SizedBox(height: AppDimensions.paddingSmall),
-                    ...(teamData['members'] as List<dynamic>).map((m) => Padding(
-                      padding: EdgeInsets.only(left: AppDimensions.paddingSmall, top: 2),
-                      child: Text(
-                        '• ${m['fullName']} (${m['rank']})',
-                        style: AppTextStyles.bodyMedium,
-                      ),
-                    )),
-                    SizedBox(height: AppDimensions.paddingMedium),
-                    Divider(),
-                    SizedBox(height: AppDimensions.paddingSmall),
-                    _buildSummaryRow('Общий вес:', '${teamData['totalWeight'].toStringAsFixed(3)} кг'),
-                    _buildSummaryRow('Кол-во рыбы:', '${teamData['totalFishCount']}'),
-                    _buildSummaryRow('Трофей:', '${teamData['biggestFish'].toStringAsFixed(3)} кг'),
-                    _buildSummaryRow('Штрафы:', '${teamData['penalties']}'),
-                    SizedBox(height: AppDimensions.paddingMedium),
-                    Text('Взвешивания:', style: AppTextStyles.bodyBold),
-                    SizedBox(height: AppDimensions.paddingSmall),
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: DataTable(
-                        headingRowColor: WidgetStateProperty.all(
-                          AppColors.primary.withOpacity(0.1),
-                        ),
-                        columns: [
-                          DataColumn(label: Text('День', style: AppTextStyles.bodyMedium)),
-                          DataColumn(label: Text('№', style: AppTextStyles.bodyMedium)),
-                          DataColumn(label: Text('Время', style: AppTextStyles.bodyMedium)),
-                          DataColumn(label: Text('Кол-во', style: AppTextStyles.bodyMedium)),
-                          DataColumn(label: Text('Вес (кг)', style: AppTextStyles.bodyMedium)),
-                        ],
-                        rows: (teamData['weighings'] as List<dynamic>).map<DataRow>((w) {
-                          return DataRow(
-                            cells: [
-                              DataCell(Text('${w['dayNumber']}', style: AppTextStyles.bodyMedium)),
-                              DataCell(Text('${w['weighingNumber']}', style: AppTextStyles.bodyMedium)),
-                              DataCell(Text(
-                                DateFormat('HH:mm').format(DateTime.parse(w['weighingTime'])),
-                                style: AppTextStyles.bodyMedium,
-                              )),
-                              DataCell(Text('${w['fishCount']}', style: AppTextStyles.bodyMedium)),
-                              DataCell(Text('${(w['totalWeight'] as num).toStringAsFixed(3)}', style: AppTextStyles.bodyMedium)),
-                            ],
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _buildFinalContent(Map<String, dynamic> data) {
-    final finalData = data['finalData'] as List<dynamic>? ?? [];
-
-    if (finalData.isEmpty) {
-      return const Center(child: Text('Нет данных'));
+      return Center(child: Text('protocol_no_data'.tr()));
     }
 
     return Card(
@@ -386,19 +357,146 @@ class ProtocolViewScreen extends StatelessWidget {
             AppColors.primary.withOpacity(0.1),
           ),
           columns: [
-            DataColumn(label: Text('Место', style: AppTextStyles.bodyBold)),
-            DataColumn(label: Text('Команда', style: AppTextStyles.bodyBold)),
-            DataColumn(label: Text('Город', style: AppTextStyles.bodyBold)),
-            DataColumn(label: Text('Клуб', style: AppTextStyles.bodyBold)),
-            DataColumn(label: Text('Сектор', style: AppTextStyles.bodyBold)),
-            DataColumn(label: Text('Кол-во', style: AppTextStyles.bodyBold)),
-            DataColumn(label: Text('Вес (кг)', style: AppTextStyles.bodyBold)),
-            DataColumn(label: Text('Трофей (кг)', style: AppTextStyles.bodyBold)),
-            DataColumn(label: Text('Штрафы', style: AppTextStyles.bodyBold)),
+            DataColumn(label: Text('protocol_table_team'.tr(), style: AppTextStyles.bodyBold)),
+            DataColumn(label: Text('protocol_table_members'.tr(), style: AppTextStyles.bodyBold)),
+            DataColumn(label: Text('protocol_table_rank'.tr(), style: AppTextStyles.bodyBold)),
+            DataColumn(label: Text('protocol_table_sector'.tr(), style: AppTextStyles.bodyBold)),
+            DataColumn(label: Text('protocol_table_count'.tr(), style: AppTextStyles.bodyBold)),
+            DataColumn(label: Text('protocol_table_total_weight'.tr(), style: AppTextStyles.bodyBold)),
+            DataColumn(label: Text('protocol_table_avg_weight'.tr(), style: AppTextStyles.bodyBold)),
+            DataColumn(label: Text('protocol_table_trophy'.tr(), style: AppTextStyles.bodyBold)),
+            DataColumn(label: Text('protocol_table_penalties'.tr(), style: AppTextStyles.bodyBold)),
+            DataColumn(label: Text('protocol_table_place'.tr(), style: AppTextStyles.bodyBold)),
           ],
-          rows: finalData.map<DataRow>((row) {
+          rows: summaryData.map<DataRow>((teamData) {
+            final members = (teamData['members'] as List<dynamic>);
+            final memberNames = members.map((m) => m['fullName'] as String).join('\n');
+            final memberRanks = members.map((m) => m['rank'] as String).join('\n');
+
+            final totalWeight = teamData['totalWeight'] as num;
+            final fishCount = teamData['totalFishCount'] as int;
+            final avgWeight = fishCount > 0 ? totalWeight / fishCount : 0.0;
+
             return DataRow(
               cells: [
+                DataCell(Text(teamData['teamName'] ?? '', style: AppTextStyles.bodyBold)),
+                DataCell(
+                  Container(
+                    constraints: BoxConstraints(maxWidth: 150),
+                    child: Text(
+                      memberNames,
+                      style: AppTextStyles.bodyMedium.copyWith(fontSize: 12),
+                    ),
+                  ),
+                ),
+                DataCell(
+                  Container(
+                    constraints: BoxConstraints(maxWidth: 80),
+                    child: Text(
+                      memberRanks,
+                      style: AppTextStyles.bodyMedium.copyWith(fontSize: 12),
+                    ),
+                  ),
+                ),
+                DataCell(Text('${teamData['sector']}')),
+                DataCell(Text('$fishCount')),
+                DataCell(Text('${totalWeight.toStringAsFixed(3)}')),
+                DataCell(Text('${avgWeight.toStringAsFixed(3)}')),
+                DataCell(Text('${teamData['biggestFish'].toStringAsFixed(3)}')),
+                DataCell(Text('${teamData['penalties']}')),
+                DataCell(
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: AppDimensions.paddingSmall,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _getPlaceColor(teamData['place']).withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+                    ),
+                    child: Text(
+                      '${teamData['place']}',
+                      style: AppTextStyles.bodyBold.copyWith(
+                        color: _getPlaceColor(teamData['place']),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFinalContent(Map<String, dynamic> data) {
+    final finalData = data['finalData'] as List<dynamic>? ?? [];
+
+    if (finalData.isEmpty) {
+      return Center(child: Text('protocol_no_data'.tr()));
+    }
+
+    return Card(
+      color: AppColors.surface,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: DataTable(
+          headingRowColor: WidgetStateProperty.all(
+            AppColors.primary.withOpacity(0.1),
+          ),
+          columns: [
+            DataColumn(label: Text('protocol_table_team'.tr(), style: AppTextStyles.bodyBold)),
+            DataColumn(label: Text('protocol_table_city'.tr(), style: AppTextStyles.bodyBold)),
+            DataColumn(label: Text('protocol_table_club'.tr(), style: AppTextStyles.bodyBold)),
+            DataColumn(label: Text('protocol_table_members'.tr(), style: AppTextStyles.bodyBold)),
+            DataColumn(label: Text('protocol_table_rank'.tr(), style: AppTextStyles.bodyBold)),
+            DataColumn(label: Text('protocol_table_sector'.tr(), style: AppTextStyles.bodyBold)),
+            DataColumn(label: Text('protocol_table_count'.tr(), style: AppTextStyles.bodyBold)),
+            DataColumn(label: Text('protocol_table_total_weight'.tr(), style: AppTextStyles.bodyBold)),
+            DataColumn(label: Text('protocol_table_avg_weight'.tr(), style: AppTextStyles.bodyBold)),
+            DataColumn(label: Text('protocol_table_trophy'.tr(), style: AppTextStyles.bodyBold)),
+            DataColumn(label: Text('protocol_table_penalties'.tr(), style: AppTextStyles.bodyBold)),
+            DataColumn(label: Text('protocol_table_place'.tr(), style: AppTextStyles.bodyBold)),
+          ],
+          rows: finalData.map<DataRow>((row) {
+            final members = (row['members'] as List<dynamic>);
+            final memberNames = members.map((m) => m['fullName'] as String).join('\n');
+            final memberRanks = members.map((m) => m['rank'] as String).join('\n');
+
+            final totalWeight = row['totalWeight'] as num;
+            final fishCount = row['totalFishCount'] as int;
+            final avgWeight = fishCount > 0 ? totalWeight / fishCount : 0.0;
+
+            return DataRow(
+              cells: [
+                DataCell(Text(row['teamName'] ?? '', style: AppTextStyles.bodyBold)),
+                DataCell(Text(row['city'] ?? '')),
+                DataCell(Text(row['club'] ?? '-')),
+                DataCell(
+                  Container(
+                    constraints: BoxConstraints(maxWidth: 150),
+                    child: Text(
+                      memberNames,
+                      style: AppTextStyles.bodyMedium.copyWith(fontSize: 12),
+                    ),
+                  ),
+                ),
+                DataCell(
+                  Container(
+                    constraints: BoxConstraints(maxWidth: 80),
+                    child: Text(
+                      memberRanks,
+                      style: AppTextStyles.bodyMedium.copyWith(fontSize: 12),
+                    ),
+                  ),
+                ),
+                DataCell(Text('${row['sector']}')),
+                DataCell(Text('$fishCount')),
+                DataCell(Text('${totalWeight.toStringAsFixed(3)}')),
+                DataCell(Text('${avgWeight.toStringAsFixed(3)}')),
+                DataCell(Text('${(row['biggestFish'] as num).toStringAsFixed(3)}')),
+                DataCell(Text('${row['penalties']}')),
                 DataCell(
                   Container(
                     padding: EdgeInsets.symmetric(
@@ -417,26 +515,6 @@ class ProtocolViewScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-                DataCell(
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(row['teamName'] ?? '', style: AppTextStyles.bodyBold),
-                      ...(row['members'] as List<dynamic>).map((m) => Text(
-                        '${m['fullName']} (${m['rank']})',
-                        style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
-                      )),
-                    ],
-                  ),
-                ),
-                DataCell(Text(row['city'] ?? '')),
-                DataCell(Text(row['club'] ?? '-')),
-                DataCell(Text('${row['sector']}')),
-                DataCell(Text('${row['totalFishCount']}')),
-                DataCell(Text('${(row['totalWeight'] as num).toStringAsFixed(3)}')),
-                DataCell(Text('${(row['biggestFish'] as num).toStringAsFixed(3)}')),
-                DataCell(Text('${row['penalties']}')),
               ],
             );
           }).toList(),
@@ -445,55 +523,16 @@ class ProtocolViewScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildBigFishRow(String label, String value) {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: AppDimensions.paddingSmall),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
-            ),
-          ),
-          Text(
-            value,
-            style: AppTextStyles.bodyLarge.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSummaryRow(String label, String value) {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: AppTextStyles.bodyMedium),
-          Text(
-            value,
-            style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.bold),
-          ),
-        ],
-      ),
-    );
-  }
-
   Color _getPlaceColor(int place) {
     switch (place) {
       case 1:
-        return Colors.amber;
+        return Colors.green.shade600; // 🥇 Зелёный
       case 2:
-        return Colors.grey;
+        return Colors.blue.shade600;  // 🥈 Синий
       case 3:
-        return Colors.brown;
+        return Colors.yellow.shade700; // 🥉 Жёлтый
       default:
-        return AppColors.textSecondary;
+        return Colors.transparent; // Белый фон (прозрачный)
     }
   }
 }
