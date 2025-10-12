@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_dimensions.dart';
@@ -10,10 +9,12 @@ import '../../data/models/local/competition_local.dart';
 
 class CreateCompetitionScreen extends ConsumerStatefulWidget {
   final String accessCode;
+  final String fishingType;
 
   const CreateCompetitionScreen({
     Key? key,
     required this.accessCode,
+    required this.fishingType,
   }) : super(key: key);
 
   @override
@@ -28,12 +29,31 @@ class _CreateCompetitionScreenState extends ConsumerState<CreateCompetitionScree
   final _lakeController = TextEditingController();
   final _organizerController = TextEditingController();
   final _sectorsController = TextEditingController(text: '24');
+  final _sectorsPerZoneController = TextEditingController(text: '8');
 
   DateTime _startTime = DateTime.now();
   DateTime _finishTime = DateTime.now().add(Duration(hours: 72));
-  String _scoringRules = 'total_weight';
 
+  String _scoringMethod = 'total_weight';
+  String _sectorStructure = 'simple';
+  String _zonedType = 'single_lake';
+  int _zonesCount = 3;
+
+  final List<TextEditingController> _lakeNameControllers = [];
   final List<Judge> _judges = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeLakeNameControllers();
+  }
+
+  void _initializeLakeNameControllers() {
+    _lakeNameControllers.clear();
+    for (int i = 0; i < 4; i++) {
+      _lakeNameControllers.add(TextEditingController());
+    }
+  }
 
   @override
   void dispose() {
@@ -42,6 +62,10 @@ class _CreateCompetitionScreenState extends ConsumerState<CreateCompetitionScree
     _lakeController.dispose();
     _organizerController.dispose();
     _sectorsController.dispose();
+    _sectorsPerZoneController.dispose();
+    for (var controller in _lakeNameControllers) {
+      controller.dispose();
+    }
     super.dispose();
   }
 
@@ -55,17 +79,34 @@ class _CreateCompetitionScreenState extends ConsumerState<CreateCompetitionScree
     return finishDate.difference(startDate).inDays + 1;
   }
 
-  // Функция склонения числительных для русского языка
+  int get _totalSectors {
+    if (_sectorStructure == 'simple') {
+      return int.tryParse(_sectorsController.text) ?? 0;
+    } else if (_zonedType == 'single_lake') {
+      return int.tryParse(_sectorsController.text) ?? 0;
+    } else {
+      return _zonesCount * (int.tryParse(_sectorsPerZoneController.text) ?? 0);
+    }
+  }
+
+  int get _sectorsPerZoneCalculated {
+    if (_sectorStructure == 'zoned' && _zonedType == 'single_lake') {
+      final total = int.tryParse(_sectorsController.text) ?? 0;
+      return total > 0 ? (total / _zonesCount).floor() : 0;
+    }
+    return int.tryParse(_sectorsPerZoneController.text) ?? 0;
+  }
+
   String _pluralize(int count, String one, String few, String many) {
     final remainder10 = count % 10;
     final remainder100 = count % 100;
 
     if (remainder10 == 1 && remainder100 != 11) {
-      return one; // 1 час, 21 час, 1 день
+      return one;
     } else if (remainder10 >= 2 && remainder10 <= 4 && (remainder100 < 10 || remainder100 >= 20)) {
-      return few; // 2-4 часа, 22-24 часа, 2-4 дня
+      return few;
     } else {
-      return many; // 5-20 часов, 25-30 часов, 5-20 дней
+      return many;
     }
   }
 
@@ -74,7 +115,16 @@ class _CreateCompetitionScreenState extends ConsumerState<CreateCompetitionScree
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text('create_competition'.tr(), style: AppTextStyles.h2),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('create_competition'.tr(), style: AppTextStyles.h3),
+            Text(
+              'fishing_type_${widget.fishingType}'.tr(),
+              style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
+            ),
+          ],
+        ),
         backgroundColor: AppColors.surface,
         iconTheme: IconThemeData(color: AppColors.textPrimary),
       ),
@@ -124,30 +174,19 @@ class _CreateCompetitionScreenState extends ConsumerState<CreateCompetitionScree
                 ),
                 SizedBox(height: AppDimensions.paddingMedium),
 
-                _buildTextField(
-                  controller: _lakeController,
-                  label: 'lake_name'.tr(),
-                  validator: (v) => v?.isEmpty ?? true ? 'field_required'.tr() : null,
-                ),
-                SizedBox(height: AppDimensions.paddingMedium),
+                if (_sectorStructure == 'simple' || (_sectorStructure == 'zoned' && _zonedType == 'single_lake'))
+                  _buildTextField(
+                    controller: _lakeController,
+                    label: 'lake_name'.tr(),
+                    validator: (v) => v?.isEmpty ?? true ? 'field_required'.tr() : null,
+                  ),
+                if (_sectorStructure == 'simple' || (_sectorStructure == 'zoned' && _zonedType == 'single_lake'))
+                  SizedBox(height: AppDimensions.paddingMedium),
 
                 _buildTextField(
                   controller: _organizerController,
                   label: 'organizer_name'.tr(),
                   validator: (v) => v?.isEmpty ?? true ? 'field_required'.tr() : null,
-                ),
-                SizedBox(height: AppDimensions.paddingMedium),
-
-                _buildTextField(
-                  controller: _sectorsController,
-                  label: 'sectors_count'.tr(),
-                  keyboardType: TextInputType.number,
-                  validator: (v) {
-                    if (v?.isEmpty ?? true) return 'field_required'.tr();
-                    final num = int.tryParse(v!);
-                    if (num == null || num <= 0) return 'invalid_number'.tr();
-                    return null;
-                  },
                 ),
                 SizedBox(height: AppDimensions.paddingLarge),
 
@@ -158,9 +197,70 @@ class _CreateCompetitionScreenState extends ConsumerState<CreateCompetitionScree
                 SizedBox(height: AppDimensions.paddingMedium),
 
                 _buildDurationInfo(),
+                SizedBox(height: AppDimensions.paddingLarge),
+
+                _buildScoringMethodSelector(),
+                SizedBox(height: AppDimensions.paddingLarge),
+
+                _buildSectorStructureSelector(),
                 SizedBox(height: AppDimensions.paddingMedium),
 
-                _buildScoringRulesSelector(),
+                if (_sectorStructure == 'zoned') ...[
+                  _buildZonedTypeSelector(),
+                  SizedBox(height: AppDimensions.paddingMedium),
+                  _buildZonesCountSelector(),
+                  SizedBox(height: AppDimensions.paddingMedium),
+                ],
+
+                if (_sectorStructure == 'simple')
+                  _buildTextField(
+                    controller: _sectorsController,
+                    label: 'sectors_count'.tr(),
+                    keyboardType: TextInputType.number,
+                    validator: (v) {
+                      if (v?.isEmpty ?? true) return 'field_required'.tr();
+                      final num = int.tryParse(v!);
+                      if (num == null || num <= 0) return 'invalid_number'.tr();
+                      return null;
+                    },
+                  ),
+
+                if (_sectorStructure == 'zoned' && _zonedType == 'single_lake')
+                  _buildTextField(
+                    controller: _sectorsController,
+                    label: 'total_sectors_label'.tr(),
+                    keyboardType: TextInputType.number,
+                    validator: (v) {
+                      if (v?.isEmpty ?? true) return 'field_required'.tr();
+                      final num = int.tryParse(v!);
+                      if (num == null || num <= 0) return 'invalid_number'.tr();
+                      return null;
+                    },
+                  ),
+
+                if (_sectorStructure == 'zoned' && _zonedType == 'multiple_lakes')
+                  _buildTextField(
+                    controller: _sectorsPerZoneController,
+                    label: 'sectors_per_zone_label'.tr(),
+                    keyboardType: TextInputType.number,
+                    validator: (v) {
+                      if (v?.isEmpty ?? true) return 'field_required'.tr();
+                      final num = int.tryParse(v!);
+                      if (num == null || num <= 0) return 'invalid_number'.tr();
+                      return null;
+                    },
+                  ),
+
+                if (_sectorStructure == 'zoned') ...[
+                  SizedBox(height: AppDimensions.paddingMedium),
+                  _buildZoneSummary(),
+                ],
+
+                if (_sectorStructure == 'zoned' && _zonedType == 'multiple_lakes') ...[
+                  SizedBox(height: AppDimensions.paddingMedium),
+                  _buildLakeNamesInput(),
+                ],
+
                 SizedBox(height: AppDimensions.paddingLarge),
 
                 _buildJudgesSection(),
@@ -312,7 +412,7 @@ class _CreateCompetitionScreenState extends ConsumerState<CreateCompetitionScree
     );
   }
 
-  Widget _buildScoringRulesSelector() {
+  Widget _buildScoringMethodSelector() {
     return Container(
       padding: EdgeInsets.all(AppDimensions.paddingMedium),
       decoration: BoxDecoration(
@@ -323,22 +423,223 @@ class _CreateCompetitionScreenState extends ConsumerState<CreateCompetitionScree
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('scoring_rules'.tr(), style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary)),
-          SizedBox(height: 8),
+          Text('scoring_method'.tr(), style: AppTextStyles.bodyBold.copyWith(color: AppColors.textPrimary)),
+          SizedBox(height: 12),
           DropdownButton<String>(
-            value: _scoringRules,
+            value: _scoringMethod,
             isExpanded: true,
             dropdownColor: AppColors.surface,
             style: AppTextStyles.body.copyWith(color: AppColors.textPrimary),
             items: [
-              DropdownMenuItem(value: 'total_weight', child: Text('total_weight'.tr())),
-              DropdownMenuItem(value: 'top_3', child: Text('top_3'.tr())),
-              DropdownMenuItem(value: 'top_5', child: Text('top_5'.tr())),
+              DropdownMenuItem(value: 'total_weight', child: Text('scoring_total_weight'.tr())),
+              DropdownMenuItem(value: 'top_3_weight', child: Text('scoring_top_3_weight'.tr())),
+              DropdownMenuItem(value: 'top_5_weight', child: Text('scoring_top_5_weight'.tr())),
+              DropdownMenuItem(value: 'total_length', child: Text('scoring_total_length'.tr())),
+              DropdownMenuItem(value: 'top_3_length', child: Text('scoring_top_3_length'.tr())),
+              DropdownMenuItem(value: 'top_5_length', child: Text('scoring_top_5_length'.tr())),
+              DropdownMenuItem(value: 'total_count', child: Text('scoring_total_count'.tr())),
             ],
             onChanged: (value) {
-              if (value != null) setState(() => _scoringRules = value);
+              if (value != null) setState(() => _scoringMethod = value);
             },
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectorStructureSelector() {
+    return Container(
+      padding: EdgeInsets.all(AppDimensions.paddingMedium),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('sector_structure'.tr(), style: AppTextStyles.bodyBold.copyWith(color: AppColors.textPrimary)),
+          SizedBox(height: 12),
+          RadioListTile<String>(
+            title: Text('sector_simple'.tr(), style: AppTextStyles.body.copyWith(color: AppColors.textPrimary)),
+            subtitle: Text('sector_simple_desc'.tr(), style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary)),
+            value: 'simple',
+            groupValue: _sectorStructure,
+            activeColor: AppColors.primary,
+            onChanged: (value) {
+              setState(() => _sectorStructure = value!);
+            },
+          ),
+          RadioListTile<String>(
+            title: Text('sector_zoned'.tr(), style: AppTextStyles.body.copyWith(color: AppColors.textPrimary)),
+            subtitle: Text('sector_zoned_desc'.tr(), style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary)),
+            value: 'zoned',
+            groupValue: _sectorStructure,
+            activeColor: AppColors.primary,
+            onChanged: (value) {
+              setState(() => _sectorStructure = value!);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildZonedTypeSelector() {
+    return Container(
+      padding: EdgeInsets.all(AppDimensions.paddingMedium),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('zoned_type'.tr(), style: AppTextStyles.bodyBold.copyWith(color: AppColors.textPrimary)),
+          SizedBox(height: 12),
+          RadioListTile<String>(
+            title: Text('zoned_single_lake'.tr(), style: AppTextStyles.body.copyWith(color: AppColors.textPrimary)),
+            value: 'single_lake',
+            groupValue: _zonedType,
+            activeColor: AppColors.primary,
+            onChanged: (value) {
+              setState(() => _zonedType = value!);
+            },
+          ),
+          RadioListTile<String>(
+            title: Text('zoned_multiple_lakes'.tr(), style: AppTextStyles.body.copyWith(color: AppColors.textPrimary)),
+            value: 'multiple_lakes',
+            groupValue: _zonedType,
+            activeColor: AppColors.primary,
+            onChanged: (value) {
+              setState(() => _zonedType = value!);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildZonesCountSelector() {
+    return Container(
+      padding: EdgeInsets.all(AppDimensions.paddingMedium),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('zones_count'.tr(), style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary)),
+          SizedBox(height: 8),
+          DropdownButton<int>(
+            value: _zonesCount,
+            isExpanded: true,
+            dropdownColor: AppColors.surface,
+            style: AppTextStyles.body.copyWith(color: AppColors.textPrimary),
+            items: [
+              DropdownMenuItem(value: 2, child: Text('zones_2'.tr())),
+              DropdownMenuItem(value: 3, child: Text('zones_3'.tr())),
+              DropdownMenuItem(value: 4, child: Text('zones_4'.tr())),
+            ],
+            onChanged: (value) {
+              if (value != null) setState(() => _zonesCount = value);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildZoneSummary() {
+    final zoneLetters = ['A', 'B', 'C', 'D'];
+    return Container(
+      padding: EdgeInsets.all(AppDimensions.paddingMedium),
+      decoration: BoxDecoration(
+        color: AppColors.success.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+        border: Border.all(color: AppColors.success.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.info_outline, color: AppColors.success, size: 20),
+              SizedBox(width: 8),
+              Text(
+                '${'total_sectors_label'.tr()}: $_totalSectors',
+                style: AppTextStyles.bodyBold.copyWith(color: AppColors.success),
+              ),
+            ],
+          ),
+          SizedBox(height: 12),
+          Text('distribution'.tr(), style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary)),
+          SizedBox(height: 8),
+          ...List.generate(_zonesCount, (index) {
+            final startSector = index * _sectorsPerZoneCalculated + 1;
+            final endSector = (index + 1) * _sectorsPerZoneCalculated;
+            final lakeName = _zonedType == 'multiple_lakes' && _lakeNameControllers[index].text.isNotEmpty
+                ? ' (${_lakeNameControllers[index].text})'
+                : '';
+            return Padding(
+              padding: EdgeInsets.only(bottom: 4),
+              child: Text(
+                '• ${'zone_label'.tr().replaceAll('{zone}', zoneLetters[index])}$lakeName: ${'sectors_count'.tr()} $startSector-$endSector',
+                style: AppTextStyles.body.copyWith(color: AppColors.textPrimary),
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLakeNamesInput() {
+    final zoneLetters = ['A', 'B', 'C', 'D'];
+    return Container(
+      padding: EdgeInsets.all(AppDimensions.paddingMedium),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('lake_names'.tr(), style: AppTextStyles.bodyBold.copyWith(color: AppColors.textPrimary)),
+          SizedBox(height: 12),
+          ...List.generate(_zonesCount, (index) {
+            return Padding(
+              padding: EdgeInsets.only(bottom: 8),
+              child: TextField(
+                controller: _lakeNameControllers[index],
+                decoration: InputDecoration(
+                  labelText: '${'zone_label'.tr().replaceAll('{zone}', zoneLetters[index])}',
+                  labelStyle: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
+                  filled: true,
+                  fillColor: AppColors.background,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+                    borderSide: BorderSide(color: AppColors.divider),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+                    borderSide: BorderSide(color: AppColors.divider),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+                    borderSide: BorderSide(color: AppColors.primary, width: 2),
+                  ),
+                ),
+                style: AppTextStyles.body.copyWith(color: AppColors.textPrimary),
+                onChanged: (_) => setState(() {}),
+              ),
+            );
+          }),
         ],
       ),
     );
@@ -429,7 +730,7 @@ class _CreateCompetitionScreenState extends ConsumerState<CreateCompetitionScree
           } else {
             if (newDateTime.isBefore(_startTime)) {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Финиш не может быть раньше старта!')),
+                SnackBar(content: Text('finish_before_start_error'.tr())),
               );
               return;
             }
@@ -465,25 +766,41 @@ class _CreateCompetitionScreenState extends ConsumerState<CreateCompetitionScree
       return;
     }
 
-    if (_finishTime.isBefore(_startTime) || _finishTime.isAtSameMomentAs(_startTime)) {
+    if (_finishTime.isBefore(_startTime) || _finishTime
+
+        .isAtSameMomentAs(_startTime)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Финиш должен быть позже старта!')),
+        SnackBar(content: Text('finish_after_start_error'.tr())),
       );
       return;
     }
 
     try {
+      // Собираем названия озёр для зональной структуры (multiple_lakes)
+      final lakeNames = <String>[];
+      if (_sectorStructure == 'zoned' && _zonedType == 'multiple_lakes') {
+        for (int i = 0; i < _zonesCount; i++) {
+          lakeNames.add(_lakeNameControllers[i].text.trim());
+        }
+      }
+
       await ref.read(competitionProvider.notifier).createCompetition(
         name: _nameController.text,
         cityOrRegion: _cityController.text,
         lakeName: _lakeController.text,
-        sectorsCount: int.parse(_sectorsController.text),
+        sectorsCount: _totalSectors,
         startTime: _startTime,
         finishTime: _finishTime,
-        scoringRules: _scoringRules,
+        scoringMethod: _scoringMethod,
         organizerName: _organizerController.text,
         judges: _judges,
         accessCode: widget.accessCode,
+        fishingType: widget.fishingType,
+        sectorStructure: _sectorStructure,
+        zonedType: _sectorStructure == 'zoned' ? _zonedType : null,
+        zonesCount: _sectorStructure == 'zoned' ? _zonesCount : null,
+        sectorsPerZone: _sectorStructure == 'zoned' && _zonedType == 'multiple_lakes' ? _sectorsPerZoneCalculated : null,
+        lakeNames: lakeNames.isNotEmpty ? lakeNames : null,
       );
 
       if (!mounted) return;
@@ -520,7 +837,7 @@ class _JudgeDialog extends StatefulWidget {
 
 class _JudgeDialogState extends State<_JudgeDialog> {
   final _nameController = TextEditingController();
-  String _rank = 'Главный судья';
+  String _rank = 'judge_chief';  // ← Теперь используем ключ локализации
 
   @override
   void dispose() {
@@ -551,9 +868,9 @@ class _JudgeDialogState extends State<_JudgeDialog> {
             dropdownColor: AppColors.surface,
             style: AppTextStyles.body.copyWith(color: AppColors.textPrimary),
             items: [
-              DropdownMenuItem(value: 'Главный судья', child: Text('Главный судья')),
-              DropdownMenuItem(value: 'Судья', child: Text('Судья')),
-              DropdownMenuItem(value: 'Помощник судьи', child: Text('Помощник судьи')),
+              DropdownMenuItem(value: 'judge_chief', child: Text('judge_chief'.tr())),
+              DropdownMenuItem(value: 'judge_regular', child: Text('judge_regular'.tr())),
+              DropdownMenuItem(value: 'judge_assistant', child: Text('judge_assistant'.tr())),
             ],
             onChanged: (value) {
               if (value != null) setState(() => _rank = value);

@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_dimensions.dart';
-import 'enter_code_screen.dart';
+import 'select_fishing_type_screen.dart';
 import 'public_competitions_screen.dart';
-import 'my_competitions_screen.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -155,7 +153,15 @@ class HomeScreen extends ConsumerWidget {
                   borderColor: AppColors.primary,
                   iconBackgroundColor: AppColors.primary,
                   iconColor: AppColors.text,
-                  onPressed: () => _handleOrganizerTap(context),
+                  onPressed: () {
+                    // Переход на экран выбора типа рыбалки
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const SelectFishingTypeScreen(),
+                      ),
+                    );
+                  },
                 ),
 
                 const SizedBox(height: AppDimensions.paddingMedium),
@@ -287,177 +293,6 @@ class HomeScreen extends ConsumerWidget {
           ),
         ),
       ),
-    );
-  }
-
-  Future<void> _handleOrganizerTap(BuildContext context) async {
-    // Сразу открываем список соревнований
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const MyCompetitionsScreen()),
-    );
-  }
-
-  void _showCodeRequiredDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return Dialog(
-          backgroundColor: AppColors.background,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(AppDimensions.paddingLarge),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Заголовок
-                Row(
-                  children: [
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: AppColors.primary,
-                        borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
-                      ),
-                      child: const Icon(
-                        Icons.lock_outline,
-                        color: AppColors.text,
-                        size: 28,
-                      ),
-                    ),
-                    const SizedBox(width: AppDimensions.paddingMedium),
-                    Expanded(
-                      child: Text(
-                        'code_required'.tr(),
-                        style: AppTextStyles.h2,
-                      ),
-                    ),
-                    IconButton(
-                      icon: Icon(
-                        Icons.close,
-                        color: AppColors.textTertiary,
-                      ),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: AppDimensions.paddingLarge),
-
-                // Описание
-                Text(
-                  'code_required_description'.tr(),
-                  style: AppTextStyles.bodyLarge,
-                  textAlign: TextAlign.center,
-                ),
-
-                const SizedBox(height: AppDimensions.paddingLarge),
-
-                // Кнопка: Ввести код
-                OutlinedButton.icon(
-                  onPressed: () async {
-                    Navigator.pop(context);
-                    await Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const EnterCodeScreen()),
-                    );
-                    // После возврата проверяем, был ли введён код
-                    final prefs = await SharedPreferences.getInstance();
-                    final accessCode = prefs.getString('access_code');
-                    if (accessCode != null && accessCode.isNotEmpty) {
-                      // Код введён → открываем список соревнований
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const MyCompetitionsScreen()),
-                      );
-                    }
-                  },
-                  icon: const Icon(Icons.qr_code, size: AppDimensions.iconMedium),
-                  label: Text('enter_code'.tr()),
-                  style: OutlinedButton.styleFrom(
-                    backgroundColor: AppColors.surfaceMedium,
-                    foregroundColor: AppColors.text,
-                    side: BorderSide(
-                      color: AppColors.borderMedium,
-                      width: 2,
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: AppDimensions.paddingMedium),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
-                    ),
-                    textStyle: AppTextStyles.buttonMedium,
-                  ),
-                ),
-
-                const SizedBox(height: AppDimensions.paddingMedium - 4),
-
-                // Разделитель
-                Row(
-                  children: [
-                    Expanded(
-                      child: Divider(
-                        color: AppColors.borderLight,
-                        thickness: 1,
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: AppDimensions.paddingMedium),
-                      child: Text(
-                        'or'.tr(),
-                        style: AppTextStyles.bodyMedium,
-                      ),
-                    ),
-                    Expanded(
-                      child: Divider(
-                        color: AppColors.borderLight,
-                        thickness: 1,
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: AppDimensions.paddingMedium - 4),
-
-                // Кнопка: Купить код
-                Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.shadowUpcoming,
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      _showNotImplemented(context, 'buy_code'.tr());
-                    },
-                    icon: const Icon(Icons.shopping_cart, size: 20),
-                    label: Text('buy_code'.tr()),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.upcoming,
-                      foregroundColor: AppColors.text,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(vertical: AppDimensions.paddingMedium),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
-                      ),
-                      textStyle: AppTextStyles.buttonMedium,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
     );
   }
 

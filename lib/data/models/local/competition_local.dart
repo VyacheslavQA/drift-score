@@ -13,7 +13,6 @@ class CompetitionLocal {
   late String cityOrRegion;
   late String organizerName;
   late String lakeName;
-  late int sectorsCount;
 
   late DateTime startTime; // Дата и время старта
   late DateTime finishTime; // Дата и время финиша
@@ -23,17 +22,41 @@ class CompetitionLocal {
     return finishTime.difference(startTime).inHours;
   }
 
-// Вычисляемое свойство - количество календарных дней
+  // Вычисляемое свойство - количество календарных дней
   int get durationDays {
     final startDate = DateTime(startTime.year, startTime.month, startTime.day);
     final finishDate = DateTime(finishTime.year, finishTime.month, finishTime.day);
     return finishDate.difference(startDate).inDays + 1;
   }
 
-  late String scoringRules; // 'total_weight' | 'top_3' | 'top_5'
+  // ✅ Тип рыбалки
+  late String fishingType; // 'float' | 'spinning' | 'carp' | 'feeder' | 'ice_jig' | 'ice_spoon' | 'trout' | 'fly'
+
+  // ✅ Метод подсчета результатов
+  late String scoringMethod;
+  // 'total_weight' - общий вес
+  // 'total_length' - общая длина (см)
+  // 'total_count' - общее количество рыб
+  // 'top_3_weight' - топ-3 по весу
+  // 'top_5_weight' - топ-5 по весу
+  // 'top_3_length' - топ-3 по длине
+  // 'top_5_length' - топ-5 по длине
+
+  // ✅ Структура секторов
+  late String sectorStructure; // 'simple' | 'zoned'
+
+  // ✅ Для зональной структуры
+  String? zonedType; // 'single_lake' | 'multiple_lakes' (null если simple)
+  int? zonesCount; // Количество зон (null если simple)
+  int? sectorsPerZone; // Секторов в каждой зоне (только для multiple_lakes)
+  List<String> lakeNames = []; // Названия озёр для каждой зоны (только для multiple_lakes)
+
+  // ✅ Общее количество секторов
+  late int sectorsCount;
+
   String status = 'draft'; // 'draft' | 'active' | 'completed'
   String? accessCode; // Код доступа организатора
-  String? createdByDeviceId; // ID устройства, которое создало соревнование (для фильтрации "Мои соревнования")
+  String? createdByDeviceId; // ID устройства, которое создало соревнование
 
   List<Judge> judges = []; // Список судей
 
@@ -41,23 +64,23 @@ class CompetitionLocal {
   DateTime? finalizedAt; // Когда закрыли
   List<EditLog> editHistory = []; // История редактирований
 
-  bool isSynced = false; // ← Инициализировали значением по умолчанию
+  bool isSynced = false;
   DateTime? lastSyncedAt;
 
   late DateTime createdAt;
-  DateTime? updatedAt; // ← Сделали nullable (не всегда обновляется сразу)
+  DateTime? updatedAt;
 }
 
 @embedded
 class Judge {
-  String id = ''; // ← Инициализировали пустой строкой
+  String id = '';
   late String fullName;
-  late String rank; // "Главный судья", "Судья", "Помощник судьи" или свободный ввод
+  late String rank; // "Главный судья", "Судья", "Помощник судьи"
 }
 
 @embedded
 class EditLog {
-  String id = ''; // ← Инициализировали пустой строкой
+  String id = '';
   late DateTime timestamp;
   late String judgeId; // Кто редактировал
   late String action; // Описание действия

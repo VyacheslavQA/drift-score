@@ -181,7 +181,7 @@ class _CompetitionDetailsScreenState extends ConsumerState<CompetitionDetailsScr
             _buildInfoRow(
               Icons.calculate,
               'rules'.tr(),
-              _getScoringRulesText(widget.competition.scoringRules),
+              _getScoringRulesText(widget.competition.scoringMethod),
             ),
             SizedBox(height: AppDimensions.paddingSmall),
             _buildInfoRow(

@@ -104,17 +104,34 @@ class CompetitionNotifier extends StateNotifier<AsyncValue<List<CompetitionLocal
     required int sectorsCount,
     required DateTime startTime,
     required DateTime finishTime,
-    required String scoringRules,
+    required String scoringMethod, // ✅ ИЗМЕНЕНО (было scoringRules)
     required String organizerName,
     required List<Judge> judges,
     required String accessCode,
+    required String fishingType, // ✅ Тип рыбалки
+    required String sectorStructure, // ✅ ДОБАВЛЕНО
+    String? zonedType, // ✅ ДОБАВЛЕНО
+    int? zonesCount, // ✅ ДОБАВЛЕНО
+    int? sectorsPerZone, // ✅ ДОБАВЛЕНО
+    List<String>? lakeNames, // ✅ ДОБАВЛЕНО
   }) async {
-    print('🔵 createCompetition() called with name: $name, code: $accessCode');
+    print('🔵 createCompetition() called');
+    print('   Name: $name');
+    print('   Code: $accessCode');
+    print('   Type: $fishingType');
+    print('   Scoring: $scoringMethod');
+    print('   Structure: $sectorStructure');
+    if (sectorStructure == 'zoned') {
+      print('   Zoned Type: $zonedType');
+      print('   Zones Count: $zonesCount');
+      print('   Sectors Per Zone: $sectorsPerZone');
+      print('   Lake Names: $lakeNames');
+    }
+
     try {
       final deviceId = await _getDeviceId();
 
       print('📱 Device ID: $deviceId');
-      print('🔑 Access Code: $accessCode');
 
       // ⬇️ ПРОВЕРКА: Существует ли уже соревнование с этим кодом?
       print('🔍 Checking for existing competitions with code: $accessCode');
@@ -143,11 +160,17 @@ class CompetitionNotifier extends StateNotifier<AsyncValue<List<CompetitionLocal
         ..sectorsCount = sectorsCount
         ..startTime = startTime
         ..finishTime = finishTime
-        ..scoringRules = scoringRules
+        ..scoringMethod = scoringMethod // ✅ ИЗМЕНЕНО
         ..organizerName = organizerName
         ..judges = judges
         ..accessCode = accessCode
         ..createdByDeviceId = deviceId
+        ..fishingType = fishingType
+        ..sectorStructure = sectorStructure // ✅ ДОБАВЛЕНО
+        ..zonedType = zonedType // ✅ ДОБАВЛЕНО
+        ..zonesCount = zonesCount // ✅ ДОБАВЛЕНО
+        ..sectorsPerZone = sectorsPerZone // ✅ ДОБАВЛЕНО
+        ..lakeNames = lakeNames ?? [] // ✅ ДОБАВЛЕНО
         ..status = 'active'
         ..isFinal = false
         ..isSynced = false
@@ -156,6 +179,9 @@ class CompetitionNotifier extends StateNotifier<AsyncValue<List<CompetitionLocal
       print('✅ Competition object created');
       print('   Name: ${competition.name}');
       print('   Access Code: ${competition.accessCode}');
+      print('   Fishing Type: ${competition.fishingType}');
+      print('   Scoring Method: ${competition.scoringMethod}');
+      print('   Sector Structure: ${competition.sectorStructure}');
       print('   Device ID: ${competition.createdByDeviceId}');
 
       await isar.writeTxn(() async {

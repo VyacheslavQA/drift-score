@@ -63,71 +63,101 @@ const CompetitionLocalSchema = CollectionSchema(
       name: r'finishTime',
       type: IsarType.dateTime,
     ),
-    r'isFinal': PropertySchema(
+    r'fishingType': PropertySchema(
       id: 9,
+      name: r'fishingType',
+      type: IsarType.string,
+    ),
+    r'isFinal': PropertySchema(
+      id: 10,
       name: r'isFinal',
       type: IsarType.bool,
     ),
     r'isSynced': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'isSynced',
       type: IsarType.bool,
     ),
     r'judges': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'judges',
       type: IsarType.objectList,
       target: r'Judge',
     ),
     r'lakeName': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'lakeName',
       type: IsarType.string,
     ),
+    r'lakeNames': PropertySchema(
+      id: 14,
+      name: r'lakeNames',
+      type: IsarType.stringList,
+    ),
     r'lastSyncedAt': PropertySchema(
-      id: 13,
+      id: 15,
       name: r'lastSyncedAt',
       type: IsarType.dateTime,
     ),
     r'name': PropertySchema(
-      id: 14,
+      id: 16,
       name: r'name',
       type: IsarType.string,
     ),
     r'organizerName': PropertySchema(
-      id: 15,
+      id: 17,
       name: r'organizerName',
       type: IsarType.string,
     ),
-    r'scoringRules': PropertySchema(
-      id: 16,
-      name: r'scoringRules',
+    r'scoringMethod': PropertySchema(
+      id: 18,
+      name: r'scoringMethod',
+      type: IsarType.string,
+    ),
+    r'sectorStructure': PropertySchema(
+      id: 19,
+      name: r'sectorStructure',
       type: IsarType.string,
     ),
     r'sectorsCount': PropertySchema(
-      id: 17,
+      id: 20,
       name: r'sectorsCount',
       type: IsarType.long,
     ),
+    r'sectorsPerZone': PropertySchema(
+      id: 21,
+      name: r'sectorsPerZone',
+      type: IsarType.long,
+    ),
     r'serverId': PropertySchema(
-      id: 18,
+      id: 22,
       name: r'serverId',
       type: IsarType.string,
     ),
     r'startTime': PropertySchema(
-      id: 19,
+      id: 23,
       name: r'startTime',
       type: IsarType.dateTime,
     ),
     r'status': PropertySchema(
-      id: 20,
+      id: 24,
       name: r'status',
       type: IsarType.string,
     ),
     r'updatedAt': PropertySchema(
-      id: 21,
+      id: 25,
       name: r'updatedAt',
       type: IsarType.dateTime,
+    ),
+    r'zonedType': PropertySchema(
+      id: 26,
+      name: r'zonedType',
+      type: IsarType.string,
+    ),
+    r'zonesCount': PropertySchema(
+      id: 27,
+      name: r'zonesCount',
+      type: IsarType.long,
     )
   },
   estimateSize: _competitionLocalEstimateSize,
@@ -185,6 +215,7 @@ int _competitionLocalEstimateSize(
       bytesCount += EditLogSchema.estimateSize(value, offsets, allOffsets);
     }
   }
+  bytesCount += 3 + object.fishingType.length * 3;
   bytesCount += 3 + object.judges.length * 3;
   {
     final offsets = allOffsets[Judge]!;
@@ -194,9 +225,17 @@ int _competitionLocalEstimateSize(
     }
   }
   bytesCount += 3 + object.lakeName.length * 3;
+  bytesCount += 3 + object.lakeNames.length * 3;
+  {
+    for (var i = 0; i < object.lakeNames.length; i++) {
+      final value = object.lakeNames[i];
+      bytesCount += value.length * 3;
+    }
+  }
   bytesCount += 3 + object.name.length * 3;
   bytesCount += 3 + object.organizerName.length * 3;
-  bytesCount += 3 + object.scoringRules.length * 3;
+  bytesCount += 3 + object.scoringMethod.length * 3;
+  bytesCount += 3 + object.sectorStructure.length * 3;
   {
     final value = object.serverId;
     if (value != null) {
@@ -204,6 +243,12 @@ int _competitionLocalEstimateSize(
     }
   }
   bytesCount += 3 + object.status.length * 3;
+  {
+    final value = object.zonedType;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   return bytesCount;
 }
 
@@ -227,24 +272,30 @@ void _competitionLocalSerialize(
   );
   writer.writeDateTime(offsets[7], object.finalizedAt);
   writer.writeDateTime(offsets[8], object.finishTime);
-  writer.writeBool(offsets[9], object.isFinal);
-  writer.writeBool(offsets[10], object.isSynced);
+  writer.writeString(offsets[9], object.fishingType);
+  writer.writeBool(offsets[10], object.isFinal);
+  writer.writeBool(offsets[11], object.isSynced);
   writer.writeObjectList<Judge>(
-    offsets[11],
+    offsets[12],
     allOffsets,
     JudgeSchema.serialize,
     object.judges,
   );
-  writer.writeString(offsets[12], object.lakeName);
-  writer.writeDateTime(offsets[13], object.lastSyncedAt);
-  writer.writeString(offsets[14], object.name);
-  writer.writeString(offsets[15], object.organizerName);
-  writer.writeString(offsets[16], object.scoringRules);
-  writer.writeLong(offsets[17], object.sectorsCount);
-  writer.writeString(offsets[18], object.serverId);
-  writer.writeDateTime(offsets[19], object.startTime);
-  writer.writeString(offsets[20], object.status);
-  writer.writeDateTime(offsets[21], object.updatedAt);
+  writer.writeString(offsets[13], object.lakeName);
+  writer.writeStringList(offsets[14], object.lakeNames);
+  writer.writeDateTime(offsets[15], object.lastSyncedAt);
+  writer.writeString(offsets[16], object.name);
+  writer.writeString(offsets[17], object.organizerName);
+  writer.writeString(offsets[18], object.scoringMethod);
+  writer.writeString(offsets[19], object.sectorStructure);
+  writer.writeLong(offsets[20], object.sectorsCount);
+  writer.writeLong(offsets[21], object.sectorsPerZone);
+  writer.writeString(offsets[22], object.serverId);
+  writer.writeDateTime(offsets[23], object.startTime);
+  writer.writeString(offsets[24], object.status);
+  writer.writeDateTime(offsets[25], object.updatedAt);
+  writer.writeString(offsets[26], object.zonedType);
+  writer.writeLong(offsets[27], object.zonesCount);
 }
 
 CompetitionLocal _competitionLocalDeserialize(
@@ -267,26 +318,32 @@ CompetitionLocal _competitionLocalDeserialize(
       [];
   object.finalizedAt = reader.readDateTimeOrNull(offsets[7]);
   object.finishTime = reader.readDateTime(offsets[8]);
+  object.fishingType = reader.readString(offsets[9]);
   object.id = id;
-  object.isFinal = reader.readBool(offsets[9]);
-  object.isSynced = reader.readBool(offsets[10]);
+  object.isFinal = reader.readBool(offsets[10]);
+  object.isSynced = reader.readBool(offsets[11]);
   object.judges = reader.readObjectList<Judge>(
-        offsets[11],
+        offsets[12],
         JudgeSchema.deserialize,
         allOffsets,
         Judge(),
       ) ??
       [];
-  object.lakeName = reader.readString(offsets[12]);
-  object.lastSyncedAt = reader.readDateTimeOrNull(offsets[13]);
-  object.name = reader.readString(offsets[14]);
-  object.organizerName = reader.readString(offsets[15]);
-  object.scoringRules = reader.readString(offsets[16]);
-  object.sectorsCount = reader.readLong(offsets[17]);
-  object.serverId = reader.readStringOrNull(offsets[18]);
-  object.startTime = reader.readDateTime(offsets[19]);
-  object.status = reader.readString(offsets[20]);
-  object.updatedAt = reader.readDateTimeOrNull(offsets[21]);
+  object.lakeName = reader.readString(offsets[13]);
+  object.lakeNames = reader.readStringList(offsets[14]) ?? [];
+  object.lastSyncedAt = reader.readDateTimeOrNull(offsets[15]);
+  object.name = reader.readString(offsets[16]);
+  object.organizerName = reader.readString(offsets[17]);
+  object.scoringMethod = reader.readString(offsets[18]);
+  object.sectorStructure = reader.readString(offsets[19]);
+  object.sectorsCount = reader.readLong(offsets[20]);
+  object.sectorsPerZone = reader.readLongOrNull(offsets[21]);
+  object.serverId = reader.readStringOrNull(offsets[22]);
+  object.startTime = reader.readDateTime(offsets[23]);
+  object.status = reader.readString(offsets[24]);
+  object.updatedAt = reader.readDateTimeOrNull(offsets[25]);
+  object.zonedType = reader.readStringOrNull(offsets[26]);
+  object.zonesCount = reader.readLongOrNull(offsets[27]);
   return object;
 }
 
@@ -322,10 +379,12 @@ P _competitionLocalDeserializeProp<P>(
     case 8:
       return (reader.readDateTime(offset)) as P;
     case 9:
-      return (reader.readBool(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 10:
       return (reader.readBool(offset)) as P;
     case 11:
+      return (reader.readBool(offset)) as P;
+    case 12:
       return (reader.readObjectList<Judge>(
             offset,
             JudgeSchema.deserialize,
@@ -333,26 +392,36 @@ P _competitionLocalDeserializeProp<P>(
             Judge(),
           ) ??
           []) as P;
-    case 12:
-      return (reader.readString(offset)) as P;
     case 13:
-      return (reader.readDateTimeOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 14:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringList(offset) ?? []) as P;
     case 15:
-      return (reader.readString(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 16:
       return (reader.readString(offset)) as P;
     case 17:
-      return (reader.readLong(offset)) as P;
-    case 18:
-      return (reader.readStringOrNull(offset)) as P;
-    case 19:
-      return (reader.readDateTime(offset)) as P;
-    case 20:
       return (reader.readString(offset)) as P;
+    case 18:
+      return (reader.readString(offset)) as P;
+    case 19:
+      return (reader.readString(offset)) as P;
+    case 20:
+      return (reader.readLong(offset)) as P;
     case 21:
+      return (reader.readLongOrNull(offset)) as P;
+    case 22:
+      return (reader.readStringOrNull(offset)) as P;
+    case 23:
+      return (reader.readDateTime(offset)) as P;
+    case 24:
+      return (reader.readString(offset)) as P;
+    case 25:
       return (reader.readDateTimeOrNull(offset)) as P;
+    case 26:
+      return (reader.readStringOrNull(offset)) as P;
+    case 27:
+      return (reader.readLongOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -1407,6 +1476,142 @@ extension CompetitionLocalQueryFilter
   }
 
   QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      fishingTypeEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'fishingType',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      fishingTypeGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'fishingType',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      fishingTypeLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'fishingType',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      fishingTypeBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'fishingType',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      fishingTypeStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'fishingType',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      fishingTypeEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'fishingType',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      fishingTypeContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'fishingType',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      fishingTypeMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'fishingType',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      fishingTypeIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'fishingType',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      fishingTypeIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'fishingType',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
       idEqualTo(Id value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -1704,6 +1909,231 @@ extension CompetitionLocalQueryFilter
         property: r'lakeName',
         value: '',
       ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      lakeNamesElementEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'lakeNames',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      lakeNamesElementGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'lakeNames',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      lakeNamesElementLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'lakeNames',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      lakeNamesElementBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'lakeNames',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      lakeNamesElementStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'lakeNames',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      lakeNamesElementEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'lakeNames',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      lakeNamesElementContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'lakeNames',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      lakeNamesElementMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'lakeNames',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      lakeNamesElementIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'lakeNames',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      lakeNamesElementIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'lakeNames',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      lakeNamesLengthEqualTo(int length) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'lakeNames',
+        length,
+        true,
+        length,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      lakeNamesIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'lakeNames',
+        0,
+        true,
+        0,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      lakeNamesIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'lakeNames',
+        0,
+        false,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      lakeNamesLengthLessThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'lakeNames',
+        0,
+        true,
+        length,
+        include,
+      );
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      lakeNamesLengthGreaterThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'lakeNames',
+        length,
+        include,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      lakeNamesLengthBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'lakeNames',
+        lower,
+        includeLower,
+        upper,
+        includeUpper,
+      );
     });
   }
 
@@ -2054,13 +2484,13 @@ extension CompetitionLocalQueryFilter
   }
 
   QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
-      scoringRulesEqualTo(
+      scoringMethodEqualTo(
     String value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'scoringRules',
+        property: r'scoringMethod',
         value: value,
         caseSensitive: caseSensitive,
       ));
@@ -2068,7 +2498,7 @@ extension CompetitionLocalQueryFilter
   }
 
   QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
-      scoringRulesGreaterThan(
+      scoringMethodGreaterThan(
     String value, {
     bool include = false,
     bool caseSensitive = true,
@@ -2076,7 +2506,7 @@ extension CompetitionLocalQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
         include: include,
-        property: r'scoringRules',
+        property: r'scoringMethod',
         value: value,
         caseSensitive: caseSensitive,
       ));
@@ -2084,7 +2514,7 @@ extension CompetitionLocalQueryFilter
   }
 
   QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
-      scoringRulesLessThan(
+      scoringMethodLessThan(
     String value, {
     bool include = false,
     bool caseSensitive = true,
@@ -2092,7 +2522,7 @@ extension CompetitionLocalQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.lessThan(
         include: include,
-        property: r'scoringRules',
+        property: r'scoringMethod',
         value: value,
         caseSensitive: caseSensitive,
       ));
@@ -2100,7 +2530,7 @@ extension CompetitionLocalQueryFilter
   }
 
   QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
-      scoringRulesBetween(
+      scoringMethodBetween(
     String lower,
     String upper, {
     bool includeLower = true,
@@ -2109,7 +2539,7 @@ extension CompetitionLocalQueryFilter
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.between(
-        property: r'scoringRules',
+        property: r'scoringMethod',
         lower: lower,
         includeLower: includeLower,
         upper: upper,
@@ -2120,13 +2550,13 @@ extension CompetitionLocalQueryFilter
   }
 
   QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
-      scoringRulesStartsWith(
+      scoringMethodStartsWith(
     String value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.startsWith(
-        property: r'scoringRules',
+        property: r'scoringMethod',
         value: value,
         caseSensitive: caseSensitive,
       ));
@@ -2134,13 +2564,13 @@ extension CompetitionLocalQueryFilter
   }
 
   QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
-      scoringRulesEndsWith(
+      scoringMethodEndsWith(
     String value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.endsWith(
-        property: r'scoringRules',
+        property: r'scoringMethod',
         value: value,
         caseSensitive: caseSensitive,
       ));
@@ -2148,10 +2578,10 @@ extension CompetitionLocalQueryFilter
   }
 
   QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
-      scoringRulesContains(String value, {bool caseSensitive = true}) {
+      scoringMethodContains(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.contains(
-        property: r'scoringRules',
+        property: r'scoringMethod',
         value: value,
         caseSensitive: caseSensitive,
       ));
@@ -2159,10 +2589,10 @@ extension CompetitionLocalQueryFilter
   }
 
   QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
-      scoringRulesMatches(String pattern, {bool caseSensitive = true}) {
+      scoringMethodMatches(String pattern, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.matches(
-        property: r'scoringRules',
+        property: r'scoringMethod',
         wildcard: pattern,
         caseSensitive: caseSensitive,
       ));
@@ -2170,20 +2600,156 @@ extension CompetitionLocalQueryFilter
   }
 
   QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
-      scoringRulesIsEmpty() {
+      scoringMethodIsEmpty() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'scoringRules',
+        property: r'scoringMethod',
         value: '',
       ));
     });
   }
 
   QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
-      scoringRulesIsNotEmpty() {
+      scoringMethodIsNotEmpty() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
-        property: r'scoringRules',
+        property: r'scoringMethod',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      sectorStructureEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'sectorStructure',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      sectorStructureGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'sectorStructure',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      sectorStructureLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'sectorStructure',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      sectorStructureBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'sectorStructure',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      sectorStructureStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'sectorStructure',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      sectorStructureEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'sectorStructure',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      sectorStructureContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'sectorStructure',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      sectorStructureMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'sectorStructure',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      sectorStructureIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'sectorStructure',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      sectorStructureIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'sectorStructure',
         value: '',
       ));
     });
@@ -2237,6 +2803,80 @@ extension CompetitionLocalQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.between(
         property: r'sectorsCount',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      sectorsPerZoneIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'sectorsPerZone',
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      sectorsPerZoneIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'sectorsPerZone',
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      sectorsPerZoneEqualTo(int? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'sectorsPerZone',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      sectorsPerZoneGreaterThan(
+    int? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'sectorsPerZone',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      sectorsPerZoneLessThan(
+    int? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'sectorsPerZone',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      sectorsPerZoneBetween(
+    int? lower,
+    int? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'sectorsPerZone',
         lower: lower,
         includeLower: includeLower,
         upper: upper,
@@ -2664,6 +3304,234 @@ extension CompetitionLocalQueryFilter
       ));
     });
   }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      zonedTypeIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'zonedType',
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      zonedTypeIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'zonedType',
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      zonedTypeEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'zonedType',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      zonedTypeGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'zonedType',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      zonedTypeLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'zonedType',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      zonedTypeBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'zonedType',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      zonedTypeStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'zonedType',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      zonedTypeEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'zonedType',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      zonedTypeContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'zonedType',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      zonedTypeMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'zonedType',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      zonedTypeIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'zonedType',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      zonedTypeIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'zonedType',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      zonesCountIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'zonesCount',
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      zonesCountIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'zonesCount',
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      zonesCountEqualTo(int? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'zonesCount',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      zonesCountGreaterThan(
+    int? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'zonesCount',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      zonesCountLessThan(
+    int? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'zonesCount',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      zonesCountBetween(
+    int? lower,
+    int? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'zonesCount',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
 }
 
 extension CompetitionLocalQueryObject
@@ -2801,6 +3669,20 @@ extension CompetitionLocalQuerySortBy
   }
 
   QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterSortBy>
+      sortByFishingType() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'fishingType', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterSortBy>
+      sortByFishingTypeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'fishingType', Sort.desc);
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterSortBy>
       sortByIsFinal() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isFinal', Sort.asc);
@@ -2884,16 +3766,30 @@ extension CompetitionLocalQuerySortBy
   }
 
   QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterSortBy>
-      sortByScoringRules() {
+      sortByScoringMethod() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'scoringRules', Sort.asc);
+      return query.addSortBy(r'scoringMethod', Sort.asc);
     });
   }
 
   QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterSortBy>
-      sortByScoringRulesDesc() {
+      sortByScoringMethodDesc() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'scoringRules', Sort.desc);
+      return query.addSortBy(r'scoringMethod', Sort.desc);
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterSortBy>
+      sortBySectorStructure() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'sectorStructure', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterSortBy>
+      sortBySectorStructureDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'sectorStructure', Sort.desc);
     });
   }
 
@@ -2908,6 +3804,20 @@ extension CompetitionLocalQuerySortBy
       sortBySectorsCountDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'sectorsCount', Sort.desc);
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterSortBy>
+      sortBySectorsPerZone() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'sectorsPerZone', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterSortBy>
+      sortBySectorsPerZoneDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'sectorsPerZone', Sort.desc);
     });
   }
 
@@ -2964,6 +3874,34 @@ extension CompetitionLocalQuerySortBy
       sortByUpdatedAtDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'updatedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterSortBy>
+      sortByZonedType() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'zonedType', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterSortBy>
+      sortByZonedTypeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'zonedType', Sort.desc);
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterSortBy>
+      sortByZonesCount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'zonesCount', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterSortBy>
+      sortByZonesCountDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'zonesCount', Sort.desc);
     });
   }
 }
@@ -3082,6 +4020,20 @@ extension CompetitionLocalQuerySortThenBy
     });
   }
 
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterSortBy>
+      thenByFishingType() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'fishingType', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterSortBy>
+      thenByFishingTypeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'fishingType', Sort.desc);
+    });
+  }
+
   QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterSortBy> thenById() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.asc);
@@ -3179,16 +4131,30 @@ extension CompetitionLocalQuerySortThenBy
   }
 
   QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterSortBy>
-      thenByScoringRules() {
+      thenByScoringMethod() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'scoringRules', Sort.asc);
+      return query.addSortBy(r'scoringMethod', Sort.asc);
     });
   }
 
   QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterSortBy>
-      thenByScoringRulesDesc() {
+      thenByScoringMethodDesc() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'scoringRules', Sort.desc);
+      return query.addSortBy(r'scoringMethod', Sort.desc);
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterSortBy>
+      thenBySectorStructure() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'sectorStructure', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterSortBy>
+      thenBySectorStructureDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'sectorStructure', Sort.desc);
     });
   }
 
@@ -3203,6 +4169,20 @@ extension CompetitionLocalQuerySortThenBy
       thenBySectorsCountDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'sectorsCount', Sort.desc);
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterSortBy>
+      thenBySectorsPerZone() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'sectorsPerZone', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterSortBy>
+      thenBySectorsPerZoneDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'sectorsPerZone', Sort.desc);
     });
   }
 
@@ -3259,6 +4239,34 @@ extension CompetitionLocalQuerySortThenBy
       thenByUpdatedAtDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'updatedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterSortBy>
+      thenByZonedType() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'zonedType', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterSortBy>
+      thenByZonedTypeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'zonedType', Sort.desc);
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterSortBy>
+      thenByZonesCount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'zonesCount', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterSortBy>
+      thenByZonesCountDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'zonesCount', Sort.desc);
     });
   }
 }
@@ -3323,6 +4331,13 @@ extension CompetitionLocalQueryWhereDistinct
   }
 
   QueryBuilder<CompetitionLocal, CompetitionLocal, QDistinct>
+      distinctByFishingType({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'fishingType', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QDistinct>
       distinctByIsFinal() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'isFinal');
@@ -3340,6 +4355,13 @@ extension CompetitionLocalQueryWhereDistinct
       distinctByLakeName({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'lakeName', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QDistinct>
+      distinctByLakeNames() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'lakeNames');
     });
   }
 
@@ -3366,9 +4388,18 @@ extension CompetitionLocalQueryWhereDistinct
   }
 
   QueryBuilder<CompetitionLocal, CompetitionLocal, QDistinct>
-      distinctByScoringRules({bool caseSensitive = true}) {
+      distinctByScoringMethod({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'scoringRules', caseSensitive: caseSensitive);
+      return query.addDistinctBy(r'scoringMethod',
+          caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QDistinct>
+      distinctBySectorStructure({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'sectorStructure',
+          caseSensitive: caseSensitive);
     });
   }
 
@@ -3376,6 +4407,13 @@ extension CompetitionLocalQueryWhereDistinct
       distinctBySectorsCount() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'sectorsCount');
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QDistinct>
+      distinctBySectorsPerZone() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'sectorsPerZone');
     });
   }
 
@@ -3404,6 +4442,20 @@ extension CompetitionLocalQueryWhereDistinct
       distinctByUpdatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'updatedAt');
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QDistinct>
+      distinctByZonedType({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'zonedType', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QDistinct>
+      distinctByZonesCount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'zonesCount');
     });
   }
 }
@@ -3478,6 +4530,13 @@ extension CompetitionLocalQueryProperty
     });
   }
 
+  QueryBuilder<CompetitionLocal, String, QQueryOperations>
+      fishingTypeProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'fishingType');
+    });
+  }
+
   QueryBuilder<CompetitionLocal, bool, QQueryOperations> isFinalProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isFinal');
@@ -3503,6 +4562,13 @@ extension CompetitionLocalQueryProperty
     });
   }
 
+  QueryBuilder<CompetitionLocal, List<String>, QQueryOperations>
+      lakeNamesProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'lakeNames');
+    });
+  }
+
   QueryBuilder<CompetitionLocal, DateTime?, QQueryOperations>
       lastSyncedAtProperty() {
     return QueryBuilder.apply(this, (query) {
@@ -3524,15 +4590,29 @@ extension CompetitionLocalQueryProperty
   }
 
   QueryBuilder<CompetitionLocal, String, QQueryOperations>
-      scoringRulesProperty() {
+      scoringMethodProperty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'scoringRules');
+      return query.addPropertyName(r'scoringMethod');
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, String, QQueryOperations>
+      sectorStructureProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'sectorStructure');
     });
   }
 
   QueryBuilder<CompetitionLocal, int, QQueryOperations> sectorsCountProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'sectorsCount');
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, int?, QQueryOperations>
+      sectorsPerZoneProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'sectorsPerZone');
     });
   }
 
@@ -3559,6 +4639,19 @@ extension CompetitionLocalQueryProperty
       updatedAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'updatedAt');
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, String?, QQueryOperations>
+      zonedTypeProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'zonedType');
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, int?, QQueryOperations> zonesCountProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'zonesCount');
     });
   }
 }

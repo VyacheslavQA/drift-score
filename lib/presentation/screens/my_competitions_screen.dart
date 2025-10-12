@@ -13,7 +13,12 @@ import 'competition_details_screen.dart';
 import '../../data/services/isar_service.dart';
 
 class MyCompetitionsScreen extends ConsumerStatefulWidget {
-  const MyCompetitionsScreen({Key? key}) : super(key: key);
+  final String fishingType;
+
+  const MyCompetitionsScreen({
+    Key? key,
+    required this.fishingType,
+  }) : super(key: key);
 
   @override
   ConsumerState<MyCompetitionsScreen> createState() => _MyCompetitionsScreenState();
@@ -29,7 +34,16 @@ class _MyCompetitionsScreenState extends ConsumerState<MyCompetitionsScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text('my_competitions'.tr(), style: AppTextStyles.h2),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('my_competitions'.tr(), style: AppTextStyles.h3),
+            Text(
+              'fishing_type_${widget.fishingType}'.tr(),
+              style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
+            ),
+          ],
+        ),
         backgroundColor: AppColors.surface,
         iconTheme: IconThemeData(color: AppColors.textPrimary),
 
@@ -63,7 +77,6 @@ class _MyCompetitionsScreenState extends ConsumerState<MyCompetitionsScreen> {
               );
 
               if (confirm == true) {
-                // Показываем загрузку
                 showDialog(
                   context: context,
                   barrierDismissible: false,
@@ -85,27 +98,18 @@ class _MyCompetitionsScreenState extends ConsumerState<MyCompetitionsScreen> {
                   ),
                 );
 
-                // Очистить Isar
                 try {
                   final isarService = IsarService();
-
-                  // Получаем все соревнования
                   final allCompetitions = await isarService.getAllCompetitions();
-
-                  // Удаляем каждое соревнование (каскадно)
                   for (var comp in allCompetitions) {
                     await isarService.deleteCompetition(comp.id!);
                   }
-
                   print('✅ Deleted ${allCompetitions.length} competitions with cascade');
                 } catch (e) {
                   print('❌ Delete error: $e');
                 }
 
-                // Закрыть диалог загрузки
                 Navigator.of(context).pop();
-
-                // Обновить список
                 ref.read(competitionProvider.notifier).loadAllCompetitionsForDevice();
 
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -370,9 +374,12 @@ class _MyCompetitionsScreenState extends ConsumerState<MyCompetitionsScreen> {
   }
 
   List<CompetitionLocal> _filterCompetitions(List<CompetitionLocal> competitions) {
-    if (_filter == 'all') return competitions;
+    // Фильтруем по типу рыбалки И по статусу
+    final byType = competitions.where((c) => c.fishingType == widget.fishingType).toList();
 
-    return competitions.where((c) {
+    if (_filter == 'all') return byType;
+
+    return byType.where((c) {
       return _filter == 'active'
           ? c.status == 'active'
           : c.status == 'completed';
@@ -438,9 +445,7 @@ class _MyCompetitionsScreenState extends ConsumerState<MyCompetitionsScreen> {
   }
 
   Future<void> _handleCreateCompetition(BuildContext context) async {
-    print('🔵 _handleCreateCompetition called');
-
-    // ВСЕГДА показываем диалог (не проверяем наличие кода)
+    print('🔵 _handleCreateCompetition called for ${widget.fishingType}');
     _showCodeRequiredForCreation(context);
   }
 
@@ -496,15 +501,11 @@ class _MyCompetitionsScreenState extends ConsumerState<MyCompetitionsScreen> {
                 const SizedBox(height: AppDimensions.paddingLarge),
                 OutlinedButton.icon(
                   onPressed: () async {
-                    // Закрываем диалог
                     Navigator.pop(dialogContext);
-
-                    // Небольшая задержка для завершения анимации
                     await Future.delayed(Duration(milliseconds: 300));
 
                     if (!mounted) return;
 
-                    // Открываем экран ввода кода
                     final code = await Navigator.push<String>(
                       context,
                       MaterialPageRoute(builder: (_) => const EnterCodeScreen()),
@@ -512,24 +513,24 @@ class _MyCompetitionsScreenState extends ConsumerState<MyCompetitionsScreen> {
 
                     print('🔑 Received code: $code');
 
-                    // Если код введён успешно
                     if (code != null && code.isNotEmpty && mounted) {
-                      // ✅ Сохраняем код в SharedPreferences
                       final prefs = await SharedPreferences.getInstance();
                       await prefs.setString('access_code', code);
                       await prefs.setBool('is_admin', true);
 
                       print('✅ Code saved to SharedPreferences: $code');
 
-                      // Открываем форму создания
+                      // Передаём fishingType в CreateCompetitionScreen
                       await Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => CreateCompetitionScreen(accessCode: code), // ✅ ИСПРАВЛЕНО
+                          builder: (_) => CreateCompetitionScreen(
+                            accessCode: code,
+                            fishingType: widget.fishingType, // ✅ Передаём тип
+                          ),
                         ),
                       );
 
-                      // Обновляем список соревнований
                       if (mounted) {
                         ref.read(competitionProvider.notifier).loadAllCompetitionsForDevice();
                       }
