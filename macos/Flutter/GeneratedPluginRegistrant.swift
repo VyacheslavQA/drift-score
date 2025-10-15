@@ -16,7 +16,7 @@ import firebase_crashlytics
 import firebase_remote_config
 import firebase_storage
 import in_app_purchase_storekit
-import isar_flutter_libs
+import isar_community_flutter_libs
 import mobile_scanner
 import open_file_mac
 import path_provider_foundation

@@ -88,7 +88,7 @@ const OperationQueueSchema = CollectionSchema(
   getId: _operationQueueGetId,
   getLinks: _operationQueueGetLinks,
   attach: _operationQueueAttach,
-  version: '3.1.0+1',
+  version: '3.3.0-dev.3',
 );
 
 int _operationQueueEstimateSize(

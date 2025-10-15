@@ -123,7 +123,7 @@ const TeamLocalSchema = CollectionSchema(
   getId: _teamLocalGetId,
   getLinks: _teamLocalGetLinks,
   attach: _teamLocalAttach,
-  version: '3.1.0+1',
+  version: '3.3.0-dev.3',
 );
 
 int _teamLocalEstimateSize(

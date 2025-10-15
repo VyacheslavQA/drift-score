@@ -26,9 +26,9 @@ dependencies:
   # State Management
   flutter_riverpod: ^2.5.1
 
-  # Local Database
-  isar: ^3.1.0+1
-  isar_flutter_libs: ^3.1.0+1
+  # Local Database - ИСПРАВЛЕНО на community версии
+  isar_community: ^3.3.0-dev.3
+  isar_community_flutter_libs: ^3.3.0-dev.3
   path_provider: ^2.1.2
 
   # QR & Signature
@@ -39,7 +39,7 @@ dependencies:
   # Documents Export
   pdf: ^3.11.3
   printing: ^5.14.2
-  google_fonts: ^6.2.1  # Добавлено для PdfGoogleFonts
+  google_fonts: ^6.2.1
   syncfusion_flutter_xlsio: ^29.2.11
   share_plus: ^7.2.2
 
@@ -63,7 +63,8 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
-  isar_generator: ^3.1.0+1
+  # ИСПРАВЛЕНО на community версию
+  isar_community_generator: ^3.3.0-dev.3
   build_runner: ^2.4.7
   flutter_launcher_icons: ^0.13.1
 
@@ -74,11 +75,14 @@ flutter:
   assets:
     - assets/locales/
     - assets/images/
+    - assets/images/fishing_types/
 
 # Настройка иконок приложения
 flutter_launcher_icons:
   android: true
   ios: true
   image_path: "assets/images/app_icon.png"
-  adaptive_icon_background: "#223A5E"  # Цвет фона для Android Adaptive Icon
+  adaptive_icon_background: "#223A5E"
   adaptive_icon_foreground: "assets/images/app_icon.png"
+  remove_alpha_ios: true
+  min_sdk_android: 21
