@@ -10,7 +10,9 @@ import '../providers/team_provider.dart';
 import 'add_team_screen.dart';
 import 'draw_screen.dart';
 import 'weighing_list_screen.dart';
+import 'casting_session_list_screen.dart';
 import 'protocol_list_screen.dart';
+import 'edit_competition_screen.dart';
 
 class CompetitionDetailsScreen extends ConsumerStatefulWidget {
   final CompetitionLocal competition;
@@ -42,6 +44,13 @@ class _CompetitionDetailsScreenState extends ConsumerState<CompetitionDetailsScr
         ),
         backgroundColor: AppColors.surface,
         iconTheme: IconThemeData(color: AppColors.textPrimary),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.edit, color: AppColors.primary),
+            onPressed: () => _navigateToEditCompetition(context),
+            tooltip: 'edit'.tr(),
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -147,6 +156,8 @@ class _CompetitionDetailsScreenState extends ConsumerState<CompetitionDetailsScr
   }
 
   Widget _buildInfoCard() {
+    final isCasting = widget.competition.fishingType == 'casting';
+
     return Card(
       color: AppColors.surface,
       child: Padding(
@@ -156,14 +167,20 @@ class _CompetitionDetailsScreenState extends ConsumerState<CompetitionDetailsScr
           children: [
             Text('competition_info'.tr(), style: AppTextStyles.h3),
             SizedBox(height: AppDimensions.paddingMedium),
-            _buildInfoRow(Icons.location_on, 'city'.tr(), widget.competition.cityOrRegion),
+            _buildInfoRow(Icons.location_on, 'city'.tr(),
+                widget.competition.cityOrRegion),
             SizedBox(height: AppDimensions.paddingSmall),
-            _buildInfoRow(Icons.water, 'lake'.tr(), widget.competition.lakeName),
+            _buildInfoRow(
+              Icons.water,
+              isCasting ? 'venue'.tr() : 'lake'.tr(),
+              widget.competition.lakeName,
+            ),
             SizedBox(height: AppDimensions.paddingSmall),
             _buildInfoRow(
               Icons.calendar_today,
               'start_date'.tr(),
-              DateFormat('dd.MM.yyyy HH:mm').format(widget.competition.startTime),
+              DateFormat('dd.MM.yyyy HH:mm').format(
+                  widget.competition.startTime),
             ),
             SizedBox(height: AppDimensions.paddingSmall),
             _buildInfoRow(
@@ -171,12 +188,34 @@ class _CompetitionDetailsScreenState extends ConsumerState<CompetitionDetailsScr
               'duration'.tr(),
               '${widget.competition.durationHours} ${'hours'.tr()}',
             ),
-            SizedBox(height: AppDimensions.paddingSmall),
-            _buildInfoRow(
-              Icons.grid_on,
-              'sectors'.tr(),
-              '${widget.competition.sectorsCount}',
-            ),
+
+            if (!isCasting) ...[
+              SizedBox(height: AppDimensions.paddingSmall),
+              _buildInfoRow(
+                Icons.grid_on,
+                'sectors'.tr(),
+                '${widget.competition.sectorsCount}',
+              ),
+            ],
+
+            if (isCasting && widget.competition.attemptsCount != null) ...[
+              SizedBox(height: AppDimensions.paddingSmall),
+              _buildInfoRow(
+                Icons.repeat,
+                'attempts_count'.tr(),
+                '${widget.competition.attemptsCount}',
+              ),
+            ],
+
+            if (isCasting && widget.competition.commonLine != null) ...[
+              SizedBox(height: AppDimensions.paddingSmall),
+              _buildInfoRow(
+                Icons.line_weight,
+                'common_line'.tr(),
+                widget.competition.commonLine!,
+              ),
+            ],
+
             SizedBox(height: AppDimensions.paddingSmall),
             _buildInfoRow(
               Icons.calculate,
@@ -211,28 +250,29 @@ class _CompetitionDetailsScreenState extends ConsumerState<CompetitionDetailsScr
               ],
             ),
             SizedBox(height: AppDimensions.paddingMedium),
-            ...widget.competition.judges.map((judge) => Padding(
-              padding: EdgeInsets.only(bottom: AppDimensions.paddingSmall),
-              child: Row(
-                children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      shape: BoxShape.circle,
-                    ),
+            ...widget.competition.judges.map((judge) =>
+                Padding(
+                  padding: EdgeInsets.only(bottom: AppDimensions.paddingSmall),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      SizedBox(width: AppDimensions.paddingSmall),
+                      Expanded(
+                        child: Text(
+                          '${judge.fullName} — ${judge.rank.tr()}',
+                          style: AppTextStyles.body,
+                        ),
+                      ),
+                    ],
                   ),
-                  SizedBox(width: AppDimensions.paddingSmall),
-                  Expanded(
-                    child: Text(
-                      '${judge.fullName} — ${judge.rank}',
-                      style: AppTextStyles.body,
-                    ),
-                  ),
-                ],
-              ),
-            )),
+                )),
           ],
         ),
       ),
@@ -248,10 +288,13 @@ class _CompetitionDetailsScreenState extends ConsumerState<CompetitionDetailsScr
         Expanded(
           child: RichText(
             text: TextSpan(
-              style: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
+              style: AppTextStyles.body.copyWith(
+                  color: AppColors.textSecondary),
               children: [
-                TextSpan(text: '$label: ', style: TextStyle(fontWeight: FontWeight.bold)),
-                TextSpan(text: value, style: TextStyle(color: AppColors.textPrimary)),
+                TextSpan(text: '$label: ',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+                TextSpan(text: value,
+                    style: TextStyle(color: AppColors.textPrimary)),
               ],
             ),
           ),
@@ -269,12 +312,13 @@ class _CompetitionDetailsScreenState extends ConsumerState<CompetitionDetailsScr
         return _buildTeamsList(teams);
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) => Center(
-        child: Text(
-          'error_loading_teams'.tr(),
-          style: AppTextStyles.body.copyWith(color: AppColors.error),
-        ),
-      ),
+      error: (error, stack) =>
+          Center(
+            child: Text(
+              'error_loading_teams'.tr(),
+              style: AppTextStyles.body.copyWith(color: AppColors.error),
+            ),
+          ),
     );
   }
 
@@ -307,7 +351,9 @@ class _CompetitionDetailsScreenState extends ConsumerState<CompetitionDetailsScr
   Widget _buildTeamsList(List<TeamLocal> teams) {
     return RefreshIndicator(
       onRefresh: () async {
-        await ref.read(teamProvider(widget.competition.id).notifier).loadTeams();
+        await ref
+            .read(teamProvider(widget.competition.id).notifier)
+            .loadTeams();
       },
       child: ListView.builder(
         padding: EdgeInsets.all(AppDimensions.paddingMedium),
@@ -351,11 +397,13 @@ class _CompetitionDetailsScreenState extends ConsumerState<CompetitionDetailsScr
                       ),
                       decoration: BoxDecoration(
                         color: AppColors.primary.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+                        borderRadius: BorderRadius.circular(
+                            AppDimensions.radiusSmall),
                       ),
                       child: Text(
                         '${'sector'.tr()} ${team.sector}',
-                        style: AppTextStyles.caption.copyWith(color: AppColors.primary),
+                        style: AppTextStyles.caption.copyWith(
+                            color: AppColors.primary),
                       ),
                     ),
                 ],
@@ -369,7 +417,8 @@ class _CompetitionDetailsScreenState extends ConsumerState<CompetitionDetailsScr
               SizedBox(height: 4),
               _buildTeamInfoRow(
                 Icons.people,
-                '${team.members.length} ${team.members.length == 1 ? 'member'.tr() : 'members'.tr()}',
+                '${team.members.length} ${team.members.length == 1 ? 'member'
+                    .tr() : 'members'.tr()}',
               ),
               if (team.members.isNotEmpty) ...[
                 SizedBox(height: AppDimensions.paddingSmall),
@@ -379,7 +428,8 @@ class _CompetitionDetailsScreenState extends ConsumerState<CompetitionDetailsScr
                   children: team.members.map((member) {
                     return Chip(
                       avatar: member.isCaptain
-                          ? Icon(Icons.star, size: 16, color: AppColors.upcoming)
+                          ? Icon(
+                          Icons.star, size: 16, color: AppColors.upcoming)
                           : null,
                       label: Text(
                         member.fullName,
@@ -406,7 +456,8 @@ class _CompetitionDetailsScreenState extends ConsumerState<CompetitionDetailsScr
         Expanded(
           child: Text(
             text,
-            style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
+            style: AppTextStyles.caption.copyWith(
+                color: AppColors.textSecondary),
           ),
         ),
       ],
@@ -414,8 +465,13 @@ class _CompetitionDetailsScreenState extends ConsumerState<CompetitionDetailsScr
   }
 
   Widget _buildActionButtons() {
+    final isCasting = widget.competition.fishingType == 'casting';
+
     return Container(
-      padding: EdgeInsets.all(AppDimensions.paddingMedium),
+      padding: EdgeInsets.symmetric(
+        horizontal: AppDimensions.paddingMedium,
+        vertical: AppDimensions.paddingSmall,
+      ),
       decoration: BoxDecoration(
         color: AppColors.surface,
         boxShadow: [
@@ -426,61 +482,120 @@ class _CompetitionDetailsScreenState extends ConsumerState<CompetitionDetailsScr
           ),
         ],
       ),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Expanded(
-            child: OutlinedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => DrawScreen(competition: widget.competition),
+          if (!isCasting) ...[
+            SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          DrawScreen(competition: widget.competition),
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.surface,
+                  foregroundColor: AppColors.textPrimary,
+                  elevation: 0,
+                  side: BorderSide(color: AppColors.divider),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(
+                        AppDimensions.radiusSmall),
                   ),
-                );
-              },
-              icon: Icon(Icons.shuffle, size: 18),
-              label: Text('draw'.tr()),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.textPrimary,
-                side: BorderSide(color: AppColors.primary),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.shuffle, size: 24),
+                    SizedBox(width: 12),
+                    Text('draw'.tr(), style: AppTextStyles.bodyBold),
+                  ],
+                ),
               ),
             ),
-          ),
-          SizedBox(width: AppDimensions.paddingSmall),
-          Expanded(
-            child: OutlinedButton.icon(
+            SizedBox(height: 8),
+          ],
+
+          SizedBox(
+            width: double.infinity,
+            height: 56,
+            child: ElevatedButton(
               onPressed: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => WeighingListScreen(competition: widget.competition),
+                    builder: (_) =>
+                    isCasting
+                        ? CastingSessionListScreen(
+                        competition: widget.competition)
+                        : WeighingListScreen(competition: widget.competition),
                   ),
                 );
               },
-              icon: Icon(Icons.scale, size: 18),
-              label: Text('weighing_title'.tr()),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.textPrimary,
-                side: BorderSide(color: AppColors.primary),
-              ),
-            ),
-          ),
-          SizedBox(width: AppDimensions.paddingSmall),
-          Expanded(
-            child: ElevatedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => ProtocolListScreen(competition: widget.competition),
-                  ),
-                );
-              },
-              icon: Icon(Icons.description, size: 18),
-              label: Text('protocols_title'.tr()),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                foregroundColor: AppColors.text,
+                backgroundColor: AppColors.surface,
+                foregroundColor: AppColors.textPrimary,
+                elevation: 0,
+                side: BorderSide(color: AppColors.divider),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(
+                      AppDimensions.radiusSmall),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(isCasting ? Icons.gps_fixed : Icons.scale, size: 24),
+                  SizedBox(width: 12),
+                  Text(
+                    isCasting ? 'casting_results'.tr() : 'weighing_title'.tr(),
+                    style: AppTextStyles.bodyBold,
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          SizedBox(height: 8),
+
+          SizedBox(
+            width: double.infinity,
+            height: 56,
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        ProtocolListScreen(competition: widget.competition),
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(
+                      AppDimensions.radiusSmall),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.description, size: 24),
+                  SizedBox(width: 12),
+                  Text(
+                    'protocols_title'.tr(),
+                    style: AppTextStyles.bodyBold.copyWith(color: Colors.white),
+                  ),
+                ],
               ),
             ),
           ),
@@ -497,6 +612,10 @@ class _CompetitionDetailsScreenState extends ConsumerState<CompetitionDetailsScr
         return 'top_3_fish'.tr();
       case 'top_5':
         return 'top_5_fish'.tr();
+      case 'best_distance':
+        return 'scoring_best_distance'.tr();
+      case 'average_distance':
+        return 'scoring_average_distance'.tr();
       default:
         return rules;
     }
@@ -515,11 +634,25 @@ class _CompetitionDetailsScreenState extends ConsumerState<CompetitionDetailsScr
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => AddTeamScreen(
-          competition: widget.competition,
-          team: team,
-        ),
+        builder: (_) =>
+            AddTeamScreen(
+              competition: widget.competition,
+              team: team,
+            ),
       ),
     );
+  }
+
+  Future<void> _navigateToEditCompetition(BuildContext context) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EditCompetitionScreen(competition: widget.competition),
+      ),
+    );
+
+    if (result == true && mounted) {
+      setState(() {});
+    }
   }
 }

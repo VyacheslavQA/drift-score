@@ -44,7 +44,9 @@ class ProtocolExportService {
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
               _buildPdfHeader(protocol, data, font, fontBold),
-              pw.SizedBox(height: 20),
+              pw.SizedBox(height: 15),
+              _buildPdfLocationAndDate(protocol, data, font, fontBold),
+              pw.SizedBox(height: 15),
               _buildPdfContent(protocol, data, font, fontBold),
               pw.Spacer(),
               _buildPdfSignature(data, font, fontBold),
@@ -66,7 +68,10 @@ class ProtocolExportService {
     int currentRow = 1;
 
     currentRow = _addExcelHeader(sheet, protocol, data, currentRow);
-    currentRow += 2;
+    currentRow += 1;
+
+    currentRow = _addExcelLocationAndDate(sheet, protocol, data, currentRow);
+    currentRow += 1;
 
     currentRow = _addExcelTable(sheet, protocol, data, currentRow);
     currentRow += 2;
@@ -83,32 +88,92 @@ class ProtocolExportService {
   // ===== PDF HELPERS =====
 
   pw.Widget _buildPdfHeader(ProtocolLocal protocol, Map<String, dynamic> data, pw.Font font, pw.Font fontBold) {
-    return pw.Container(
-      padding: const pw.EdgeInsets.all(10),
-      decoration: pw.BoxDecoration(
-        border: pw.Border.all(color: PdfColors.grey),
-      ),
-      child: pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.center,
+      children: [
+        // Организатор (без слова "Организатор:")
+        if (data['organizer'] != null)
           pw.Text(
-            _getProtocolTitle(protocol),
-            style: pw.TextStyle(fontSize: 18, font: fontBold),
+            data['organizer'],
+            style: pw.TextStyle(fontSize: 14, font: fontBold),
+            textAlign: pw.TextAlign.center,
           ),
-          pw.SizedBox(height: 10),
-          if (data['city'] != null)
-            pw.Text('Город: ${data['city']}', style: pw.TextStyle(fontSize: 12, font: font)),
-          if (data['lake'] != null)
-            pw.Text('Озеро: ${data['lake']}', style: pw.TextStyle(fontSize: 12, font: font)),
-          if (data['organizer'] != null)
-            pw.Text('Организатор: ${data['organizer']}', style: pw.TextStyle(fontSize: 12, font: font)),
-          if (data['weighingTime'] != null)
-            pw.Text(
-              'Время: ${DateFormat('dd.MM.yyyy HH:mm').format(DateTime.parse(data['weighingTime']))}',
-              style: pw.TextStyle(fontSize: 12, font: font),
-            ),
-        ],
-      ),
+        pw.SizedBox(height: 8),
+
+        // Тип протокола
+        pw.Text(
+          _getProtocolTitle(protocol),
+          style: pw.TextStyle(fontSize: 16, font: fontBold),
+          textAlign: pw.TextAlign.center,
+        ),
+        pw.SizedBox(height: 8),
+
+        // Название соревнования
+        if (data['competitionName'] != null)
+          pw.Text(
+            data['competitionName'],
+            style: pw.TextStyle(fontSize: 14, font: fontBold),
+            textAlign: pw.TextAlign.center,
+          ),
+      ],
+    );
+  }
+
+  pw.Widget _buildPdfLocationAndDate(ProtocolLocal protocol, Map<String, dynamic> data, pw.Font font, pw.Font fontBold) {
+    final isSummaryOrFinal = protocol.type == 'summary' || protocol.type == 'final';
+
+    return pw.Row(
+      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        // Левая часть: место и даты
+        pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            if (data['lake'] != null)
+              pw.Text(
+                'Место проведения: ${data['lake']}',
+                style: pw.TextStyle(fontSize: 11, font: font),
+              ),
+            pw.SizedBox(height: 4),
+
+            // Дата в зависимости от типа протокола
+            if (protocol.type == 'weighing' && data['weighingTime'] != null)
+              pw.Text(
+                'Дата и время: ${DateFormat('dd.MM.yyyy HH:mm').format(DateTime.parse(data['weighingTime']))}',
+                style: pw.TextStyle(fontSize: 11, font: font),
+              ),
+
+            if (protocol.type == 'big_fish' && data['startTime'] != null && data['finishTime'] != null)
+              pw.Text(
+                'Период: ${DateFormat('dd.MM.yyyy HH:mm').format(DateTime.parse(data['startTime']))} - ${DateFormat('dd.MM.yyyy HH:mm').format(DateTime.parse(data['finishTime']))}',
+                style: pw.TextStyle(fontSize: 11, font: font),
+              ),
+
+            if (isSummaryOrFinal && data['startTime'] != null && data['finishTime'] != null)
+              pw.Text(
+                'Даты соревнования: ${DateFormat('dd.MM.yyyy').format(DateTime.parse(data['startTime']))} - ${DateFormat('dd.MM.yyyy').format(DateTime.parse(data['finishTime']))}',
+                style: pw.TextStyle(fontSize: 11, font: font),
+              ),
+          ],
+        ),
+
+        // Правая часть: дата формирования (только для сводного и финального)
+        if (isSummaryOrFinal)
+          pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.end,
+            children: [
+              pw.Text(
+                'Дата формирования протокола:',
+                style: pw.TextStyle(fontSize: 10, font: font),
+              ),
+              pw.Text(
+                DateFormat('dd.MM.yyyy').format(DateTime.now()),
+                style: pw.TextStyle(fontSize: 11, font: fontBold),
+              ),
+            ],
+          ),
+      ],
     );
   }
 
@@ -302,37 +367,34 @@ class ProtocolExportService {
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
         pw.Divider(),
-        pw.SizedBox(height: 10),
-        pw.Text('Подписи судей:', style: pw.TextStyle(font: fontBold)),
-        pw.SizedBox(height: 20),
+        pw.SizedBox(height: 15),
+
         if (data['judges'] != null)
           ...((data['judges'] as List<dynamic>).map((judge) {
             final judgeMap = judge as Map<String, dynamic>;
+            final rank = judgeMap['rank']?.toString() ?? 'Судья';
+            final name = judgeMap['name']?.toString() ?? '';
+
             return pw.Padding(
-              padding: const pw.EdgeInsets.only(bottom: 15),
+              padding: const pw.EdgeInsets.only(bottom: 20),
               child: pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
                   pw.Text(
-                    '${judgeMap['name'] ?? ''} (${judgeMap['rank'] ?? ''})',
-                    style: pw.TextStyle(fontSize: 10, font: font),
+                    '$rank: $name',
+                    style: pw.TextStyle(fontSize: 11, font: font),
                   ),
                   pw.Container(
-                    width: 150,
+                    width: 200,
                     decoration: const pw.BoxDecoration(
                       border: pw.Border(bottom: pw.BorderSide()),
                     ),
-                    child: pw.SizedBox(height: 20),
+                    child: pw.SizedBox(height: 1),
                   ),
                 ],
               ),
             );
           })),
-        pw.SizedBox(height: 10),
-        pw.Text(
-          'Дата: ${DateFormat('dd.MM.yyyy').format(DateTime.now())}',
-          style: pw.TextStyle(fontSize: 10, font: font),
-        ),
       ],
     );
   }
@@ -340,26 +402,73 @@ class ProtocolExportService {
   // ===== EXCEL HELPERS =====
 
   int _addExcelHeader(xlsio.Worksheet sheet, ProtocolLocal protocol, Map<String, dynamic> data, int row) {
-    sheet.getRangeByIndex(row, 1).setText(_getProtocolTitle(protocol));
-    sheet.getRangeByIndex(row, 1).cellStyle.bold = true;
-    sheet.getRangeByIndex(row, 1).cellStyle.fontSize = 16;
+    // Организатор (без слова "Организатор:")
+    if (data['organizer'] != null) {
+      final titleRange = sheet.getRangeByIndex(row, 1, row, 7);
+      titleRange.merge();
+      titleRange.setText(data['organizer']);
+      titleRange.cellStyle.bold = true;
+      titleRange.cellStyle.fontSize = 14;
+      titleRange.cellStyle.hAlign = xlsio.HAlignType.center;
+      row++;
+    }
+
+    // Тип протокола
+    final protocolRange = sheet.getRangeByIndex(row, 1, row, 7);
+    protocolRange.merge();
+    protocolRange.setText(_getProtocolTitle(protocol));
+    protocolRange.cellStyle.bold = true;
+    protocolRange.cellStyle.fontSize = 16;
+    protocolRange.cellStyle.hAlign = xlsio.HAlignType.center;
     row++;
 
-    if (data['city'] != null) {
-      sheet.getRangeByIndex(row, 1).setText('Город: ${data['city']}');
+    // Название соревнования
+    if (data['competitionName'] != null) {
+      final nameRange = sheet.getRangeByIndex(row, 1, row, 7);
+      nameRange.merge();
+      nameRange.setText(data['competitionName']);
+      nameRange.cellStyle.bold = true;
+      nameRange.cellStyle.fontSize = 14;
+      nameRange.cellStyle.hAlign = xlsio.HAlignType.center;
       row++;
     }
 
+    return row;
+  }
+
+  int _addExcelLocationAndDate(xlsio.Worksheet sheet, ProtocolLocal protocol, Map<String, dynamic> data, int row) {
+    final isSummaryOrFinal = protocol.type == 'summary' || protocol.type == 'final';
+
+    // Место проведения
     if (data['lake'] != null) {
-      sheet.getRangeByIndex(row, 1).setText('Озеро: ${data['lake']}');
+      sheet.getRangeByIndex(row, 1).setText('Место проведения: ${data['lake']}');
       row++;
     }
 
-    if (data['organizer'] != null) {
-      sheet.getRangeByIndex(row, 1).setText('Организатор: ${data['organizer']}');
-      row++;
+    // Дата в зависимости от типа протокола
+    if (protocol.type == 'weighing' && data['weighingTime'] != null) {
+      sheet.getRangeByIndex(row, 1).setText(
+        'Дата и время: ${DateFormat('dd.MM.yyyy HH:mm').format(DateTime.parse(data['weighingTime']))}',
+      );
+    } else if (protocol.type == 'big_fish' && data['startTime'] != null && data['finishTime'] != null) {
+      sheet.getRangeByIndex(row, 1).setText(
+        'Период: ${DateFormat('dd.MM.yyyy HH:mm').format(DateTime.parse(data['startTime']))} - ${DateFormat('dd.MM.yyyy HH:mm').format(DateTime.parse(data['finishTime']))}',
+      );
+    } else if (isSummaryOrFinal && data['startTime'] != null && data['finishTime'] != null) {
+      sheet.getRangeByIndex(row, 1).setText(
+        'Даты соревнования: ${DateFormat('dd.MM.yyyy').format(DateTime.parse(data['startTime']))} - ${DateFormat('dd.MM.yyyy').format(DateTime.parse(data['finishTime']))}',
+      );
     }
 
+    // Дата формирования протокола (справа, только для сводного и финального)
+    if (isSummaryOrFinal) {
+      sheet.getRangeByIndex(row, 7).setText(
+        'Дата формирования протокола: ${DateFormat('dd.MM.yyyy').format(DateTime.now())}',
+      );
+      sheet.getRangeByIndex(row, 7).cellStyle.hAlign = xlsio.HAlignType.right;
+    }
+
+    row++;
     return row;
   }
 
@@ -385,22 +494,16 @@ class ProtocolExportService {
   }
 
   void _addExcelSignature(xlsio.Worksheet sheet, Map<String, dynamic> data, int row) {
-    sheet.getRangeByIndex(row, 1).setText('Подписи судей:');
-    sheet.getRangeByIndex(row, 1).cellStyle.bold = true;
-    row += 2;
-
     if (data['judges'] != null) {
       for (final judge in data['judges'] as List<dynamic>) {
         final judgeMap = judge as Map<String, dynamic>;
-        sheet.getRangeByIndex(row, 1).setText(
-          '${judgeMap['name'] ?? ''} (${judgeMap['rank'] ?? ''}): _______________',
-        );
+        final rank = judgeMap['rank']?.toString() ?? 'Судья';
+        final name = judgeMap['name']?.toString() ?? '';
+
+        sheet.getRangeByIndex(row, 1).setText('$rank: $name _______________');
         row++;
       }
     }
-
-    row += 1;
-    sheet.getRangeByIndex(row, 1).setText('Дата: ${DateFormat('dd.MM.yyyy').format(DateTime.now())}');
   }
 
   List<String> _getExcelHeaders(String type) {
@@ -473,7 +576,6 @@ class ProtocolExportService {
 
           final totalWeight = (teamMap['totalWeight'] as num?) ?? 0;
           final fishCount = (teamMap['totalFishCount'] as int?) ?? 0;
-          final avgWeight = fishCount > 0 ? totalWeight / fishCount : 0.0;
 
           return [
             teamMap['teamName']?.toString() ?? '',
@@ -495,7 +597,6 @@ class ProtocolExportService {
 
           final totalWeight = (rowMap['totalWeight'] as num?) ?? 0;
           final fishCount = (rowMap['totalFishCount'] as int?) ?? 0;
-          final avgWeight = fishCount > 0 ? totalWeight / fishCount : 0.0;
 
           return [
             rowMap['teamName']?.toString() ?? '',

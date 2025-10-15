@@ -31,6 +31,7 @@ class _AddTeamScreenState extends ConsumerState<AddTeamScreen> {
   List<_MemberData> _members = [];
 
   bool get _isEditing => widget.team != null;
+  bool get _isCasting => widget.competition.fishingType == 'casting';
 
   @override
   void initState() {
@@ -50,6 +51,8 @@ class _AddTeamScreenState extends ConsumerState<AddTeamScreen> {
       nameController: TextEditingController(text: member.fullName),
       isCaptain: member.isCaptain,
       rank: member.rank,
+      rodController: TextEditingController(text: member.rod ?? ''), // ✅ Для кастинга
+      lineController: TextEditingController(text: member.line ?? ''), // ✅ Для кастинга
     )).toList();
   }
 
@@ -60,6 +63,8 @@ class _AddTeamScreenState extends ConsumerState<AddTeamScreen> {
     _clubController.dispose();
     for (var member in _members) {
       member.nameController.dispose();
+      member.rodController.dispose();
+      member.lineController.dispose();
     }
     super.dispose();
   }
@@ -70,7 +75,7 @@ class _AddTeamScreenState extends ConsumerState<AddTeamScreen> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: Text(
-          _isEditing ? 'edit_team'.tr() : 'add_team'.tr(),
+          _isEditing ? 'edit_team'.tr() : (_isCasting ? 'add_participants'.tr() : 'add_team'.tr()),
           style: AppTextStyles.h2,
         ),
         backgroundColor: AppColors.surface,
@@ -89,15 +94,59 @@ class _AddTeamScreenState extends ConsumerState<AddTeamScreen> {
           child: ListView(
             padding: EdgeInsets.all(AppDimensions.paddingMedium),
             children: [
-              _buildTeamInfoSection(),
-              SizedBox(height: AppDimensions.paddingLarge),
+              // Для кастинга не нужна информация о команде
+              if (!_isCasting) ...[
+                _buildTeamInfoSection(),
+                SizedBox(height: AppDimensions.paddingLarge),
+              ],
+
+              // Для кастинга показываем общую леску, если указана
+              if (_isCasting && widget.competition.commonLine != null) ...[
+                _buildCommonLineInfo(),
+                SizedBox(height: AppDimensions.paddingLarge),
+              ],
+
               _buildMembersSection(),
               SizedBox(height: AppDimensions.paddingXLarge),
               _buildSaveButton(),
-              SizedBox(height: AppDimensions.paddingLarge), // ✅ Дополнительный отступ
+              SizedBox(height: AppDimensions.paddingLarge),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  // Информация об общей леске (для кастинга)
+  Widget _buildCommonLineInfo() {
+    return Container(
+      padding: EdgeInsets.all(AppDimensions.paddingMedium),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+        border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.info_outline, color: AppColors.primary, size: 20),
+          SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'common_line_for_all'.tr(),
+                  style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  widget.competition.commonLine!,
+                  style: AppTextStyles.bodyBold.copyWith(color: AppColors.primary),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -215,11 +264,11 @@ class _AddTeamScreenState extends ConsumerState<AddTeamScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('members'.tr(), style: AppTextStyles.h3),
+                Text(_isCasting ? 'participants'.tr() : 'members'.tr(), style: AppTextStyles.h3),
                 TextButton.icon(
                   onPressed: _addMember,
                   icon: Icon(Icons.add, size: 18),
-                  label: Text('add_member'.tr()),
+                  label: Text(_isCasting ? 'add_participant'.tr() : 'add_member'.tr()),
                   style: TextButton.styleFrom(
                     foregroundColor: AppColors.primary,
                   ),
@@ -231,7 +280,7 @@ class _AddTeamScreenState extends ConsumerState<AddTeamScreen> {
               SizedBox(height: AppDimensions.paddingMedium),
               Center(
                 child: Text(
-                  'no_members_yet'.tr(),
+                  _isCasting ? 'no_participants_yet'.tr() : 'no_members_yet'.tr(),
                   style: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
                 ),
               ),
@@ -240,7 +289,9 @@ class _AddTeamScreenState extends ConsumerState<AddTeamScreen> {
               ..._members.asMap().entries.map((entry) {
                 final index = entry.key;
                 final member = entry.value;
-                return _buildMemberCard(member, index);
+                return _isCasting
+                    ? _buildCastingParticipantCard(member, index)
+                    : _buildMemberCard(member, index);
               }).toList(),
             ],
           ],
@@ -249,6 +300,152 @@ class _AddTeamScreenState extends ConsumerState<AddTeamScreen> {
     );
   }
 
+  // Карточка участника для кастинга
+  Widget _buildCastingParticipantCard(_MemberData member, int index) {
+    final hasCommonLine = widget.competition.commonLine != null;
+
+    return Card(
+      color: AppColors.background,
+      margin: EdgeInsets.only(bottom: AppDimensions.paddingMedium),
+      child: Padding(
+        padding: EdgeInsets.all(AppDimensions.paddingMedium),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    '${'participant'.tr()} ${index + 1}',
+                    style: AppTextStyles.bodyBold,
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(Icons.delete, color: AppColors.error, size: 20),
+                  onPressed: () => _removeMember(index),
+                  padding: EdgeInsets.zero,
+                  constraints: BoxConstraints(),
+                ),
+              ],
+            ),
+            SizedBox(height: AppDimensions.paddingSmall),
+
+            // ФИО
+            TextFormField(
+              controller: member.nameController,
+              style: AppTextStyles.body.copyWith(color: AppColors.textPrimary),
+              decoration: InputDecoration(
+                labelText: 'participant_full_name'.tr(),
+                labelStyle: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
+                filled: true,
+                fillColor: AppColors.surface,
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: AppDimensions.paddingMedium,
+                  vertical: AppDimensions.paddingSmall,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+                  borderSide: BorderSide(color: AppColors.divider),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+                  borderSide: BorderSide(color: AppColors.divider),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+                  borderSide: BorderSide(color: AppColors.primary, width: 2),
+                ),
+              ),
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'field_required'.tr();
+                }
+                return null;
+              },
+            ),
+            SizedBox(height: AppDimensions.paddingSmall),
+
+            // Удилище
+            TextFormField(
+              controller: member.rodController,
+              style: AppTextStyles.body.copyWith(color: AppColors.textPrimary),
+              decoration: InputDecoration(
+                labelText: 'rod'.tr(),
+                hintText: 'rod_hint'.tr(), // Например: "Shimano Aero X5"
+                labelStyle: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
+                hintStyle: AppTextStyles.caption.copyWith(color: AppColors.textSecondary.withOpacity(0.5)),
+                filled: true,
+                fillColor: AppColors.surface,
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: AppDimensions.paddingMedium,
+                  vertical: AppDimensions.paddingSmall,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+                  borderSide: BorderSide(color: AppColors.divider),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+                  borderSide: BorderSide(color: AppColors.divider),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+                  borderSide: BorderSide(color: AppColors.primary, width: 2),
+                ),
+              ),
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'field_required'.tr();
+                }
+                return null;
+              },
+            ),
+
+            // Леска (только если нет общей)
+            if (!hasCommonLine) ...[
+              SizedBox(height: AppDimensions.paddingSmall),
+              TextFormField(
+                controller: member.lineController,
+                style: AppTextStyles.body.copyWith(color: AppColors.textPrimary),
+                decoration: InputDecoration(
+                  labelText: 'line'.tr(),
+                  hintText: 'line_hint'.tr(), // Например: "0.28 мм плетёная"
+                  labelStyle: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
+                  hintStyle: AppTextStyles.caption.copyWith(color: AppColors.textSecondary.withOpacity(0.5)),
+                  filled: true,
+                  fillColor: AppColors.surface,
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: AppDimensions.paddingMedium,
+                    vertical: AppDimensions.paddingSmall,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+                    borderSide: BorderSide(color: AppColors.divider),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+                    borderSide: BorderSide(color: AppColors.divider),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+                    borderSide: BorderSide(color: AppColors.primary, width: 2),
+                  ),
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'field_required'.tr();
+                  }
+                  return null;
+                },
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Карточка участника для обычной рыбалки
   Widget _buildMemberCard(_MemberData member, int index) {
     return Card(
       color: AppColors.background,
@@ -390,7 +587,7 @@ class _AddTeamScreenState extends ConsumerState<AddTeamScreen> {
           ),
         ),
         child: Text(
-          _isEditing ? 'save_changes'.tr() : 'create_team'.tr(),
+          _isEditing ? 'save_changes'.tr() : (_isCasting ? 'add_participants_button'.tr() : 'create_team'.tr()),
           style: AppTextStyles.button,
         ),
       ),
@@ -403,6 +600,8 @@ class _AddTeamScreenState extends ConsumerState<AddTeamScreen> {
         nameController: TextEditingController(),
         isCaptain: false,
         rank: 'none',
+        rodController: TextEditingController(),
+        lineController: TextEditingController(),
       ));
     });
   }
@@ -410,6 +609,8 @@ class _AddTeamScreenState extends ConsumerState<AddTeamScreen> {
   void _removeMember(int index) {
     setState(() {
       _members[index].nameController.dispose();
+      _members[index].rodController.dispose();
+      _members[index].lineController.dispose();
       _members.removeAt(index);
     });
   }
@@ -417,6 +618,7 @@ class _AddTeamScreenState extends ConsumerState<AddTeamScreen> {
   Future<void> _saveTeam() async {
     print('🔵 _saveTeam() called');
     print('   isEditing: $_isEditing');
+    print('   isCasting: $_isCasting');
     print('   Team name: ${_nameController.text}');
     print('   Members count: ${_members.length}');
 
@@ -428,7 +630,7 @@ class _AddTeamScreenState extends ConsumerState<AddTeamScreen> {
     if (_members.isEmpty) {
       print('❌ No members');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('at_least_one_member'.tr())),
+        SnackBar(content: Text(_isCasting ? 'at_least_one_participant'.tr() : 'at_least_one_member'.tr())),
       );
       return;
     }
@@ -444,7 +646,7 @@ class _AddTeamScreenState extends ConsumerState<AddTeamScreen> {
 
     if (!hasValidMember) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('at_least_one_member'.tr())),
+        SnackBar(content: Text(_isCasting ? 'at_least_one_participant'.tr() : 'at_least_one_member'.tr())),
       );
       return;
     }
@@ -453,32 +655,36 @@ class _AddTeamScreenState extends ConsumerState<AddTeamScreen> {
         .where((m) => m.nameController.text.trim().isNotEmpty)
         .map((m) => TeamMember()
       ..fullName = m.nameController.text.trim()
-      ..isCaptain = m.isCaptain
-      ..rank = m.rank)
+      ..isCaptain = _isCasting ? false : m.isCaptain // Для кастинга нет капитана
+      ..rank = _isCasting ? 'none' : m.rank          // Для кастинга нет разряда
+      ..rod = _isCasting ? m.rodController.text.trim() : null
+      ..line = _isCasting && widget.competition.commonLine == null
+          ? m.lineController.text.trim()
+          : null) // Если есть общая леска, не сохраняем индивидуальную
         .toList();
 
     if (_isEditing) {
       await ref.read(teamProvider(widget.competition.id).notifier).updateTeam(
         teamId: widget.team!.id,
-        name: _nameController.text.trim(),
-        city: _cityController.text.trim(),
+        name: _isCasting ? 'Participants' : _nameController.text.trim(), // Для кастинга имя не важно
+        city: _isCasting ? widget.competition.cityOrRegion : _cityController.text.trim(),
         club: _clubController.text.trim().isEmpty ? null : _clubController.text.trim(),
         members: members,
       );
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('team_updated'.tr())),
+        SnackBar(content: Text(_isCasting ? 'participants_updated'.tr() : 'team_updated'.tr())),
       );
     } else {
       await ref.read(teamProvider(widget.competition.id).notifier).createTeam(
-        name: _nameController.text.trim(),
-        city: _cityController.text.trim(),
+        name: _isCasting ? 'Participants' : _nameController.text.trim(),
+        city: _isCasting ? widget.competition.cityOrRegion : _cityController.text.trim(),
         club: _clubController.text.trim().isEmpty ? null : _clubController.text.trim(),
         members: members,
       );
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('team_created'.tr())),
+        SnackBar(content: Text(_isCasting ? 'participants_added'.tr() : 'team_created'.tr())),
       );
     }
 
@@ -496,14 +702,14 @@ class _AddTeamScreenState extends ConsumerState<AddTeamScreen> {
             SizedBox(width: 8),
             Expanded(
               child: Text(
-                'delete_team'.tr(),
+                _isCasting ? 'delete_participants'.tr() : 'delete_team'.tr(),
                 style: AppTextStyles.h3.copyWith(color: AppColors.error),
               ),
             ),
           ],
         ),
         content: Text(
-          'delete_team_warning'.tr(),
+          _isCasting ? 'delete_participants_warning'.tr() : 'delete_team_warning'.tr(),
           style: AppTextStyles.body.copyWith(color: AppColors.textPrimary),
         ),
         actions: [
@@ -529,7 +735,7 @@ class _AddTeamScreenState extends ConsumerState<AddTeamScreen> {
       await ref.read(teamProvider(widget.competition.id).notifier).deleteTeam(widget.team!.id);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('team_deleted'.tr())),
+        SnackBar(content: Text(_isCasting ? 'participants_deleted'.tr() : 'team_deleted'.tr())),
       );
 
       Navigator.pop(context);
@@ -541,10 +747,14 @@ class _MemberData {
   final TextEditingController nameController;
   bool isCaptain;
   String rank;
+  final TextEditingController rodController;    // ✅ Для кастинга
+  final TextEditingController lineController;   // ✅ Для кастинга
 
   _MemberData({
     required this.nameController,
     required this.isCaptain,
     required this.rank,
+    required this.rodController,
+    required this.lineController,
   });
 }

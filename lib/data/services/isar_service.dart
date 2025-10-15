@@ -7,6 +7,8 @@ import '../models/local/weighing_result_local.dart';
 import '../models/local/result_local.dart';
 import '../models/local/operation_queue.dart';
 import '../models/local/protocol_local.dart';
+import '../models/local/casting_session_local.dart';
+import '../models/local/casting_result_local.dart';
 
 class IsarService {
   static Isar? _isar;
@@ -28,6 +30,8 @@ class IsarService {
         ResultLocalSchema,
         OperationQueueSchema,
         ProtocolLocalSchema,
+        CastingSessionLocalSchema,
+        CastingResultLocalSchema,
       ],
       directory: dir.path,
       name: 'drift_score',
@@ -80,7 +84,7 @@ class IsarService {
           .competitionLocalIdEqualTo(id)
           .findAll();
 
-      int deletedResults = 0;
+      int deletedWeighingResults = 0;
 
       // 2. Для каждого взвешивания удаляем его результаты
       for (var weighing in weighings) {
@@ -91,14 +95,33 @@ class IsarService {
 
         for (var result in results) {
           await isar.weighingResultLocals.delete(result.id!);
-          deletedResults++;
+          deletedWeighingResults++;
         }
 
         // Удаляем само взвешивание
         await isar.weighingLocals.delete(weighing.id!);
       }
 
-      // 3. Удаляем все команды соревнования
+      // 3. Удаляем кастинг-сессии и их результаты (НОВОЕ)
+      final castingSessions = await isar.castingSessionLocals
+          .filter()
+          .competitionIdEqualTo(id)
+          .findAll();
+
+      int deletedCastingResults = 0;
+      for (var session in castingSessions) {
+        final results = await isar.castingResultLocals
+            .filter()
+            .castingSessionIdEqualTo(session.id)
+            .findAll();
+        for (var result in results) {
+          await isar.castingResultLocals.delete(result.id);
+          deletedCastingResults++;
+        }
+        await isar.castingSessionLocals.delete(session.id);
+      }
+
+      // 4. Удаляем все команды соревнования
       final teams = await isar.teamLocals
           .filter()
           .competitionLocalIdEqualTo(id)
@@ -108,7 +131,7 @@ class IsarService {
         await isar.teamLocals.delete(team.id!);
       }
 
-      // 4. Удаляем все протоколы соревнования
+      // 5. Удаляем все протоколы соревнования
       final protocols = await isar.protocolLocals
           .filter()
           .competitionIdEqualTo(id.toString())
@@ -118,13 +141,15 @@ class IsarService {
         await isar.protocolLocals.delete(protocol.id);
       }
 
-      // 5. Удаляем само соревнование
+      // 6. Удаляем само соревнование
       await isar.competitionLocals.delete(id);
 
       print('✅ Deleted competition $id with all related data:');
       print('   - Weighings: ${weighings.length}');
+      print('   - Weighing Results: $deletedWeighingResults');
+      print('   - Casting Sessions: ${castingSessions.length}');
+      print('   - Casting Results: $deletedCastingResults');
       print('   - Teams: ${teams.length}');
-      print('   - Results: $deletedResults');
       print('   - Protocols: ${protocols.length}');
     });
   }
@@ -395,6 +420,179 @@ class IsarService {
     await isar.writeTxn(() async {
       await isar.weighingResultLocals.delete(id);
     });
+  }
+
+  // ========== CastingSessionLocal ==========
+
+  /// Сохранить сессию кастинга
+  Future<int> saveCastingSession(CastingSessionLocal session) async {
+    final isar = await getInstance();
+
+    // Проверяем, есть ли уже сессия с такими параметрами
+    final existing = await isar.castingSessionLocals
+        .filter()
+        .competitionIdEqualTo(session.competitionId)
+        .dayNumberEqualTo(session.dayNumber)
+        .sessionNumberEqualTo(session.sessionNumber)
+        .findFirst();
+
+    if (existing != null && session.id == Isar.autoIncrement) {
+      print('⚠️ Casting session already exists: Day ${session.dayNumber}, #${session.sessionNumber}, id=${existing.id}');
+      return existing.id;
+    }
+
+    return await isar.writeTxn(() async {
+      final id = await isar.castingSessionLocals.put(session);
+      print('✅ Saved casting session: Day ${session.dayNumber}, #${session.sessionNumber}, id=$id');
+      return id;
+    });
+  }
+
+  /// Получить сессию кастинга по ID
+  Future<CastingSessionLocal?> getCastingSession(int id) async {
+    final isar = await getInstance();
+    return await isar.castingSessionLocals.get(id);
+  }
+
+  /// Получить все сессии соревнования
+  Future<List<CastingSessionLocal>> getCastingSessionsByCompetition(int competitionId) async {
+    final isar = await getInstance();
+    return await isar.castingSessionLocals
+        .filter()
+        .competitionIdEqualTo(competitionId)
+        .sortBySessionTimeDesc()
+        .findAll();
+  }
+
+  /// Обновить сессию кастинга
+  Future<void> updateCastingSession(CastingSessionLocal session) async {
+    final isar = await getInstance();
+    await isar.writeTxn(() async {
+      await isar.castingSessionLocals.put(session);
+    });
+  }
+
+  /// Удалить сессию кастинга
+  Future<void> deleteCastingSession(int id) async {
+    final isar = await getInstance();
+    await isar.writeTxn(() async {
+      // Удаляем все результаты этой сессии
+      final results = await isar.castingResultLocals
+          .filter()
+          .castingSessionIdEqualTo(id)
+          .findAll();
+
+      for (var result in results) {
+        await isar.castingResultLocals.delete(result.id);
+      }
+
+      // Удаляем саму сессию
+      await isar.castingSessionLocals.delete(id);
+
+      print('✅ Deleted casting session $id with ${results.length} results');
+    });
+  }
+
+  // ========== CastingResultLocal ==========
+
+  /// Сохранить результат участника
+  Future<int> saveCastingResult(CastingResultLocal result) async {
+    final isar = await getInstance();
+    return await isar.writeTxn(() async {
+      return await isar.castingResultLocals.put(result);
+    });
+  }
+
+  /// Получить результат по ID
+  Future<CastingResultLocal?> getCastingResult(int id) async {
+    final isar = await getInstance();
+    return await isar.castingResultLocals.get(id);
+  }
+
+  /// Получить все результаты сессии
+  Future<List<CastingResultLocal>> getResultsByCastingSession(int sessionId) async {
+    final isar = await getInstance();
+    return await isar.castingResultLocals
+        .filter()
+        .castingSessionIdEqualTo(sessionId)
+        .sortByBestDistanceDesc()
+        .findAll();
+  }
+
+  /// Получить результат участника в конкретной сессии
+  Future<CastingResultLocal?> getResultByParticipantAndSession(
+      int participantId,
+      int sessionId,
+      ) async {
+    final isar = await getInstance();
+    return await isar.castingResultLocals
+        .filter()
+        .participantIdEqualTo(participantId)
+        .and()
+        .castingSessionIdEqualTo(sessionId)
+        .findFirst();
+  }
+
+  /// Обновить результат участника
+  Future<void> updateCastingResult(CastingResultLocal result) async {
+    final isar = await getInstance();
+    await isar.writeTxn(() async {
+      await isar.castingResultLocals.put(result);
+    });
+  }
+
+  /// Удалить результат участника
+  Future<void> deleteCastingResult(int id) async {
+    final isar = await getInstance();
+    await isar.writeTxn(() async {
+      await isar.castingResultLocals.delete(id);
+    });
+  }
+
+  /// Получить все результаты участника в соревновании
+  Future<List<CastingResultLocal>> getResultsByParticipant(int participantId) async {
+    final isar = await getInstance();
+    return await isar.castingResultLocals
+        .filter()
+        .participantIdEqualTo(participantId)
+        .sortByCreatedAtDesc()
+        .findAll();
+  }
+
+  /// Получить топ участников соревнования по лучшей дальности
+  Future<List<CastingResultLocal>> getTopParticipantsByDistance(
+      int competitionId,
+      {int limit = 10}
+      ) async {
+    final isar = await getInstance();
+
+    // Получаем все сессии соревнования
+    final sessions = await getCastingSessionsByCompetition(competitionId);
+    final sessionIds = sessions.map((s) => s.id).toList();
+
+    if (sessionIds.isEmpty) return [];
+
+    // Получаем все результаты этих сессий
+    final allResults = <CastingResultLocal>[];
+    for (var sessionId in sessionIds) {
+      final results = await getResultsByCastingSession(sessionId);
+      allResults.addAll(results);
+    }
+
+    // Группируем по participantId и берём лучший результат
+    final Map<int, CastingResultLocal> bestResults = {};
+    for (var result in allResults) {
+      if (!bestResults.containsKey(result.participantId) ||
+          result.bestDistance > bestResults[result.participantId]!.bestDistance) {
+        bestResults[result.participantId] = result;
+      }
+    }
+
+    // Сортируем по дальности и возвращаем топ
+    final sorted = bestResults.values.toList()
+      ..sort((a, b) => b.bestDistance.compareTo(a.bestDistance));
+
+    return sorted.take(limit).toList();
   }
 
   // ============================================================

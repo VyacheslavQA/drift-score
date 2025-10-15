@@ -12,7 +12,7 @@ class CompetitionLocal {
   late String name;
   late String cityOrRegion;
   late String organizerName;
-  late String lakeName;
+  late String lakeName; // Для рыбалки = озеро, для кастинга = место проведения
 
   late DateTime startTime; // Дата и время старта
   late DateTime finishTime; // Дата и время финиша
@@ -30,10 +30,11 @@ class CompetitionLocal {
   }
 
   // ✅ Тип рыбалки
-  late String fishingType; // 'float' | 'spinning' | 'carp' | 'feeder' | 'ice_jig' | 'ice_spoon' | 'trout' | 'fly'
+  late String fishingType; // 'float' | 'spinning' | 'carp' | 'feeder' | 'ice_jig' | 'ice_spoon' | 'trout' | 'fly' | 'casting'
 
   // ✅ Метод подсчета результатов
   late String scoringMethod;
+  // Для рыбалки:
   // 'total_weight' - общий вес
   // 'total_length' - общая длина (см)
   // 'total_count' - общее количество рыб
@@ -41,18 +42,27 @@ class CompetitionLocal {
   // 'top_5_weight' - топ-5 по весу
   // 'top_3_length' - топ-3 по длине
   // 'top_5_length' - топ-5 по длине
+  // Для кастинга:
+  // 'best_distance' - лучшая дальность заброса
+  // 'average_distance' - средняя дальность
 
-  // ✅ Структура секторов
-  late String sectorStructure; // 'simple' | 'zoned'
+  // ✅ Структура секторов (только для рыбалки)
+  late String sectorStructure; // 'simple' | 'zoned' | 'none' (для кастинга)
 
   // ✅ Для зональной структуры
-  String? zonedType; // 'single_lake' | 'multiple_lakes' (null если simple)
-  int? zonesCount; // Количество зон (null если simple)
+  String? zonedType; // 'single_lake' | 'multiple_lakes' (null если simple или none)
+  int? zonesCount; // Количество зон (null если simple или none)
   int? sectorsPerZone; // Секторов в каждой зоне (только для multiple_lakes)
   List<String> lakeNames = []; // Названия озёр для каждой зоны (только для multiple_lakes)
 
-  // ✅ Общее количество секторов
+  // ✅ Общее количество секторов (для рыбалки) или 0 для кастинга
   late int sectorsCount;
+
+  // ✅ НОВОЕ: Количество попыток (только для кастинга)
+  int? attemptsCount; // null для рыбалки, 3 для кастинга (по умолчанию)
+
+  // ✅ НОВОЕ: Общая леска для всех участников (только для кастинга)
+  String? commonLine; // null = у каждого своя, заполнено = одна для всех
 
   String status = 'draft'; // 'draft' | 'active' | 'completed'
   String? accessCode; // Код доступа организатора

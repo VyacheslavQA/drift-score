@@ -5,7 +5,6 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'dart:io';
 import '../../data/models/local/competition_local.dart';
 
-
 final isarProvider = Provider<Isar>((ref) {
   throw UnimplementedError('Isar instance must be overridden');
 });
@@ -104,16 +103,18 @@ class CompetitionNotifier extends StateNotifier<AsyncValue<List<CompetitionLocal
     required int sectorsCount,
     required DateTime startTime,
     required DateTime finishTime,
-    required String scoringMethod, // ✅ ИЗМЕНЕНО (было scoringRules)
+    required String scoringMethod,
     required String organizerName,
     required List<Judge> judges,
     required String accessCode,
-    required String fishingType, // ✅ Тип рыбалки
-    required String sectorStructure, // ✅ ДОБАВЛЕНО
-    String? zonedType, // ✅ ДОБАВЛЕНО
-    int? zonesCount, // ✅ ДОБАВЛЕНО
-    int? sectorsPerZone, // ✅ ДОБАВЛЕНО
-    List<String>? lakeNames, // ✅ ДОБАВЛЕНО
+    required String fishingType,
+    required String sectorStructure,
+    String? zonedType,
+    int? zonesCount,
+    int? sectorsPerZone,
+    List<String>? lakeNames,
+    int? attemptsCount,
+    String? commonLine,
   }) async {
     print('🔵 createCompetition() called');
     print('   Name: $name');
@@ -126,6 +127,10 @@ class CompetitionNotifier extends StateNotifier<AsyncValue<List<CompetitionLocal
       print('   Zones Count: $zonesCount');
       print('   Sectors Per Zone: $sectorsPerZone');
       print('   Lake Names: $lakeNames');
+    }
+    if (fishingType == 'casting') {
+      print('   Attempts Count: $attemptsCount');
+      print('   Common Line: ${commonLine ?? "Not specified (individual lines)"}');
     }
 
     try {
@@ -160,17 +165,19 @@ class CompetitionNotifier extends StateNotifier<AsyncValue<List<CompetitionLocal
         ..sectorsCount = sectorsCount
         ..startTime = startTime
         ..finishTime = finishTime
-        ..scoringMethod = scoringMethod // ✅ ИЗМЕНЕНО
+        ..scoringMethod = scoringMethod
         ..organizerName = organizerName
         ..judges = judges
         ..accessCode = accessCode
         ..createdByDeviceId = deviceId
         ..fishingType = fishingType
-        ..sectorStructure = sectorStructure // ✅ ДОБАВЛЕНО
-        ..zonedType = zonedType // ✅ ДОБАВЛЕНО
-        ..zonesCount = zonesCount // ✅ ДОБАВЛЕНО
-        ..sectorsPerZone = sectorsPerZone // ✅ ДОБАВЛЕНО
-        ..lakeNames = lakeNames ?? [] // ✅ ДОБАВЛЕНО
+        ..sectorStructure = sectorStructure
+        ..zonedType = zonedType
+        ..zonesCount = zonesCount
+        ..sectorsPerZone = sectorsPerZone
+        ..lakeNames = lakeNames ?? []
+        ..attemptsCount = attemptsCount
+        ..commonLine = commonLine
         ..status = 'active'
         ..isFinal = false
         ..isSynced = false
@@ -182,6 +189,8 @@ class CompetitionNotifier extends StateNotifier<AsyncValue<List<CompetitionLocal
       print('   Fishing Type: ${competition.fishingType}');
       print('   Scoring Method: ${competition.scoringMethod}');
       print('   Sector Structure: ${competition.sectorStructure}');
+      print('   Attempts Count: ${competition.attemptsCount}');
+      print('   Common Line: ${competition.commonLine ?? "null"}');
       print('   Device ID: ${competition.createdByDeviceId}');
 
       await isar.writeTxn(() async {
@@ -195,7 +204,91 @@ class CompetitionNotifier extends StateNotifier<AsyncValue<List<CompetitionLocal
       print('❌ Error creating competition: $e');
       print('Stack: $stack');
       state = AsyncValue.error(e, stack);
-      rethrow; // Пробрасываем ошибку выше
+      rethrow;
+    }
+  }
+
+  // ✅ НОВЫЙ МЕТОД: Обновление соревнования
+  Future<void> updateCompetition({
+    required int id,
+    required String name,
+    required String cityOrRegion,
+    required String lakeName,
+    required int sectorsCount,
+    required DateTime startTime,
+    required DateTime finishTime,
+    required String scoringMethod,
+    required String organizerName,
+    required List<Judge> judges,
+    required String fishingType,
+    required String sectorStructure,
+    String? zonedType,
+    int? zonesCount,
+    int? sectorsPerZone,
+    List<String>? lakeNames,
+    int? attemptsCount,
+    String? commonLine,
+  }) async {
+    print('🔵 updateCompetition() called');
+    print('   ID: $id');
+    print('   Name: $name');
+    print('   Type: $fishingType');
+    print('   Scoring: $scoringMethod');
+    print('   Structure: $sectorStructure');
+    if (sectorStructure == 'zoned') {
+      print('   Zoned Type: $zonedType');
+      print('   Zones Count: $zonesCount');
+      print('   Sectors Per Zone: $sectorsPerZone');
+      print('   Lake Names: $lakeNames');
+    }
+    if (fishingType == 'casting') {
+      print('   Attempts Count: $attemptsCount');
+      print('   Common Line: ${commonLine ?? "Not specified"}');
+    }
+
+    try {
+      await isar.writeTxn(() async {
+        final competition = await isar.competitionLocals.get(id);
+
+        if (competition == null) {
+          print('❌ Competition with ID $id not found!');
+          throw Exception('Соревнование не найдено');
+        }
+
+        print('✅ Found competition to update: ${competition.name}');
+
+        // Обновляем поля
+        competition.name = name;
+        competition.cityOrRegion = cityOrRegion;
+        competition.lakeName = lakeName;
+        competition.sectorsCount = sectorsCount;
+        competition.startTime = startTime;
+        competition.finishTime = finishTime;
+        competition.scoringMethod = scoringMethod;
+        competition.organizerName = organizerName;
+        competition.judges = judges;
+        competition.sectorStructure = sectorStructure;
+        competition.zonedType = zonedType;
+        competition.zonesCount = zonesCount;
+        competition.sectorsPerZone = sectorsPerZone;
+        competition.lakeNames = lakeNames ?? [];
+        competition.attemptsCount = attemptsCount;
+        competition.commonLine = commonLine;
+        competition.isSynced = false; // Помечаем как несинхронизированное
+
+        await isar.competitionLocals.put(competition);
+        print('✅ Competition updated successfully');
+        print('   Updated Name: ${competition.name}');
+        print('   Updated Scoring: ${competition.scoringMethod}');
+        print('   Updated Common Line: ${competition.commonLine ?? "null"}');
+      });
+
+      print('🔵 Reloading competitions after update');
+      await loadAllCompetitionsForDevice();
+    } catch (e, stack) {
+      print('❌ Error updating competition: $e');
+      state = AsyncValue.error(e, stack);
+      rethrow;
     }
   }
 

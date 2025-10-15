@@ -50,7 +50,7 @@ class SelectFishingTypeScreen extends StatelessWidget {
                 physics: NeverScrollableScrollPhysics(),
                 mainAxisSpacing: AppDimensions.paddingMedium,
                 crossAxisSpacing: AppDimensions.paddingMedium,
-                childAspectRatio: 0.9, // Увеличено с 0.85 до 0.9
+                childAspectRatio: 0.9,
                 children: [
                   _buildFishingTypeCard(
                     context: context,
@@ -102,6 +102,10 @@ class SelectFishingTypeScreen extends StatelessWidget {
                   ),
                 ],
               ),
+
+              // Горизонтальная карточка Кастинга (внизу, на всю ширину)
+              SizedBox(height: AppDimensions.paddingMedium),
+              _buildCastingCard(context),
             ],
           ),
         ),
@@ -140,7 +144,7 @@ class SelectFishingTypeScreen extends StatelessWidget {
           },
           borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
           child: Container(
-            padding: EdgeInsets.all(AppDimensions.paddingSmall), // Уменьшено с paddingMedium
+            padding: EdgeInsets.all(AppDimensions.paddingSmall),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
               border: Border.all(color: color.withOpacity(0.3), width: 2),
@@ -158,8 +162,8 @@ class SelectFishingTypeScreen extends StatelessWidget {
               children: [
                 // Иконка с анимацией
                 Container(
-                  width: 70, // Уменьшено с 80
-                  height: 70, // Уменьшено с 80
+                  width: 70,
+                  height: 70,
                   decoration: BoxDecoration(
                     color: color.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
@@ -171,46 +175,153 @@ class SelectFishingTypeScreen extends StatelessWidget {
                       ),
                     ],
                   ),
-                  padding: EdgeInsets.all(10), // Уменьшено с 12
+                  padding: EdgeInsets.all(10),
                   child: Image.asset(
                     iconPath,
                     fit: BoxFit.contain,
                     color: color,
                   ),
                 ),
-                SizedBox(height: 8), // Уменьшено с paddingMedium
+                SizedBox(height: 8),
 
                 // Текст
                 Text(
                   'fishing_type_$type'.tr(),
                   style: AppTextStyles.h3.copyWith(
-                    fontSize: 15, // Уменьшено с 16
+                    fontSize: 15,
                     fontWeight: FontWeight.bold,
                   ),
                   textAlign: TextAlign.center,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                SizedBox(height: 2), // Уменьшено с 4
+                SizedBox(height: 2),
                 Text(
                   'fishing_type_${type}_desc'.tr(),
                   style: AppTextStyles.caption.copyWith(
                     color: AppColors.textSecondary,
-                    fontSize: 10, // Уменьшено с 11
+                    fontSize: 10,
                   ),
                   textAlign: TextAlign.center,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                SizedBox(height: 6), // Уменьшено с 8
+                SizedBox(height: 6),
 
                 // Индикатор
                 Container(
-                  width: 35, // Уменьшено с 40
-                  height: 2.5, // Уменьшено с 3
+                  width: 35,
+                  height: 2.5,
                   decoration: BoxDecoration(
                     color: color,
                     borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Горизонтальная карточка для Кастинга
+  Widget _buildCastingCard(BuildContext context) {
+    const Color castingColor = Color(0xFFD35400); // Тёмно-оранжевый
+
+    return Container(
+      height: 110, // Увеличено для вмещения текста
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
+        boxShadow: [
+          BoxShadow(
+            color: castingColor.withOpacity(0.25),
+            blurRadius: 16,
+            offset: Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Material(
+        color: AppColors.surfaceLight,
+        borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
+        child: InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => MyCompetitionsScreen(fishingType: 'casting'),
+              ),
+            );
+          },
+          borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
+          child: Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: AppDimensions.paddingLarge,
+              vertical: AppDimensions.paddingMedium,
+            ),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
+              border: Border.all(color: castingColor.withOpacity(0.3), width: 2),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  castingColor.withOpacity(0.05),
+                  castingColor.withOpacity(0.02),
+                ],
+              ),
+            ),
+            child: Row(
+              children: [
+                // Иконка
+                Container(
+                  width: 70,
+                  height: 70,
+                  decoration: BoxDecoration(
+                    color: castingColor.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+                    boxShadow: [
+                      BoxShadow(
+                        color: castingColor.withOpacity(0.2),
+                        blurRadius: 8,
+                        offset: Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  padding: EdgeInsets.all(12),
+                  child: Image.asset(
+                    'assets/images/fishing_types/spinning.png',
+                    fit: BoxFit.contain,
+                    color: castingColor,
+                  ),
+                ),
+                SizedBox(width: AppDimensions.paddingLarge),
+
+                // Текст
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'fishing_type_casting'.tr(),
+                        style: AppTextStyles.h2.copyWith(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'fishing_type_casting_desc'.tr(),
+                        style: AppTextStyles.body.copyWith(
+                          color: AppColors.textSecondary,
+                          fontSize: 13,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ),
                 ),
               ],

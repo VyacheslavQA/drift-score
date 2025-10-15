@@ -33,7 +33,11 @@ class TeamLocal {
 class TeamMember {
   late String fullName;
   late bool isCaptain;
-  late String rank; // КМС, МС, МСМК
+  late String rank; // КМС, МС, МСМК (для рыбалки) или б/р (для кастинга)
+
+  // ✅ НОВЫЕ ПОЛЯ ДЛЯ КАСТИНГА:
+  String? rod; // Удилище (модель/название)
+  String? line; // Леска (диаметр/тип) — если не указана общая в соревновании
 }
 
 @embedded

@@ -124,6 +124,8 @@ class ProtocolNotifier extends StateNotifier<ProtocolState> {
           'city': competition.cityOrRegion,
           'lake': competition.lakeName,
           'organizer': competition.organizerName,
+          'startTime': competition.startTime.toIso8601String(),
+          'finishTime': competition.finishTime.toIso8601String(),
           'judges': competition.judges.map((j) => {
             'name': j.fullName,
             'rank': j.rank,
@@ -236,6 +238,13 @@ class ProtocolNotifier extends StateNotifier<ProtocolState> {
           'competitionName': competition.name,
           'city': competition.cityOrRegion,
           'lake': competition.lakeName,
+          'organizer': competition.organizerName,
+          'startTime': competition.startTime.toIso8601String(),
+          'finishTime': competition.finishTime.toIso8601String(),
+          'judges': competition.judges.map((j) => {
+            'name': j.fullName,
+            'rank': j.rank,
+          }).toList(),
           'weighingNumber': upToWeighingNumber,
           'weighingTime': weighings.last.weighingTime.toIso8601String(),
           'tableData': tableData,
@@ -326,6 +335,15 @@ class ProtocolNotifier extends StateNotifier<ProtocolState> {
 
       final protocolData = {
         'competitionName': competition.name,
+        'city': competition.cityOrRegion,
+        'lake': competition.lakeName,
+        'organizer': competition.organizerName,
+        'startTime': competition.startTime.toIso8601String(),
+        'finishTime': competition.finishTime.toIso8601String(),
+        'judges': competition.judges.map((j) => {
+          'name': j.fullName,
+          'rank': j.rank,
+        }).toList(),
         'dayNumber': dayNumber,
         'dayStart': dayStart.toIso8601String(),
         'dayEnd': dayEnd.toIso8601String(),
@@ -445,6 +463,8 @@ class ProtocolNotifier extends StateNotifier<ProtocolState> {
           'city': competition.cityOrRegion,
           'lake': competition.lakeName,
           'organizer': competition.organizerName,
+          'startTime': competition.startTime.toIso8601String(),
+          'finishTime': competition.finishTime.toIso8601String(),
           'judges': competition.judges.map((j) => {
             'name': j.fullName,
             'rank': j.rank,

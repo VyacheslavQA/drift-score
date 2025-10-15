@@ -22,140 +22,150 @@ const CompetitionLocalSchema = CollectionSchema(
       name: r'accessCode',
       type: IsarType.string,
     ),
-    r'cityOrRegion': PropertySchema(
+    r'attemptsCount': PropertySchema(
       id: 1,
+      name: r'attemptsCount',
+      type: IsarType.long,
+    ),
+    r'cityOrRegion': PropertySchema(
+      id: 2,
       name: r'cityOrRegion',
       type: IsarType.string,
     ),
+    r'commonLine': PropertySchema(
+      id: 3,
+      name: r'commonLine',
+      type: IsarType.string,
+    ),
     r'createdAt': PropertySchema(
-      id: 2,
+      id: 4,
       name: r'createdAt',
       type: IsarType.dateTime,
     ),
     r'createdByDeviceId': PropertySchema(
-      id: 3,
+      id: 5,
       name: r'createdByDeviceId',
       type: IsarType.string,
     ),
     r'durationDays': PropertySchema(
-      id: 4,
+      id: 6,
       name: r'durationDays',
       type: IsarType.long,
     ),
     r'durationHours': PropertySchema(
-      id: 5,
+      id: 7,
       name: r'durationHours',
       type: IsarType.long,
     ),
     r'editHistory': PropertySchema(
-      id: 6,
+      id: 8,
       name: r'editHistory',
       type: IsarType.objectList,
       target: r'EditLog',
     ),
     r'finalizedAt': PropertySchema(
-      id: 7,
+      id: 9,
       name: r'finalizedAt',
       type: IsarType.dateTime,
     ),
     r'finishTime': PropertySchema(
-      id: 8,
+      id: 10,
       name: r'finishTime',
       type: IsarType.dateTime,
     ),
     r'fishingType': PropertySchema(
-      id: 9,
+      id: 11,
       name: r'fishingType',
       type: IsarType.string,
     ),
     r'isFinal': PropertySchema(
-      id: 10,
+      id: 12,
       name: r'isFinal',
       type: IsarType.bool,
     ),
     r'isSynced': PropertySchema(
-      id: 11,
+      id: 13,
       name: r'isSynced',
       type: IsarType.bool,
     ),
     r'judges': PropertySchema(
-      id: 12,
+      id: 14,
       name: r'judges',
       type: IsarType.objectList,
       target: r'Judge',
     ),
     r'lakeName': PropertySchema(
-      id: 13,
+      id: 15,
       name: r'lakeName',
       type: IsarType.string,
     ),
     r'lakeNames': PropertySchema(
-      id: 14,
+      id: 16,
       name: r'lakeNames',
       type: IsarType.stringList,
     ),
     r'lastSyncedAt': PropertySchema(
-      id: 15,
+      id: 17,
       name: r'lastSyncedAt',
       type: IsarType.dateTime,
     ),
     r'name': PropertySchema(
-      id: 16,
+      id: 18,
       name: r'name',
       type: IsarType.string,
     ),
     r'organizerName': PropertySchema(
-      id: 17,
+      id: 19,
       name: r'organizerName',
       type: IsarType.string,
     ),
     r'scoringMethod': PropertySchema(
-      id: 18,
+      id: 20,
       name: r'scoringMethod',
       type: IsarType.string,
     ),
     r'sectorStructure': PropertySchema(
-      id: 19,
+      id: 21,
       name: r'sectorStructure',
       type: IsarType.string,
     ),
     r'sectorsCount': PropertySchema(
-      id: 20,
+      id: 22,
       name: r'sectorsCount',
       type: IsarType.long,
     ),
     r'sectorsPerZone': PropertySchema(
-      id: 21,
+      id: 23,
       name: r'sectorsPerZone',
       type: IsarType.long,
     ),
     r'serverId': PropertySchema(
-      id: 22,
+      id: 24,
       name: r'serverId',
       type: IsarType.string,
     ),
     r'startTime': PropertySchema(
-      id: 23,
+      id: 25,
       name: r'startTime',
       type: IsarType.dateTime,
     ),
     r'status': PropertySchema(
-      id: 24,
+      id: 26,
       name: r'status',
       type: IsarType.string,
     ),
     r'updatedAt': PropertySchema(
-      id: 25,
+      id: 27,
       name: r'updatedAt',
       type: IsarType.dateTime,
     ),
     r'zonedType': PropertySchema(
-      id: 26,
+      id: 28,
       name: r'zonedType',
       type: IsarType.string,
     ),
     r'zonesCount': PropertySchema(
-      id: 27,
+      id: 29,
       name: r'zonesCount',
       type: IsarType.long,
     )
@@ -201,6 +211,12 @@ int _competitionLocalEstimateSize(
     }
   }
   bytesCount += 3 + object.cityOrRegion.length * 3;
+  {
+    final value = object.commonLine;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   {
     final value = object.createdByDeviceId;
     if (value != null) {
@@ -259,43 +275,45 @@ void _competitionLocalSerialize(
   Map<Type, List<int>> allOffsets,
 ) {
   writer.writeString(offsets[0], object.accessCode);
-  writer.writeString(offsets[1], object.cityOrRegion);
-  writer.writeDateTime(offsets[2], object.createdAt);
-  writer.writeString(offsets[3], object.createdByDeviceId);
-  writer.writeLong(offsets[4], object.durationDays);
-  writer.writeLong(offsets[5], object.durationHours);
+  writer.writeLong(offsets[1], object.attemptsCount);
+  writer.writeString(offsets[2], object.cityOrRegion);
+  writer.writeString(offsets[3], object.commonLine);
+  writer.writeDateTime(offsets[4], object.createdAt);
+  writer.writeString(offsets[5], object.createdByDeviceId);
+  writer.writeLong(offsets[6], object.durationDays);
+  writer.writeLong(offsets[7], object.durationHours);
   writer.writeObjectList<EditLog>(
-    offsets[6],
+    offsets[8],
     allOffsets,
     EditLogSchema.serialize,
     object.editHistory,
   );
-  writer.writeDateTime(offsets[7], object.finalizedAt);
-  writer.writeDateTime(offsets[8], object.finishTime);
-  writer.writeString(offsets[9], object.fishingType);
-  writer.writeBool(offsets[10], object.isFinal);
-  writer.writeBool(offsets[11], object.isSynced);
+  writer.writeDateTime(offsets[9], object.finalizedAt);
+  writer.writeDateTime(offsets[10], object.finishTime);
+  writer.writeString(offsets[11], object.fishingType);
+  writer.writeBool(offsets[12], object.isFinal);
+  writer.writeBool(offsets[13], object.isSynced);
   writer.writeObjectList<Judge>(
-    offsets[12],
+    offsets[14],
     allOffsets,
     JudgeSchema.serialize,
     object.judges,
   );
-  writer.writeString(offsets[13], object.lakeName);
-  writer.writeStringList(offsets[14], object.lakeNames);
-  writer.writeDateTime(offsets[15], object.lastSyncedAt);
-  writer.writeString(offsets[16], object.name);
-  writer.writeString(offsets[17], object.organizerName);
-  writer.writeString(offsets[18], object.scoringMethod);
-  writer.writeString(offsets[19], object.sectorStructure);
-  writer.writeLong(offsets[20], object.sectorsCount);
-  writer.writeLong(offsets[21], object.sectorsPerZone);
-  writer.writeString(offsets[22], object.serverId);
-  writer.writeDateTime(offsets[23], object.startTime);
-  writer.writeString(offsets[24], object.status);
-  writer.writeDateTime(offsets[25], object.updatedAt);
-  writer.writeString(offsets[26], object.zonedType);
-  writer.writeLong(offsets[27], object.zonesCount);
+  writer.writeString(offsets[15], object.lakeName);
+  writer.writeStringList(offsets[16], object.lakeNames);
+  writer.writeDateTime(offsets[17], object.lastSyncedAt);
+  writer.writeString(offsets[18], object.name);
+  writer.writeString(offsets[19], object.organizerName);
+  writer.writeString(offsets[20], object.scoringMethod);
+  writer.writeString(offsets[21], object.sectorStructure);
+  writer.writeLong(offsets[22], object.sectorsCount);
+  writer.writeLong(offsets[23], object.sectorsPerZone);
+  writer.writeString(offsets[24], object.serverId);
+  writer.writeDateTime(offsets[25], object.startTime);
+  writer.writeString(offsets[26], object.status);
+  writer.writeDateTime(offsets[27], object.updatedAt);
+  writer.writeString(offsets[28], object.zonedType);
+  writer.writeLong(offsets[29], object.zonesCount);
 }
 
 CompetitionLocal _competitionLocalDeserialize(
@@ -306,44 +324,46 @@ CompetitionLocal _competitionLocalDeserialize(
 ) {
   final object = CompetitionLocal();
   object.accessCode = reader.readStringOrNull(offsets[0]);
-  object.cityOrRegion = reader.readString(offsets[1]);
-  object.createdAt = reader.readDateTime(offsets[2]);
-  object.createdByDeviceId = reader.readStringOrNull(offsets[3]);
+  object.attemptsCount = reader.readLongOrNull(offsets[1]);
+  object.cityOrRegion = reader.readString(offsets[2]);
+  object.commonLine = reader.readStringOrNull(offsets[3]);
+  object.createdAt = reader.readDateTime(offsets[4]);
+  object.createdByDeviceId = reader.readStringOrNull(offsets[5]);
   object.editHistory = reader.readObjectList<EditLog>(
-        offsets[6],
+        offsets[8],
         EditLogSchema.deserialize,
         allOffsets,
         EditLog(),
       ) ??
       [];
-  object.finalizedAt = reader.readDateTimeOrNull(offsets[7]);
-  object.finishTime = reader.readDateTime(offsets[8]);
-  object.fishingType = reader.readString(offsets[9]);
+  object.finalizedAt = reader.readDateTimeOrNull(offsets[9]);
+  object.finishTime = reader.readDateTime(offsets[10]);
+  object.fishingType = reader.readString(offsets[11]);
   object.id = id;
-  object.isFinal = reader.readBool(offsets[10]);
-  object.isSynced = reader.readBool(offsets[11]);
+  object.isFinal = reader.readBool(offsets[12]);
+  object.isSynced = reader.readBool(offsets[13]);
   object.judges = reader.readObjectList<Judge>(
-        offsets[12],
+        offsets[14],
         JudgeSchema.deserialize,
         allOffsets,
         Judge(),
       ) ??
       [];
-  object.lakeName = reader.readString(offsets[13]);
-  object.lakeNames = reader.readStringList(offsets[14]) ?? [];
-  object.lastSyncedAt = reader.readDateTimeOrNull(offsets[15]);
-  object.name = reader.readString(offsets[16]);
-  object.organizerName = reader.readString(offsets[17]);
-  object.scoringMethod = reader.readString(offsets[18]);
-  object.sectorStructure = reader.readString(offsets[19]);
-  object.sectorsCount = reader.readLong(offsets[20]);
-  object.sectorsPerZone = reader.readLongOrNull(offsets[21]);
-  object.serverId = reader.readStringOrNull(offsets[22]);
-  object.startTime = reader.readDateTime(offsets[23]);
-  object.status = reader.readString(offsets[24]);
-  object.updatedAt = reader.readDateTimeOrNull(offsets[25]);
-  object.zonedType = reader.readStringOrNull(offsets[26]);
-  object.zonesCount = reader.readLongOrNull(offsets[27]);
+  object.lakeName = reader.readString(offsets[15]);
+  object.lakeNames = reader.readStringList(offsets[16]) ?? [];
+  object.lastSyncedAt = reader.readDateTimeOrNull(offsets[17]);
+  object.name = reader.readString(offsets[18]);
+  object.organizerName = reader.readString(offsets[19]);
+  object.scoringMethod = reader.readString(offsets[20]);
+  object.sectorStructure = reader.readString(offsets[21]);
+  object.sectorsCount = reader.readLong(offsets[22]);
+  object.sectorsPerZone = reader.readLongOrNull(offsets[23]);
+  object.serverId = reader.readStringOrNull(offsets[24]);
+  object.startTime = reader.readDateTime(offsets[25]);
+  object.status = reader.readString(offsets[26]);
+  object.updatedAt = reader.readDateTimeOrNull(offsets[27]);
+  object.zonedType = reader.readStringOrNull(offsets[28]);
+  object.zonesCount = reader.readLongOrNull(offsets[29]);
   return object;
 }
 
@@ -357,16 +377,20 @@ P _competitionLocalDeserializeProp<P>(
     case 0:
       return (reader.readStringOrNull(offset)) as P;
     case 1:
-      return (reader.readString(offset)) as P;
+      return (reader.readLongOrNull(offset)) as P;
     case 2:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 3:
       return (reader.readStringOrNull(offset)) as P;
     case 4:
-      return (reader.readLong(offset)) as P;
+      return (reader.readDateTime(offset)) as P;
     case 5:
-      return (reader.readLong(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 6:
+      return (reader.readLong(offset)) as P;
+    case 7:
+      return (reader.readLong(offset)) as P;
+    case 8:
       return (reader.readObjectList<EditLog>(
             offset,
             EditLogSchema.deserialize,
@@ -374,17 +398,17 @@ P _competitionLocalDeserializeProp<P>(
             EditLog(),
           ) ??
           []) as P;
-    case 7:
-      return (reader.readDateTimeOrNull(offset)) as P;
-    case 8:
-      return (reader.readDateTime(offset)) as P;
     case 9:
-      return (reader.readString(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 10:
-      return (reader.readBool(offset)) as P;
+      return (reader.readDateTime(offset)) as P;
     case 11:
-      return (reader.readBool(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 12:
+      return (reader.readBool(offset)) as P;
+    case 13:
+      return (reader.readBool(offset)) as P;
+    case 14:
       return (reader.readObjectList<Judge>(
             offset,
             JudgeSchema.deserialize,
@@ -392,35 +416,35 @@ P _competitionLocalDeserializeProp<P>(
             Judge(),
           ) ??
           []) as P;
-    case 13:
-      return (reader.readString(offset)) as P;
-    case 14:
-      return (reader.readStringList(offset) ?? []) as P;
     case 15:
-      return (reader.readDateTimeOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 16:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringList(offset) ?? []) as P;
     case 17:
-      return (reader.readString(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 18:
       return (reader.readString(offset)) as P;
     case 19:
       return (reader.readString(offset)) as P;
     case 20:
-      return (reader.readLong(offset)) as P;
-    case 21:
-      return (reader.readLongOrNull(offset)) as P;
-    case 22:
-      return (reader.readStringOrNull(offset)) as P;
-    case 23:
-      return (reader.readDateTime(offset)) as P;
-    case 24:
       return (reader.readString(offset)) as P;
-    case 25:
-      return (reader.readDateTimeOrNull(offset)) as P;
-    case 26:
+    case 21:
+      return (reader.readString(offset)) as P;
+    case 22:
+      return (reader.readLong(offset)) as P;
+    case 23:
+      return (reader.readLongOrNull(offset)) as P;
+    case 24:
       return (reader.readStringOrNull(offset)) as P;
+    case 25:
+      return (reader.readDateTime(offset)) as P;
+    case 26:
+      return (reader.readString(offset)) as P;
     case 27:
+      return (reader.readDateTimeOrNull(offset)) as P;
+    case 28:
+      return (reader.readStringOrNull(offset)) as P;
+    case 29:
       return (reader.readLongOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -799,6 +823,80 @@ extension CompetitionLocalQueryFilter
   }
 
   QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      attemptsCountIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'attemptsCount',
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      attemptsCountIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'attemptsCount',
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      attemptsCountEqualTo(int? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'attemptsCount',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      attemptsCountGreaterThan(
+    int? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'attemptsCount',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      attemptsCountLessThan(
+    int? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'attemptsCount',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      attemptsCountBetween(
+    int? lower,
+    int? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'attemptsCount',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
       cityOrRegionEqualTo(
     String value, {
     bool caseSensitive = true,
@@ -929,6 +1027,160 @@ extension CompetitionLocalQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
         property: r'cityOrRegion',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      commonLineIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'commonLine',
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      commonLineIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'commonLine',
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      commonLineEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'commonLine',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      commonLineGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'commonLine',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      commonLineLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'commonLine',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      commonLineBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'commonLine',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      commonLineStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'commonLine',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      commonLineEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'commonLine',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      commonLineContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'commonLine',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      commonLineMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'commonLine',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      commonLineIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'commonLine',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterFilterCondition>
+      commonLineIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'commonLine',
         value: '',
       ));
     });
@@ -3571,6 +3823,20 @@ extension CompetitionLocalQuerySortBy
   }
 
   QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterSortBy>
+      sortByAttemptsCount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'attemptsCount', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterSortBy>
+      sortByAttemptsCountDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'attemptsCount', Sort.desc);
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterSortBy>
       sortByCityOrRegion() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'cityOrRegion', Sort.asc);
@@ -3581,6 +3847,20 @@ extension CompetitionLocalQuerySortBy
       sortByCityOrRegionDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'cityOrRegion', Sort.desc);
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterSortBy>
+      sortByCommonLine() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'commonLine', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterSortBy>
+      sortByCommonLineDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'commonLine', Sort.desc);
     });
   }
 
@@ -3923,6 +4203,20 @@ extension CompetitionLocalQuerySortThenBy
   }
 
   QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterSortBy>
+      thenByAttemptsCount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'attemptsCount', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterSortBy>
+      thenByAttemptsCountDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'attemptsCount', Sort.desc);
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterSortBy>
       thenByCityOrRegion() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'cityOrRegion', Sort.asc);
@@ -3933,6 +4227,20 @@ extension CompetitionLocalQuerySortThenBy
       thenByCityOrRegionDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'cityOrRegion', Sort.desc);
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterSortBy>
+      thenByCommonLine() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'commonLine', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterSortBy>
+      thenByCommonLineDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'commonLine', Sort.desc);
     });
   }
 
@@ -4281,9 +4589,23 @@ extension CompetitionLocalQueryWhereDistinct
   }
 
   QueryBuilder<CompetitionLocal, CompetitionLocal, QDistinct>
+      distinctByAttemptsCount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'attemptsCount');
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QDistinct>
       distinctByCityOrRegion({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'cityOrRegion', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QDistinct>
+      distinctByCommonLine({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'commonLine', caseSensitive: caseSensitive);
     });
   }
 
@@ -4475,10 +4797,24 @@ extension CompetitionLocalQueryProperty
     });
   }
 
+  QueryBuilder<CompetitionLocal, int?, QQueryOperations>
+      attemptsCountProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'attemptsCount');
+    });
+  }
+
   QueryBuilder<CompetitionLocal, String, QQueryOperations>
       cityOrRegionProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'cityOrRegion');
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, String?, QQueryOperations>
+      commonLineProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'commonLine');
     });
   }
 

@@ -7,65 +7,81 @@ import '../../core/theme/app_dimensions.dart';
 import '../providers/competition_provider.dart';
 import '../../data/models/local/competition_local.dart';
 
-class CreateCompetitionScreen extends ConsumerStatefulWidget {
-  final String accessCode;
-  final String fishingType;
+class EditCompetitionScreen extends ConsumerStatefulWidget {
+  final CompetitionLocal competition;
 
-  const CreateCompetitionScreen({
+  const EditCompetitionScreen({
     Key? key,
-    required this.accessCode,
-    required this.fishingType,
+    required this.competition,
   }) : super(key: key);
 
   @override
-  ConsumerState<CreateCompetitionScreen> createState() => _CreateCompetitionScreenState();
+  ConsumerState<EditCompetitionScreen> createState() => _EditCompetitionScreenState();
 }
 
-class _CreateCompetitionScreenState extends ConsumerState<CreateCompetitionScreen> {
+class _EditCompetitionScreenState extends ConsumerState<EditCompetitionScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  final _nameController = TextEditingController();
-  final _cityController = TextEditingController();
-  final _lakeController = TextEditingController();
-  final _organizerController = TextEditingController();
-  final _sectorsController = TextEditingController(text: '24');
-  final _sectorsPerZoneController = TextEditingController(text: '8');
-  final _commonLineController = TextEditingController(); // Для кастинга
+  late final TextEditingController _nameController;
+  late final TextEditingController _cityController;
+  late final TextEditingController _lakeController;
+  late final TextEditingController _organizerController;
+  late final TextEditingController _sectorsController;
+  late final TextEditingController _sectorsPerZoneController;
+  late final TextEditingController _commonLineController;
 
-  DateTime _startTime = DateTime.now();
-  DateTime _finishTime = DateTime.now().add(Duration(hours: 72));
+  late DateTime _startTime;
+  late DateTime _finishTime;
 
-  String _scoringMethod = 'total_weight';
-  String _sectorStructure = 'simple';
-  String _zonedType = 'single_lake';
-  int _zonesCount = 3;
-
-  // Для кастинга
-  int _attemptsCount = 3; // По умолчанию 3 попытки
+  late String _scoringMethod;
+  late String _sectorStructure;
+  late String _zonedType;
+  late int _zonesCount;
+  late int _attemptsCount;
 
   final List<TextEditingController> _lakeNameControllers = [];
-  final List<Judge> _judges = [];
+  late List<Judge> _judges;
 
-  // Проверка: это кастинг?
-  bool get _isCasting => widget.fishingType == 'casting';
+  bool get _isCasting => widget.competition.fishingType == 'casting';
 
   @override
   void initState() {
     super.initState();
-    _initializeLakeNameControllers();
 
-    // Для кастинга устанавливаем дефолтные значения
-    if (_isCasting) {
-      _scoringMethod = 'best_distance';
-      _sectorStructure = 'none';
-      _sectorsController.text = '0';
-    }
+    // Инициализация контроллеров с существующими данными
+    _nameController = TextEditingController(text: widget.competition.name);
+    _cityController = TextEditingController(text: widget.competition.cityOrRegion);
+    _lakeController = TextEditingController(text: widget.competition.lakeName);
+    _organizerController = TextEditingController(text: widget.competition.organizerName);
+    _sectorsController = TextEditingController(text: widget.competition.sectorsCount.toString());
+    _sectorsPerZoneController = TextEditingController(text: widget.competition.sectorsPerZone?.toString() ?? '8');
+    _commonLineController = TextEditingController(text: widget.competition.commonLine ?? '');
+
+    // Инициализация дат
+    _startTime = widget.competition.startTime;
+    _finishTime = widget.competition.finishTime;
+
+    // Инициализация настроек
+    _scoringMethod = widget.competition.scoringMethod;
+    _sectorStructure = widget.competition.sectorStructure ?? 'simple';
+    _zonedType = widget.competition.zonedType ?? 'single_lake';
+    _zonesCount = widget.competition.zonesCount ?? 3;
+    _attemptsCount = widget.competition.attemptsCount ?? 3;
+
+    // Инициализация судей (копируем список)
+    _judges = List<Judge>.from(widget.competition.judges);
+
+    // Инициализация контроллеров озёр
+    _initializeLakeNameControllers();
   }
 
   void _initializeLakeNameControllers() {
     _lakeNameControllers.clear();
+    final existingLakeNames = widget.competition.lakeNames ?? [];
+
     for (int i = 0; i < 4; i++) {
-      _lakeNameControllers.add(TextEditingController());
+      final lakeName = i < existingLakeNames.length ? existingLakeNames[i] : '';
+      _lakeNameControllers.add(TextEditingController(text: lakeName));
     }
   }
 
@@ -77,7 +93,7 @@ class _CreateCompetitionScreenState extends ConsumerState<CreateCompetitionScree
     _organizerController.dispose();
     _sectorsController.dispose();
     _sectorsPerZoneController.dispose();
-    _commonLineController.dispose(); // Добавлено
+    _commonLineController.dispose();
     for (var controller in _lakeNameControllers) {
       controller.dispose();
     }
@@ -135,9 +151,9 @@ class _CreateCompetitionScreenState extends ConsumerState<CreateCompetitionScree
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('create_competition'.tr(), style: AppTextStyles.h3),
+            Text('edit_competition'.tr(), style: AppTextStyles.h3),
             Text(
-              'fishing_type_${widget.fishingType}'.tr(),
+              'fishing_type_${widget.competition.fishingType}'.tr(),
               style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
             ),
           ],
@@ -153,24 +169,25 @@ class _CreateCompetitionScreenState extends ConsumerState<CreateCompetitionScree
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Код доступа (только для отображения, нельзя редактировать)
                 Container(
                   padding: EdgeInsets.all(AppDimensions.paddingMedium),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: AppColors.textSecondary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
-                    border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                    border: Border.all(color: AppColors.textSecondary.withOpacity(0.3)),
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.key, color: AppColors.primary, size: 20),
+                      Icon(Icons.key, color: AppColors.textSecondary, size: 20),
                       SizedBox(width: 8),
                       Text(
                         '${'access_code'.tr()}: ',
                         style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
                       ),
                       Text(
-                        widget.accessCode,
-                        style: AppTextStyles.bodyBold.copyWith(color: AppColors.primary),
+                        widget.competition.accessCode ?? 'N/A',
+                        style: AppTextStyles.bodyBold.copyWith(color: AppColors.textSecondary),
                       ),
                     ],
                   ),
@@ -191,7 +208,6 @@ class _CreateCompetitionScreenState extends ConsumerState<CreateCompetitionScree
                 ),
                 SizedBox(height: AppDimensions.paddingMedium),
 
-                // Для кастинга "Место проведения", для рыбалки "Озеро"
                 if (!_isCasting && (_sectorStructure == 'simple' || (_sectorStructure == 'zoned' && _zonedType == 'single_lake')))
                   _buildTextField(
                     controller: _lakeController,
@@ -202,7 +218,7 @@ class _CreateCompetitionScreenState extends ConsumerState<CreateCompetitionScree
                 if (_isCasting)
                   _buildTextField(
                     controller: _lakeController,
-                    label: 'venue_name'.tr(), // Место проведения
+                    label: 'venue_name'.tr(),
                     validator: (v) => v?.isEmpty ?? true ? 'field_required'.tr() : null,
                   ),
 
@@ -228,19 +244,16 @@ class _CreateCompetitionScreenState extends ConsumerState<CreateCompetitionScree
                 _buildDurationInfo(),
                 SizedBox(height: AppDimensions.paddingLarge),
 
-                // Для кастинга показываем выбор попыток
                 if (_isCasting) ...[
                   _buildAttemptsCountSelector(),
                   SizedBox(height: AppDimensions.paddingLarge),
                 ],
 
-                // Для кастинга поле "Общая леска"
                 if (_isCasting) ...[
                   _buildCommonLineField(),
                   SizedBox(height: AppDimensions.paddingLarge),
                 ],
 
-                // Для кастинга другие методы подсчёта
                 if (_isCasting)
                   _buildCastingScoringMethodSelector()
                 else
@@ -248,7 +261,6 @@ class _CreateCompetitionScreenState extends ConsumerState<CreateCompetitionScree
 
                 SizedBox(height: AppDimensions.paddingLarge),
 
-                // Секторы только для рыбалки
                 if (!_isCasting) ...[
                   _buildSectorStructureSelector(),
                   SizedBox(height: AppDimensions.paddingMedium),
@@ -326,7 +338,7 @@ class _CreateCompetitionScreenState extends ConsumerState<CreateCompetitionScree
                         borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
                       ),
                     ),
-                    child: Text('create'.tr(), style: AppTextStyles.button),
+                    child: Text('save_changes'.tr(), style: AppTextStyles.button),
                   ),
                 ),
 
@@ -461,7 +473,6 @@ class _CreateCompetitionScreenState extends ConsumerState<CreateCompetitionScree
     );
   }
 
-  // НОВОЕ: Выбор количества попыток для кастинга
   Widget _buildAttemptsCountSelector() {
     return Container(
       padding: EdgeInsets.all(AppDimensions.paddingMedium),
@@ -496,7 +507,6 @@ class _CreateCompetitionScreenState extends ConsumerState<CreateCompetitionScree
     );
   }
 
-  // НОВОЕ: Поле "Общая леска" для кастинга
   Widget _buildCommonLineField() {
     return Container(
       padding: EdgeInsets.all(AppDimensions.paddingMedium),
@@ -551,7 +561,6 @@ class _CreateCompetitionScreenState extends ConsumerState<CreateCompetitionScree
     );
   }
 
-  // Методы подсчёта для кастинга
   Widget _buildCastingScoringMethodSelector() {
     return Container(
       padding: EdgeInsets.all(AppDimensions.paddingMedium),
@@ -583,7 +592,6 @@ class _CreateCompetitionScreenState extends ConsumerState<CreateCompetitionScree
     );
   }
 
-  // Методы подсчёта для рыбалки
   Widget _buildScoringMethodSelector() {
     return Container(
       padding: EdgeInsets.all(AppDimensions.paddingMedium),
@@ -858,7 +866,7 @@ class _CreateCompetitionScreenState extends ConsumerState<CreateCompetitionScree
     final date = await showDatePicker(
       context: context,
       initialDate: initialDate,
-      firstDate: DateTime.now(),
+      firstDate: DateTime(2020),
       lastDate: DateTime.now().add(Duration(days: 365)),
       builder: (context, child) {
         return Theme(
@@ -946,7 +954,6 @@ class _CreateCompetitionScreenState extends ConsumerState<CreateCompetitionScree
     }
 
     try {
-      // Собираем названия озёр для зональной структуры (multiple_lakes)
       final lakeNames = <String>[];
       if (!_isCasting && _sectorStructure == 'zoned' && _zonedType == 'multiple_lakes') {
         for (int i = 0; i < _zonesCount; i++) {
@@ -954,35 +961,35 @@ class _CreateCompetitionScreenState extends ConsumerState<CreateCompetitionScree
         }
       }
 
-      await ref.read(competitionProvider.notifier).createCompetition(
-        name: _nameController.text,
-        cityOrRegion: _cityController.text,
-        lakeName: _lakeController.text,
+      await ref.read(competitionProvider.notifier).updateCompetition(
+        id: widget.competition.id,
+        name: _nameController.text.trim(),
+        cityOrRegion: _cityController.text.trim(),
+        lakeName: _lakeController.text.trim(),
         sectorsCount: _totalSectors,
         startTime: _startTime,
         finishTime: _finishTime,
         scoringMethod: _scoringMethod,
-        organizerName: _organizerController.text,
+        organizerName: _organizerController.text.trim(),
         judges: _judges,
-        accessCode: widget.accessCode,
-        fishingType: widget.fishingType,
+        fishingType: widget.competition.fishingType,
         sectorStructure: _isCasting ? 'none' : _sectorStructure,
         zonedType: !_isCasting && _sectorStructure == 'zoned' ? _zonedType : null,
         zonesCount: !_isCasting && _sectorStructure == 'zoned' ? _zonesCount : null,
         sectorsPerZone: !_isCasting && _sectorStructure == 'zoned' && _zonedType == 'multiple_lakes' ? _sectorsPerZoneCalculated : null,
         lakeNames: lakeNames.isNotEmpty ? lakeNames : null,
-        attemptsCount: _isCasting ? _attemptsCount : null, // Только для кастинга
+        attemptsCount: _isCasting ? _attemptsCount : null,
         commonLine: _isCasting && _commonLineController.text.trim().isNotEmpty
             ? _commonLineController.text.trim()
-            : null, // Общая леска для кастинга
+            : null,
       );
 
       if (!mounted) return;
 
-      Navigator.pop(context);
+      Navigator.pop(context, true);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('competition_created'.tr()),
+          content: Text('competition_updated'.tr()),
           backgroundColor: AppColors.success,
         ),
       );
