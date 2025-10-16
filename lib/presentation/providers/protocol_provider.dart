@@ -55,6 +55,29 @@ class ProtocolNotifier extends StateNotifier<ProtocolState> {
     }
   }
 
+  String _translateRank(String rank) {
+    if (rank.isEmpty || rank == 'none') {
+      return 'б/р';
+    }
+
+    switch (rank) {
+      case '3':
+        return '3 разряд';
+      case '2':
+        return '2 разряд';
+      case '1':
+        return '1 разряд';
+      case 'kms':
+        return 'КМС';
+      case 'ms':
+        return 'МС';
+      case 'msmk':
+        return 'МСМК';
+      default:
+        return rank;
+    }
+  }
+
   // Форматирование даты соревнования
   String _formatCompetitionDates(DateTime startTime, DateTime finishTime) {
     final start = DateFormat('dd.MM.yyyy').format(startTime);
@@ -775,8 +798,11 @@ class ProtocolNotifier extends StateNotifier<ProtocolState> {
       ProtocolLocal protocol;
 
       if (existingBigFish.id != null) {
-        print('🔄 Updating existing Big Fish protocol for day $dayNumber (ID: ${existingBigFish.id})');
+        print('🔄 Updating existing Big Fish protocol...');
         protocol = existingBigFish
+          ..competitionId = competitionId.toString()  // ✅ ДОБАВЛЕНО
+          ..type = 'big_fish'                         // ✅ ДОБАВЛЕНО
+          ..bigFishDay = dayNumber                    // ✅ ДОБАВЛЕНО
           ..dataJson = jsonEncode(protocolData)
           ..createdAt = DateTime.now();
       } else {
@@ -820,7 +846,7 @@ class ProtocolNotifier extends StateNotifier<ProtocolState> {
       for (var team in teams) {
         final members = team.members.map((m) => {
           'fullName': m.fullName,
-          'rank': m.rank.isEmpty || m.rank == 'none' ? 'б/р' : m.rank,
+          'rank': _translateRank(m.rank),  // ✅ ИСПРАВЛЕНИЕ
         }).toList();
 
         final Map<String, dynamic> teamData = {
@@ -932,7 +958,7 @@ class ProtocolNotifier extends StateNotifier<ProtocolState> {
           'sector': team.sector ?? 0,
           'members': team.members.map((m) => {
             'fullName': m.fullName,
-            'rank': m.rank.isEmpty || m.rank == 'none' ? 'б/р' : m.rank,
+            'rank': _translateRank(m.rank),
             'isCaptain': m.isCaptain,
           }).toList(),
           'totalFishCount': 0,

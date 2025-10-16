@@ -188,6 +188,19 @@ const CompetitionLocalSchema = CollectionSchema(
           caseSensitive: true,
         )
       ],
+    ),
+    r'accessCode': IndexSchema(
+      id: -4762309729008467959,
+      name: r'accessCode',
+      unique: true,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'accessCode',
+          type: IndexType.hash,
+          caseSensitive: false,
+        )
+      ],
     )
   },
   links: {},
@@ -518,6 +531,61 @@ extension CompetitionLocalByIndex on IsarCollection<CompetitionLocal> {
       {bool saveLinks = true}) {
     return putAllByIndexSync(r'serverId', objects, saveLinks: saveLinks);
   }
+
+  Future<CompetitionLocal?> getByAccessCode(String? accessCode) {
+    return getByIndex(r'accessCode', [accessCode]);
+  }
+
+  CompetitionLocal? getByAccessCodeSync(String? accessCode) {
+    return getByIndexSync(r'accessCode', [accessCode]);
+  }
+
+  Future<bool> deleteByAccessCode(String? accessCode) {
+    return deleteByIndex(r'accessCode', [accessCode]);
+  }
+
+  bool deleteByAccessCodeSync(String? accessCode) {
+    return deleteByIndexSync(r'accessCode', [accessCode]);
+  }
+
+  Future<List<CompetitionLocal?>> getAllByAccessCode(
+      List<String?> accessCodeValues) {
+    final values = accessCodeValues.map((e) => [e]).toList();
+    return getAllByIndex(r'accessCode', values);
+  }
+
+  List<CompetitionLocal?> getAllByAccessCodeSync(
+      List<String?> accessCodeValues) {
+    final values = accessCodeValues.map((e) => [e]).toList();
+    return getAllByIndexSync(r'accessCode', values);
+  }
+
+  Future<int> deleteAllByAccessCode(List<String?> accessCodeValues) {
+    final values = accessCodeValues.map((e) => [e]).toList();
+    return deleteAllByIndex(r'accessCode', values);
+  }
+
+  int deleteAllByAccessCodeSync(List<String?> accessCodeValues) {
+    final values = accessCodeValues.map((e) => [e]).toList();
+    return deleteAllByIndexSync(r'accessCode', values);
+  }
+
+  Future<Id> putByAccessCode(CompetitionLocal object) {
+    return putByIndex(r'accessCode', object);
+  }
+
+  Id putByAccessCodeSync(CompetitionLocal object, {bool saveLinks = true}) {
+    return putByIndexSync(r'accessCode', object, saveLinks: saveLinks);
+  }
+
+  Future<List<Id>> putAllByAccessCode(List<CompetitionLocal> objects) {
+    return putAllByIndex(r'accessCode', objects);
+  }
+
+  List<Id> putAllByAccessCodeSync(List<CompetitionLocal> objects,
+      {bool saveLinks = true}) {
+    return putAllByIndexSync(r'accessCode', objects, saveLinks: saveLinks);
+  }
 }
 
 extension CompetitionLocalQueryWhereSort
@@ -659,6 +727,73 @@ extension CompetitionLocalQueryWhere
               indexName: r'serverId',
               lower: [],
               upper: [serverId],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterWhereClause>
+      accessCodeIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'accessCode',
+        value: [null],
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterWhereClause>
+      accessCodeIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'accessCode',
+        lower: [null],
+        includeLower: false,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterWhereClause>
+      accessCodeEqualTo(String? accessCode) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'accessCode',
+        value: [accessCode],
+      ));
+    });
+  }
+
+  QueryBuilder<CompetitionLocal, CompetitionLocal, QAfterWhereClause>
+      accessCodeNotEqualTo(String? accessCode) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'accessCode',
+              lower: [],
+              upper: [accessCode],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'accessCode',
+              lower: [accessCode],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'accessCode',
+              lower: [accessCode],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'accessCode',
+              lower: [],
+              upper: [accessCode],
               includeUpper: false,
             ));
       }

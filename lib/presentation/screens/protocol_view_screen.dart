@@ -942,7 +942,7 @@ class _ProtocolViewScreenState extends State<ProtocolViewScreen> {
       case 3:
         return Colors.yellow.shade700; // 🥉 Жёлтый
       default:
-        return Colors.transparent;
+        return Colors.white;
     }
   }
 }

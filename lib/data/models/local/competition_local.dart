@@ -65,7 +65,11 @@ class CompetitionLocal {
   String? commonLine; // null = у каждого своя, заполнено = одна для всех
 
   String status = 'draft'; // 'draft' | 'active' | 'completed'
+
+  // ✅ ИСПРАВЛЕНО: Уникальный индекс без учёта регистра
+  @Index(unique: true, caseSensitive: false)
   String? accessCode; // Код доступа организатора
+
   String? createdByDeviceId; // ID устройства, которое создало соревнование
 
   List<Judge> judges = []; // Список судей
