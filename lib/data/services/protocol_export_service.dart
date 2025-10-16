@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:intl/intl.dart';
 import '../models/local/protocol_local.dart';
+import 'package:easy_localization/easy_localization.dart' as ez;
 
 class ProtocolExportService {
   pw.Font? _regularFont;
@@ -33,7 +34,7 @@ class ProtocolExportService {
 
     pdf.addPage(
       pw.Page(
-        pageFormat: PdfPageFormat.a4.landscape, // Альбомная ориентация для кастинга
+        pageFormat: PdfPageFormat.a4.landscape,
         build: (pw.Context context) {
           return pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -108,7 +109,7 @@ class ProtocolExportService {
 
   pw.Widget _buildPdfLocationAndDate(ProtocolLocal protocol, Map<String, dynamic> data, pw.Font font, pw.Font fontBold) {
     final isSummaryOrFinal = protocol.type == 'summary' || protocol.type == 'final';
-    final isCasting = protocol.type == 'casting';
+    final isCasting = protocol.type.startsWith('casting');
 
     return pw.Row(
       mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
@@ -128,6 +129,12 @@ class ProtocolExportService {
                 style: pw.TextStyle(fontSize: 11, font: font),
               ),
             pw.SizedBox(height: 4),
+
+            if (protocol.type == 'casting_attempt' && data['sessionTime'] != null)
+              pw.Text(
+                'Дата и время: ${DateFormat('dd.MM.yyyy HH:mm').format(DateTime.parse(data['sessionTime']))}',
+                style: pw.TextStyle(fontSize: 11, font: font),
+              ),
 
             if (protocol.type == 'weighing' && data['weighingTime'] != null)
               pw.Text(
@@ -178,32 +185,65 @@ class ProtocolExportService {
         return _buildPdfSummaryTable(data, font, fontBold);
       case 'final':
         return _buildPdfFinalTable(data, font, fontBold);
-      case 'casting':
-        return _buildPdfCastingTable(data, font, fontBold);
+      case 'casting_attempt':
+        return _buildPdfCastingAttemptTable(data, font, fontBold);
+      case 'casting_intermediate':
+      case 'casting_final':
+        return _buildPdfCastingFullTable(data, font, fontBold);
       default:
         return pw.Text('Тип протокола не поддерживается', style: pw.TextStyle(font: font));
     }
   }
 
-  // ✅ НОВЫЙ МЕТОД: Таблица для кастинга (PDF)
-  pw.Widget _buildPdfCastingTable(Map<String, dynamic> data, pw.Font font, pw.Font fontBold) {
+  // ========== PDF: КАСТИНГ ПРОТОКОЛ ПОПЫТКИ (БЕЗ ЦВЕТОВ) ==========
+  pw.Widget _buildPdfCastingAttemptTable(Map<String, dynamic> data, pw.Font font, pw.Font fontBold) {
     final participantsData = data['participantsData'] as List<dynamic>? ?? [];
-    final bestInAttempts = (data['bestInAttempts'] as List<dynamic>?)?.cast<double>() ?? [];
-    final scoringMethod = data['scoringMethod'] as String? ?? 'average_distance';
-    final attemptsCount = data['attemptsCount'] as int? ?? 3;
 
     if (participantsData.isEmpty) {
       return pw.Text('Нет данных', style: pw.TextStyle(font: font));
     }
 
-    // Заголовки
+    final headers = ['Место', 'ФИО Спортсмена', 'Карповое удилище', 'Леска', 'Дальность (м)'];
+
+    final rows = <List<String>>[];
+    for (final participant in participantsData) {
+      final participantMap = participant as Map<String, dynamic>;
+      rows.add([
+        '${participantMap['place']}',
+        participantMap['fullName']?.toString() ?? '',
+        participantMap['rod']?.toString() ?? '',
+        participantMap['line']?.toString() ?? '',
+        (participantMap['distance'] as double).toStringAsFixed(2),
+      ]);
+    }
+
+    return pw.Table.fromTextArray(
+      headerStyle: pw.TextStyle(font: fontBold, fontSize: 10),
+      cellStyle: pw.TextStyle(fontSize: 9, font: font),
+      headerDecoration: const pw.BoxDecoration(color: PdfColors.grey300),
+      cellAlignment: pw.Alignment.center,
+      headers: headers,
+      data: rows,
+    );
+  }
+
+  // ========== PDF: КАСТИНГ ПРОМЕЖУТОЧНЫЙ/ФИНАЛЬНЫЙ (БЕЗ ЦВЕТОВ) ==========
+  pw.Widget _buildPdfCastingFullTable(Map<String, dynamic> data, pw.Font font, pw.Font fontBold) {
+    final participantsData = data['participantsData'] as List<dynamic>? ?? [];
+    final scoringMethod = data['scoringMethod'] as String? ?? 'average_distance';
+    final attemptsCount = (data['attemptsCount'] as int?) ?? (data['upToAttempt'] as int?) ?? 3;
+
+    if (participantsData.isEmpty) {
+      return pw.Text('Нет данных', style: pw.TextStyle(font: font));
+    }
+
     final headers = [
       '№',
-      'ФИО Спортсмена',
-      'Карповое удилище',
+      'ФИО',
+      'Удилище',
       'Леска',
-      ...List.generate(attemptsCount, (i) => 'Попытка №${i + 1}'),
-      scoringMethod == 'best_distance' ? 'Лучший результат' : 'Средний балл',
+      ...List.generate(attemptsCount, (i) => 'П${i + 1}'),
+      scoringMethod == 'best_distance' ? 'Лучший' : 'Средний',
       'Место',
     ];
 
@@ -212,7 +252,6 @@ class ProtocolExportService {
     for (int i = 0; i < participantsData.length; i++) {
       final participant = participantsData[i] as Map<String, dynamic>;
       final attempts = (participant['attempts'] as List<dynamic>).cast<double>();
-      final place = participant['place'] as int;
 
       final row = [
         '${i + 1}',
@@ -223,47 +262,19 @@ class ProtocolExportService {
         scoringMethod == 'best_distance'
             ? (participant['bestDistance'] as double).toStringAsFixed(2)
             : (participant['averageDistance'] as double).toStringAsFixed(2),
-        '$place',
+        '${participant['place']}',
       ];
 
       rows.add(row);
     }
 
     return pw.Table.fromTextArray(
-      headerStyle: pw.TextStyle(font: fontBold, fontSize: 9),
-      cellStyle: pw.TextStyle(fontSize: 8, font: font),
+      headerStyle: pw.TextStyle(font: fontBold, fontSize: 8),
+      cellStyle: pw.TextStyle(fontSize: 7, font: font),
       headerDecoration: const pw.BoxDecoration(color: PdfColors.grey300),
       cellAlignment: pw.Alignment.center,
       headers: headers,
       data: rows,
-      cellDecoration: (index, data, rowNum) {
-        if (rowNum == null) return pw.BoxDecoration();
-
-        final participant = participantsData[rowNum] as Map<String, dynamic>;
-        final place = participant['place'] as int;
-        final attempts = (participant['attempts'] as List<dynamic>).cast<double>();
-
-        // Выделяем места (строки целиком)
-        if (place == 1) {
-          return pw.BoxDecoration(color: PdfColor.fromHex('#c8e6c9')); // Зелёный
-        } else if (place == 2) {
-          return pw.BoxDecoration(color: PdfColor.fromHex('#bbdefb')); // Синий
-        } else if (place == 3) {
-          return pw.BoxDecoration(color: PdfColor.fromHex('#fff9c4')); // Жёлтый
-        }
-
-        // Выделяем лучшие результаты в попытках зелёным
-        if (index >= 4 && index < 4 + attemptsCount) {
-          final attemptIndex = index - 4;
-          if (attemptIndex < attempts.length && attemptIndex < bestInAttempts.length) {
-            if (attempts[attemptIndex] > 0 && attempts[attemptIndex] == bestInAttempts[attemptIndex]) {
-              return pw.BoxDecoration(color: PdfColor.fromHex('#a5d6a7')); // Светло-зелёный
-            }
-          }
-        }
-
-        return pw.BoxDecoration();
-      },
     );
   }
 
@@ -446,7 +457,7 @@ class ProtocolExportService {
         if (data['judges'] != null)
           ...((data['judges'] as List<dynamic>).map((judge) {
             final judgeMap = judge as Map<String, dynamic>;
-            final rank = judgeMap['rank']?.toString() ?? 'Судья';
+            final rank = (judgeMap['rank']?.toString() ?? 'judge').tr();
             final name = judgeMap['name']?.toString() ?? '';
 
             return pw.Padding(
@@ -472,7 +483,8 @@ class ProtocolExportService {
       ],
     );
   }
-// ===== EXCEL HELPERS =====
+
+  // ========== EXCEL ==========
 
   int _addExcelHeader(xlsio.Worksheet sheet, ProtocolLocal protocol, Map<String, dynamic> data, int row) {
     if (data['organizer'] != null) {
@@ -508,7 +520,7 @@ class ProtocolExportService {
 
   int _addExcelLocationAndDate(xlsio.Worksheet sheet, ProtocolLocal protocol, Map<String, dynamic> data, int row) {
     final isSummaryOrFinal = protocol.type == 'summary' || protocol.type == 'final';
-    final isCasting = protocol.type == 'casting';
+    final isCasting = protocol.type.startsWith('casting');
 
     if (data['venue'] != null && isCasting) {
       sheet.getRangeByIndex(row, 1).setText('Место проведения: ${data['venue']}');
@@ -518,7 +530,11 @@ class ProtocolExportService {
       row++;
     }
 
-    if (protocol.type == 'weighing' && data['weighingTime'] != null) {
+    if (protocol.type == 'casting_attempt' && data['sessionTime'] != null) {
+      sheet.getRangeByIndex(row, 1).setText(
+        'Дата и время: ${DateFormat('dd.MM.yyyy HH:mm').format(DateTime.parse(data['sessionTime']))}',
+      );
+    } else if (protocol.type == 'weighing' && data['weighingTime'] != null) {
       sheet.getRangeByIndex(row, 1).setText(
         'Дата и время: ${DateFormat('dd.MM.yyyy HH:mm').format(DateTime.parse(data['weighingTime']))}',
       );
@@ -544,8 +560,10 @@ class ProtocolExportService {
   }
 
   int _addExcelTable(xlsio.Worksheet sheet, ProtocolLocal protocol, Map<String, dynamic> data, int row) {
-    if (protocol.type == 'casting') {
-      return _addExcelCastingTable(sheet, data, row);
+    if (protocol.type == 'casting_attempt') {
+      return _addExcelCastingAttemptTable(sheet, data, row);
+    } else if (protocol.type == 'casting_intermediate' || protocol.type == 'casting_final') {
+      return _addExcelCastingFullTable(sheet, data, row);
     }
 
     final headers = _getExcelHeaders(protocol.type);
@@ -568,21 +586,53 @@ class ProtocolExportService {
     return row;
   }
 
-  // ✅ НОВЫЙ МЕТОД: Таблица для кастинга (Excel)
-  int _addExcelCastingTable(xlsio.Worksheet sheet, Map<String, dynamic> data, int row) {
+  // ========== EXCEL: КАСТИНГ ПОПЫТКА (БЕЗ ЦВЕТОВ) ==========
+  int _addExcelCastingAttemptTable(xlsio.Worksheet sheet, Map<String, dynamic> data, int row) {
     final participantsData = data['participantsData'] as List<dynamic>? ?? [];
-    final bestInAttempts = (data['bestInAttempts'] as List<dynamic>?)?.cast<double>() ?? [];
-    final scoringMethod = data['scoringMethod'] as String? ?? 'average_distance';
-    final attemptsCount = data['attemptsCount'] as int? ?? 3;
 
-    // Заголовки
+    final headers = ['Место', 'ФИО Спортсмена', 'Карповое удилище', 'Леска', 'Дальность (м)'];
+
+    for (int i = 0; i < headers.length; i++) {
+      final cell = sheet.getRangeByIndex(row, i + 1);
+      cell.setText(headers[i]);
+      cell.cellStyle.bold = true;
+      cell.cellStyle.backColor = '#D3D3D3';
+      cell.cellStyle.hAlign = xlsio.HAlignType.center;
+    }
+    row++;
+
+    for (final participant in participantsData) {
+      final participantMap = participant as Map<String, dynamic>;
+      final place = participantMap['place'] as int;
+
+      sheet.getRangeByIndex(row, 1).setNumber(place.toDouble());
+      sheet.getRangeByIndex(row, 2).setText(participantMap['fullName']?.toString() ?? '');
+      sheet.getRangeByIndex(row, 3).setText(participantMap['rod']?.toString() ?? '');
+      sheet.getRangeByIndex(row, 4).setText(participantMap['line']?.toString() ?? '');
+
+      final distanceCell = sheet.getRangeByIndex(row, 5);
+      distanceCell.setNumber(participantMap['distance'] as double);
+      distanceCell.numberFormat = '0.00';
+
+      row++;
+    }
+
+    return row;
+  }
+
+  // ========== EXCEL: КАСТИНГ ПРОМЕЖУТОЧНЫЙ/ФИНАЛЬНЫЙ (БЕЗ ЦВЕТОВ) ==========
+  int _addExcelCastingFullTable(xlsio.Worksheet sheet, Map<String, dynamic> data, int row) {
+    final participantsData = data['participantsData'] as List<dynamic>? ?? [];
+    final scoringMethod = data['scoringMethod'] as String? ?? 'average_distance';
+    final attemptsCount = (data['attemptsCount'] as int?) ?? (data['upToAttempt'] as int?) ?? 3;
+
     final headers = [
       '№',
-      'ФИО Спортсмена',
-      'Карповое удилище',
+      'ФИО',
+      'Удилище',
       'Леска',
-      ...List.generate(attemptsCount, (i) => 'Попытка №${i + 1}'),
-      scoringMethod == 'best_distance' ? 'Лучший результат' : 'Средний балл',
+      ...List.generate(attemptsCount, (i) => 'Попытка ${i + 1}'),
+      scoringMethod == 'best_distance' ? 'Лучший' : 'Средний',
       'Место',
     ];
 
@@ -595,7 +645,6 @@ class ProtocolExportService {
     }
     row++;
 
-    // Данные
     for (int i = 0; i < participantsData.length; i++) {
       final participant = participantsData[i] as Map<String, dynamic>;
       final attempts = (participant['attempts'] as List<dynamic>).cast<double>();
@@ -603,19 +652,11 @@ class ProtocolExportService {
 
       int col = 1;
 
-      // №
       sheet.getRangeByIndex(row, col++).setNumber(i + 1);
-
-      // ФИО
       sheet.getRangeByIndex(row, col++).setText(participant['fullName']?.toString() ?? '');
-
-      // Удилище
       sheet.getRangeByIndex(row, col++).setText(participant['rod']?.toString() ?? '');
-
-      // Леска
       sheet.getRangeByIndex(row, col++).setText(participant['line']?.toString() ?? '');
 
-      // Попытки
       for (int attemptIndex = 0; attemptIndex < attemptsCount; attemptIndex++) {
         final attemptCell = sheet.getRangeByIndex(row, col++);
 
@@ -625,14 +666,8 @@ class ProtocolExportService {
           if (distance > 0) {
             attemptCell.setNumber(distance);
             attemptCell.numberFormat = '0.00';
-
-            // Выделяем лучший результат в попытке зелёным
-            if (attemptIndex < bestInAttempts.length && distance == bestInAttempts[attemptIndex]) {
-              attemptCell.cellStyle.backColor = '#A5D6A7'; // Светло-зелёный
-            }
           } else {
             attemptCell.setText('0');
-            attemptCell.cellStyle.backColor = '#FFCDD2'; // Красный (незасчитанная)
           }
         } else {
           attemptCell.setText('0');
@@ -641,7 +676,6 @@ class ProtocolExportService {
         attemptCell.cellStyle.hAlign = xlsio.HAlignType.center;
       }
 
-      // Результат (лучший или средний)
       final resultCell = sheet.getRangeByIndex(row, col++);
       if (scoringMethod == 'best_distance') {
         resultCell.setNumber(participant['bestDistance'] as double);
@@ -652,27 +686,10 @@ class ProtocolExportService {
       resultCell.cellStyle.hAlign = xlsio.HAlignType.center;
       resultCell.cellStyle.bold = true;
 
-      // Место
       final placeCell = sheet.getRangeByIndex(row, col++);
       placeCell.setNumber(place.toDouble());
       placeCell.cellStyle.hAlign = xlsio.HAlignType.center;
       placeCell.cellStyle.bold = true;
-
-      // Выделяем места цветом (вся строка)
-      String? rowColor;
-      if (place == 1) {
-        rowColor = '#C8E6C9'; // Зелёный
-      } else if (place == 2) {
-        rowColor = '#BBDEFB'; // Синий
-      } else if (place == 3) {
-        rowColor = '#FFF9C4'; // Жёлтый
-      }
-
-      if (rowColor != null) {
-        for (int c = 1; c <= col; c++) {
-          sheet.getRangeByIndex(row, c).cellStyle.backColor = rowColor;
-        }
-      }
 
       row++;
     }
@@ -684,7 +701,7 @@ class ProtocolExportService {
     if (data['judges'] != null) {
       for (final judge in data['judges'] as List<dynamic>) {
         final judgeMap = judge as Map<String, dynamic>;
-        final rank = judgeMap['rank']?.toString() ?? 'Судья';
+        final rank = (judgeMap['rank']?.toString() ?? 'judge').tr();
         final name = judgeMap['name']?.toString() ?? '';
 
         sheet.getRangeByIndex(row, 1).setText('$rank: $name _______________');
@@ -801,20 +818,24 @@ class ProtocolExportService {
     }
   }
 
-  // ===== SAVE & SHARE =====
-
   Future<void> _savePdf(pw.Document pdf, ProtocolLocal protocol) async {
     try {
       final output = await getTemporaryDirectory();
-      final file = File('${output.path}/protocol_${protocol.id}_${DateTime.now().millisecondsSinceEpoch}.pdf');
-      await file.writeAsBytes(await pdf.save());
+      final fileName = 'protocol_${protocol.id}_${DateTime.now().millisecondsSinceEpoch}.pdf';
+      final file = File('${output.path}/$fileName');
 
-      await Share.shareXFiles(
+      print('💾 Saving PDF to: ${file.path}');
+      await file.writeAsBytes(await pdf.save());
+      print('✅ PDF saved successfully: ${file.path}');
+
+      print('📤 Sharing PDF...');
+      final result = await Share.shareXFiles(
         [XFile(file.path)],
         subject: _getProtocolTitle(protocol),
       );
+      print('✅ Share result: $result');
     } catch (e) {
-      print('Error saving PDF: $e');
+      print('❌ Error saving/sharing PDF: $e');
       rethrow;
     }
   }
@@ -825,15 +846,21 @@ class ProtocolExportService {
       workbook.dispose();
 
       final output = await getTemporaryDirectory();
-      final file = File('${output.path}/protocol_${protocol.id}_${DateTime.now().millisecondsSinceEpoch}.xlsx');
-      await file.writeAsBytes(bytes);
+      final fileName = 'protocol_${protocol.id}_${DateTime.now().millisecondsSinceEpoch}.xlsx';
+      final file = File('${output.path}/$fileName');
 
-      await Share.shareXFiles(
+      print('💾 Saving Excel to: ${file.path}');
+      await file.writeAsBytes(bytes);
+      print('✅ Excel saved successfully: ${file.path}');
+
+      print('📤 Sharing Excel...');
+      final result = await Share.shareXFiles(
         [XFile(file.path)],
         subject: _getProtocolTitle(protocol),
       );
+      print('✅ Share result: $result');
     } catch (e) {
-      print('Error saving Excel: $e');
+      print('❌ Error saving/sharing Excel: $e');
       rethrow;
     }
   }
@@ -850,8 +877,12 @@ class ProtocolExportService {
         return 'Сводный протокол';
       case 'final':
         return 'Финальный протокол';
-      case 'casting':
-        return 'Протокол соревнования по кастингу';
+      case 'casting_attempt':
+        return 'Протокол попытки №${protocol.weighingNumber}';
+      case 'casting_intermediate':
+        return 'Промежуточный протокол кастинга (${protocol.weighingNumber} попыток)';
+      case 'casting_final':
+        return 'Финальный протокол кастинга';
       default:
         return 'Протокол соревнования';
     }

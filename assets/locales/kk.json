@@ -524,5 +524,9 @@
   "protocols_generate_intermediate": "Аралық хаттаманы жасау",
   "protocols_generated_casting_success": "Кастинг хаттамасы сәтті жасалды",
   "protocols_generating_casting": "Кастинг хаттамасын жасау...",
-  "protocols_no_casting": "Әрекет хаттамалары жоқ"
+  "protocols_no_casting": "Әрекет хаттамалары жоқ",
+  "casting_attempt": "Әрекет хаттамасы",
+  "casting_intermediate": "Аралық хаттама",
+  "casting_final": "Қорытынды хаттама",
+  "common_save": "Сақтау"
 }

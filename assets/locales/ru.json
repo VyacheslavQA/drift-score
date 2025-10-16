@@ -525,6 +525,11 @@
   "protocols_generate_intermediate": "Сгенерировать промежуточный протокол",
   "protocols_generated_casting_success": "Протокол кастинга успешно создан",
   "protocols_generating_casting": "Генерация протокола кастинга...",
-  "protocols_no_casting": "Нет протоколов попыток"
+  "protocols_no_casting": "Нет протоколов попыток",
+  "casting_attempt": "Протокол попытки",
+  "casting_intermediate": "Промежуточный протокол",
+  "casting_final": "Финальный протокол",
+  "common_save": "Сохранить"
+
 
 }

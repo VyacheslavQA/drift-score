@@ -9,6 +9,8 @@ import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_dimensions.dart';
 import '../../data/services/isar_service.dart';
 import 'protocol_view_screen.dart';
+import '../../data/services/protocol_export_service.dart';
+import 'dart:convert';
 
 class ProtocolListScreen extends ConsumerStatefulWidget {
   final CompetitionLocal competition;
@@ -835,9 +837,57 @@ class _ProtocolListScreenState extends ConsumerState<ProtocolListScreen>
     );
   }
 
-  void _shareProtocol(ProtocolLocal protocol) {
-    _showSnackBar('protocols_export_type'.tr(namedArgs: {'type': protocol.type}));
-    // TODO: Реализовать экспорт в PDF/Excel/Word
+  Future<void> _shareProtocol(ProtocolLocal protocol) async {
+    try {
+      _showSnackBar('protocols_export_start'.tr());
+
+      // Показываем диалог выбора формата
+      final format = await showDialog<String>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text('export_format'.tr()),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: Icon(Icons.picture_as_pdf, color: AppColors.error),
+                title: Text('PDF'),
+                onTap: () => Navigator.pop(context, 'pdf'),
+              ),
+              ListTile(
+                leading: Icon(Icons.table_chart, color: AppColors.success),
+                title: Text('Excel'),
+                onTap: () => Navigator.pop(context, 'excel'),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      if (format == null) return;
+
+      // Парсим JSON данные протокола
+      final data = Map<String, dynamic>.from(jsonDecode(protocol.dataJson));
+
+      if (data.isEmpty) {
+        _showSnackBar('protocols_export_error'.tr());
+        return;
+      }
+
+      // Экспортируем
+      final exportService = ProtocolExportService();
+
+      if (format == 'pdf') {
+        await exportService.exportToPdf(protocol, data);
+      } else if (format == 'excel') {
+        await exportService.exportToExcel(protocol, data);
+      }
+
+      _showSnackBar('protocols_export_success'.tr());
+    } catch (e) {
+      _showSnackBar('protocols_export_error'.tr());
+      print('Export error: $e');
+    }
   }
 
   Future<void> _deleteProtocol(ProtocolLocal protocol) async {

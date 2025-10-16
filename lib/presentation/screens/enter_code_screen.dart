@@ -216,8 +216,8 @@ class _EnterCodeScreenState extends ConsumerState<EnterCodeScreen> {
       // Проверка тестовых кодов
       if (code == masterCode ||
           code == 'DS-ADMIN-2025' ||
-          code == 'DS-TEST-2025' ||
-          code == 'DS-JUDGE-2025') {
+          code == 'TEST-FISH-2024' ||
+          code == 'TEST-CAST-2024') {
         isValid = true;
         isAdmin = true;
       }

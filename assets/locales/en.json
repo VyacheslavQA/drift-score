@@ -525,5 +525,9 @@
   "protocols_generate_intermediate": "Generate Intermediate Protocol",
   "protocols_generated_casting_success": "Casting protocol successfully generated",
   "protocols_generating_casting": "Generating casting protocol...",
-  "protocols_no_casting": "No attempt protocols"
+  "protocols_no_casting": "No attempt protocols",
+  "casting_attempt": "Attempt Protocol",
+  "casting_intermediate": "Intermediate Protocol",
+  "casting_final": "Final Protocol",
+  "common_save": "Save"
 }

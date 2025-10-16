@@ -422,8 +422,9 @@ class _CompetitionDetailsScreenState extends ConsumerState<CompetitionDetailsScr
               SizedBox(height: 4),
               _buildTeamInfoRow(
                 Icons.people,
-                '${team.members.length} ${team.members.length == 1 ? 'member'
-                    .tr() : 'members'.tr()}',
+                team.members.length == 1
+                    ? '${team.members.length} ${'participant'.tr()}'
+                    : '${team.members.length} ${'participants'.tr()}',
               ),
               if (team.members.isNotEmpty) ...[
                 SizedBox(height: AppDimensions.paddingSmall),

@@ -587,7 +587,7 @@ class _AddTeamScreenState extends ConsumerState<AddTeamScreen> {
           ),
         ),
         child: Text(
-          _isEditing ? 'save_changes'.tr() : (_isCasting ? 'add_participants_button'.tr() : 'create_team'.tr()),
+          _isEditing ? 'save_changes'.tr() : (_isCasting ? 'common_save'.tr() : 'create_team'.tr()),
           style: AppTextStyles.button,
         ),
       ),
@@ -666,7 +666,7 @@ class _AddTeamScreenState extends ConsumerState<AddTeamScreen> {
     if (_isEditing) {
       await ref.read(teamProvider(widget.competition.id).notifier).updateTeam(
         teamId: widget.team!.id,
-        name: _isCasting ? 'Participants' : _nameController.text.trim(), // Для кастинга имя не важно
+        name: _isCasting ? 'participant'.tr() : _nameController.text.trim(), // Для кастинга имя не важно
         city: _isCasting ? widget.competition.cityOrRegion : _cityController.text.trim(),
         club: _clubController.text.trim().isEmpty ? null : _clubController.text.trim(),
         members: members,
@@ -677,7 +677,7 @@ class _AddTeamScreenState extends ConsumerState<AddTeamScreen> {
       );
     } else {
       await ref.read(teamProvider(widget.competition.id).notifier).createTeam(
-        name: _isCasting ? 'Participants' : _nameController.text.trim(),
+        name: _isCasting ? 'participant'.tr() : _nameController.text.trim(),
         city: _isCasting ? widget.competition.cityOrRegion : _cityController.text.trim(),
         club: _clubController.text.trim().isEmpty ? null : _clubController.text.trim(),
         members: members,
