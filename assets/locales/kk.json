@@ -517,5 +517,12 @@
   "cannot_edit": "өзгертуге болмайды",
   "save_changes": "Өзгерістерді сақтау",
   "competition_updated": "Жарыс жаңартылды",
-  "edit": "Өңдеу"
+  "edit": "Өңдеу",
+  "add_participant": "Қатысушыны қосу",
+  "protocols_attempts": "Әрекеттер",
+  "protocols_generate_casting": "Кастинг хаттамасын жасау",
+  "protocols_generate_intermediate": "Аралық хаттаманы жасау",
+  "protocols_generated_casting_success": "Кастинг хаттамасы сәтті жасалды",
+  "protocols_generating_casting": "Кастинг хаттамасын жасау...",
+  "protocols_no_casting": "Әрекет хаттамалары жоқ"
 }

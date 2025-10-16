@@ -25,11 +25,16 @@ class ProtocolListScreen extends ConsumerStatefulWidget {
 class _ProtocolListScreenState extends ConsumerState<ProtocolListScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  late bool _isCasting;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 5, vsync: this);
+    _isCasting = widget.competition.fishingType == 'casting';
+
+    // Для кастинга: 3 вкладки (Попытки, Промежуточный, Финальный)
+    // Для рыбалки: 5 вкладок (как было)
+    _tabController = TabController(length: _isCasting ? 3 : 5, vsync: this);
 
     Future.microtask(() {
       _loadProtocols();
@@ -61,7 +66,13 @@ class _ProtocolListScreenState extends ConsumerState<ProtocolListScreen>
           indicatorColor: Colors.white,
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white70,
-          tabs: [
+          tabs: _isCasting
+              ? [
+            Tab(text: 'protocols_attempts'.tr()), // Протоколы попыток
+            Tab(text: 'protocols_intermediate'.tr()), // Промежуточный
+            Tab(text: 'protocols_final'.tr()), // Финальный
+          ]
+              : [
             Tab(text: 'protocols_weighing'.tr()),
             Tab(text: 'protocols_intermediate'.tr()),
             Tab(text: 'protocols_big_fish'.tr()),
@@ -75,7 +86,13 @@ class _ProtocolListScreenState extends ConsumerState<ProtocolListScreen>
             ? const Center(child: CircularProgressIndicator())
             : TabBarView(
           controller: _tabController,
-          children: [
+          children: _isCasting
+              ? [
+            _buildCastingAttemptsTab(state.protocols),
+            _buildCastingIntermediateTab(state.protocols),
+            _buildCastingFinalTab(state.protocols),
+          ]
+              : [
             _buildWeighingProtocolsTab(state.protocols),
             _buildIntermediateProtocolsTab(state.protocols),
             _buildBigFishProtocolsTab(state.protocols),
@@ -86,6 +103,232 @@ class _ProtocolListScreenState extends ConsumerState<ProtocolListScreen>
       ),
     );
   }
+
+  // ========== КАСТИНГ ПРОТОКОЛЫ ==========
+
+  Widget _buildCastingAttemptsTab(List<ProtocolLocal> allProtocols) {
+    final protocols = allProtocols.where((p) => p.type == 'casting_attempt').toList();
+    protocols.sort((a, b) => (a.weighingNumber ?? 0).compareTo(b.weighingNumber ?? 0));
+
+    final attemptsCount = widget.competition.attemptsCount ?? 3;
+
+    return Column(
+      children: [
+        // Кнопки для генерации протоколов попыток
+        Padding(
+          padding: EdgeInsets.all(AppDimensions.paddingMedium),
+          child: Column(
+            children: List.generate(attemptsCount, (index) {
+              final attemptNumber = index + 1;
+              final existingProtocol = protocols.where((p) => p.weighingNumber == attemptNumber).firstOrNull;
+
+              return Padding(
+                padding: EdgeInsets.only(bottom: AppDimensions.paddingSmall),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: existingProtocol == null
+                        ? () => _generateCastingAttemptProtocol(attemptNumber)
+                        : null,
+                    icon: Icon(
+                      existingProtocol == null ? Icons.auto_fix_high : Icons.check_circle,
+                      size: 18,
+                    ),
+                    label: Text(
+                      existingProtocol == null
+                          ? 'Сгенерировать протокол попытки №$attemptNumber'
+                          : 'Протокол попытки №$attemptNumber создан',
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: existingProtocol == null
+                          ? AppColors.primary
+                          : Colors.grey,
+                      foregroundColor: Colors.white,
+                      padding: EdgeInsets.symmetric(vertical: AppDimensions.paddingMedium),
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ),
+        ),
+        Expanded(
+          child: protocols.isEmpty
+              ? _buildEmptyState('protocols_no_casting'.tr())
+              : RefreshIndicator(
+            onRefresh: _loadProtocols,
+            child: ListView.builder(
+              padding: EdgeInsets.all(AppDimensions.paddingMedium),
+              itemCount: protocols.length,
+              itemBuilder: (context, index) {
+                final protocol = protocols[index];
+                return _buildProtocolCard(
+                  protocol: protocol,
+                  title: 'Протокол попытки №${protocol.weighingNumber}',
+                  subtitle: _formatDateTime(protocol.createdAt),
+                  icon: Icons.gps_fixed,
+                  color: AppColors.primary,
+                );
+              },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCastingIntermediateTab(List<ProtocolLocal> allProtocols) {
+    final protocols = allProtocols.where((p) => p.type == 'casting_intermediate').toList();
+    protocols.sort((a, b) => (a.weighingNumber ?? 0).compareTo(b.weighingNumber ?? 0));
+
+    final attemptsCount = widget.competition.attemptsCount ?? 3;
+
+    return Column(
+      children: [
+        // Кнопки для генерации промежуточных протоколов
+        Padding(
+          padding: EdgeInsets.all(AppDimensions.paddingMedium),
+          child: Column(
+            children: [
+              // Промежуточный после 2-й попытки
+              if (attemptsCount >= 2)
+                Padding(
+                  padding: EdgeInsets.only(bottom: AppDimensions.paddingSmall),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: protocols.where((p) => p.weighingNumber == 2).isEmpty
+                          ? () => _generateCastingIntermediateProtocol(2)
+                          : null,
+                      icon: Icon(
+                        protocols.where((p) => p.weighingNumber == 2).isEmpty
+                            ? Icons.auto_fix_high
+                            : Icons.check_circle,
+                        size: 18,
+                      ),
+                      label: Text(
+                        protocols.where((p) => p.weighingNumber == 2).isEmpty
+                            ? 'Промежуточный после 2 попыток'
+                            : 'Промежуточный протокол (2) создан',
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: protocols.where((p) => p.weighingNumber == 2).isEmpty
+                            ? Colors.orange
+                            : Colors.grey,
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.symmetric(vertical: AppDimensions.paddingMedium),
+                      ),
+                    ),
+                  ),
+                ),
+              // Промежуточный после 3-й попытки
+              if (attemptsCount >= 3)
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: protocols.where((p) => p.weighingNumber == 3).isEmpty
+                        ? () => _generateCastingIntermediateProtocol(3)
+                        : null,
+                    icon: Icon(
+                      protocols.where((p) => p.weighingNumber == 3).isEmpty
+                          ? Icons.auto_fix_high
+                          : Icons.check_circle,
+                      size: 18,
+                    ),
+                    label: Text(
+                      protocols.where((p) => p.weighingNumber == 3).isEmpty
+                          ? 'Промежуточный после 3 попыток'
+                          : 'Промежуточный протокол (3) создан',
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: protocols.where((p) => p.weighingNumber == 3).isEmpty
+                          ? Colors.orange
+                          : Colors.grey,
+                      foregroundColor: Colors.white,
+                      padding: EdgeInsets.symmetric(vertical: AppDimensions.paddingMedium),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: protocols.isEmpty
+              ? _buildEmptyState('protocols_no_intermediate'.tr())
+              : RefreshIndicator(
+            onRefresh: _loadProtocols,
+            child: ListView.builder(
+              padding: EdgeInsets.all(AppDimensions.paddingMedium),
+              itemCount: protocols.length,
+              itemBuilder: (context, index) {
+                final protocol = protocols[index];
+                return _buildProtocolCard(
+                  protocol: protocol,
+                  title: 'Промежуточный после ${protocol.weighingNumber} попыток',
+                  subtitle: _formatDateTime(protocol.createdAt),
+                  icon: Icons.leaderboard,
+                  color: Colors.orange,
+                );
+              },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCastingFinalTab(List<ProtocolLocal> allProtocols) {
+    final protocol = allProtocols.where((p) => p.type == 'casting_final').firstOrNull;
+
+    return Column(
+      children: [
+        Padding(
+          padding: EdgeInsets.all(AppDimensions.paddingMedium),
+          child: SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: protocol == null ? () => _generateCastingFinalProtocol() : null,
+              icon: Icon(
+                protocol == null ? Icons.auto_fix_high : Icons.check_circle,
+                size: 18,
+              ),
+              label: Text(
+                protocol == null
+                    ? 'protocols_generate_final'.tr()
+                    : 'Финальный протокол создан',
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: protocol == null ? Colors.red : Colors.grey,
+                foregroundColor: Colors.white,
+                padding: EdgeInsets.symmetric(vertical: AppDimensions.paddingMedium),
+              ),
+            ),
+          ),
+        ),
+        Expanded(
+          child: protocol == null
+              ? _buildEmptyState('protocols_no_final'.tr())
+              : RefreshIndicator(
+            onRefresh: _loadProtocols,
+            child: ListView(
+              padding: EdgeInsets.all(AppDimensions.paddingMedium),
+              children: [
+                _buildProtocolCard(
+                  protocol: protocol,
+                  title: 'protocols_final_title'.tr(),
+                  subtitle: _formatDateTime(protocol.createdAt),
+                  icon: Icons.emoji_events,
+                  color: Colors.red,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ========== РЫБАЛКА ПРОТОКОЛЫ ==========
 
   Widget _buildWeighingProtocolsTab(List<ProtocolLocal> allProtocols) {
     final protocols = allProtocols.where((p) => p.type == 'weighing').toList();
@@ -320,6 +563,8 @@ class _ProtocolListScreenState extends ConsumerState<ProtocolListScreen>
     );
   }
 
+  // ========== ОБЩИЕ МЕТОДЫ ==========
+
   Widget _buildProtocolCard({
     required ProtocolLocal protocol,
     required String title,
@@ -384,6 +629,76 @@ class _ProtocolListScreenState extends ConsumerState<ProtocolListScreen>
       ),
     );
   }
+
+  // ========== ГЕНЕРАЦИЯ ПРОТОКОЛОВ: КАСТИНГ ==========
+
+  Future<void> _generateCastingAttemptProtocol(int attemptNumber) async {
+    _showLoadingDialog('Генерация протокола попытки №$attemptNumber...');
+
+    try {
+      final protocol = await ref.read(protocolProvider.notifier)
+          .generateCastingAttemptProtocol(widget.competition.id!, attemptNumber);
+
+      Navigator.pop(context);
+
+      if (protocol != null) {
+        await _loadProtocols();
+        if (mounted) setState(() {});
+        _showSnackBar('Протокол попытки №$attemptNumber создан!');
+      } else {
+        _showSnackBar('Недостаточно данных для генерации', isError: true);
+      }
+    } catch (e) {
+      Navigator.pop(context);
+      _showSnackBar('Ошибка генерации: ${e.toString()}', isError: true);
+    }
+  }
+
+  Future<void> _generateCastingIntermediateProtocol(int upToAttempt) async {
+    _showLoadingDialog('Генерация промежуточного протокола...');
+
+    try {
+      final protocol = await ref.read(protocolProvider.notifier)
+          .generateCastingIntermediateProtocol(widget.competition.id!, upToAttempt);
+
+      Navigator.pop(context);
+
+      if (protocol != null) {
+        await _loadProtocols();
+        if (mounted) setState(() {});
+        _showSnackBar('Промежуточный протокол создан!');
+      } else {
+        _showSnackBar('Недостаточно данных для генерации', isError: true);
+      }
+    } catch (e) {
+      Navigator.pop(context);
+      _showSnackBar('Ошибка генерации: ${e.toString()}', isError: true);
+    }
+  }
+
+  Future<void> _generateCastingFinalProtocol() async {
+    _showLoadingDialog('Генерация финального протокола...');
+
+    try {
+      final protocol = await ref.read(protocolProvider.notifier)
+          .generateCastingFinalProtocol(widget.competition.id!);
+
+      Navigator.pop(context);
+
+      if (protocol != null) {
+        await _loadProtocols();
+        if (mounted) setState(() {});
+        _showSnackBar('Финальный протокол создан!');
+      } else {
+        _showSnackBar('Недостаточно данных для генерации', isError: true);
+      }
+    } catch (e) {
+      Navigator.pop(context);
+      _showSnackBar('Ошибка генерации: ${e.toString()}', isError: true);
+    }
+  }
+
+  // ========== ГЕНЕРАЦИЯ ПРОТОКОЛОВ: РЫБАЛКА ==========
 
   Future<void> _generateAllWeighingProtocols() async {
     _showLoadingDialog('protocols_generating_weighing'.tr());
@@ -509,6 +824,8 @@ class _ProtocolListScreenState extends ConsumerState<ProtocolListScreen>
     }
   }
 
+  // ========== ДЕЙСТВИЯ С ПРОТОКОЛАМИ ==========
+
   void _viewProtocol(ProtocolLocal protocol) {
     Navigator.push(
       context,
@@ -548,6 +865,8 @@ class _ProtocolListScreenState extends ConsumerState<ProtocolListScreen>
       _showSnackBar('protocols_deleted'.tr());
     }
   }
+
+  // ========== ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ==========
 
   void _showLoadingDialog(String message) {
     showDialog(

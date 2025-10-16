@@ -518,5 +518,12 @@
   "cannot_edit": "cannot edit",
   "save_changes": "Save Changes",
   "competition_updated": "Competition updated",
-  "edit": "Edit"
+  "edit": "Edit",
+  "add_participant": "Add Participant",
+  "protocols_attempts": "Attempts",
+  "protocols_generate_casting": "Generate Casting Protocol",
+  "protocols_generate_intermediate": "Generate Intermediate Protocol",
+  "protocols_generated_casting_success": "Casting protocol successfully generated",
+  "protocols_generating_casting": "Generating casting protocol...",
+  "protocols_no_casting": "No attempt protocols"
 }

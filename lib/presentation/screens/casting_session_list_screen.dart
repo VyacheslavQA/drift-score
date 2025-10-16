@@ -70,7 +70,7 @@ class CastingSessionListScreen extends ConsumerWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            Icons.sports,
+            Icons.straighten,
             size: 80,
             color: AppColors.textSecondary.withOpacity(0.5),
           ),

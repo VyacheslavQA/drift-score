@@ -50,7 +50,7 @@ class ProtocolNotifier extends StateNotifier<ProtocolState> {
       case 'other':
         return 'Другое';
       default:
-        return fishType; // Если свой вариант
+        return fishType;
     }
   }
 
@@ -75,6 +75,363 @@ class ProtocolNotifier extends StateNotifier<ProtocolState> {
       return [];
     }
   }
+
+  // ========== КАСТИНГ ПРОТОКОЛЫ ==========
+
+  /// Генерация протокола конкретной попытки кастинга
+  Future<ProtocolLocal?> generateCastingAttemptProtocol(
+      int competitionId,
+      int attemptNumber,
+      ) async {
+    try {
+      print('🎯 Generating casting attempt protocol #$attemptNumber for competition $competitionId');
+
+      final competition = await _isarService.getCompetition(competitionId);
+      final teams = await _isarService.getTeamsByCompetition(competitionId);
+
+      if (competition == null || teams.isEmpty) {
+        print('❌ Competition not found or no teams');
+        return null;
+      }
+
+      final castingSessions = await _isarService.getCastingSessionsByCompetition(competitionId);
+
+      if (castingSessions.length < attemptNumber) {
+        print('❌ No casting session found for attempt #$attemptNumber');
+        return null;
+      }
+
+      final session = castingSessions[attemptNumber - 1];
+      final results = await _isarService.getResultsByCastingSession(session.id);
+
+      if (results.isEmpty) {
+        print('❌ No results found for attempt #$attemptNumber');
+        return null;
+      }
+
+      final List<Map<String, dynamic>> participantsData = [];
+
+      for (var result in results) {
+        final distance = result.attempts.isNotEmpty ? result.attempts[0].distance : 0.0;
+
+        // Находим участника в команде для получения rod и line
+        TeamMember? participant;
+        for (var team in teams) {
+          try {
+            participant = team.members.firstWhere(
+                  (m) => m.fullName.trim() == result.participantFullName.trim(),
+            );
+            break;
+          } catch (_) {
+            continue;
+          }
+        }
+
+        final rod = participant?.rod?.trim() ?? '';
+        final line = participant?.line?.trim() ?? competition.commonLine ?? '';
+
+        participantsData.add({
+          'fullName': result.participantFullName,
+          'rod': rod,
+          'line': line,
+          'distance': distance,
+        });
+      }
+
+      // Сортировка по дальности
+      participantsData.sort((a, b) => (b['distance'] as double).compareTo(a['distance'] as double));
+
+      // Присваиваем места
+      for (int i = 0; i < participantsData.length; i++) {
+        participantsData[i]['place'] = i + 1;
+      }
+
+      final protocol = ProtocolLocal()
+        ..competitionId = competitionId.toString()
+        ..type = 'casting_attempt'
+        ..weighingNumber = attemptNumber
+        ..createdAt = DateTime.now()
+        ..dataJson = jsonEncode({
+          'competitionName': competition.name,
+          'city': competition.cityOrRegion,
+          'venue': competition.lakeName,
+          'attemptNumber': attemptNumber,
+          'sessionTime': session.sessionTime.toIso8601String(),
+          'participantsData': participantsData,
+        });
+
+      await _isarService.saveProtocol(protocol);
+      print('✅ Casting attempt protocol #$attemptNumber generated');
+
+      return protocol;
+    } catch (e) {
+      print('❌ Error generating casting attempt protocol: $e');
+      return null;
+    }
+  }
+
+  /// Генерация промежуточного протокола кастинга (после нескольких попыток)
+  Future<ProtocolLocal?> generateCastingIntermediateProtocol(
+      int competitionId,
+      int upToAttempt,
+      ) async {
+    try {
+      print('🎯 Generating casting intermediate protocol up to attempt #$upToAttempt');
+
+      final competition = await _isarService.getCompetition(competitionId);
+      final teams = await _isarService.getTeamsByCompetition(competitionId);
+
+      if (competition == null || teams.isEmpty) {
+        print('❌ Competition not found or no teams');
+        return null;
+      }
+
+      final castingSessions = await _isarService.getCastingSessionsByCompetition(competitionId);
+
+      if (castingSessions.length < upToAttempt) {
+        print('❌ Not enough sessions for intermediate protocol');
+        return null;
+      }
+
+      final Map<String, Map<String, dynamic>> participantsMap = {};
+
+      // Собираем результаты всех попыток до upToAttempt
+      for (int i = 0; i < upToAttempt; i++) {
+        final session = castingSessions[i];
+        final results = await _isarService.getResultsByCastingSession(session.id);
+
+        for (var result in results) {
+          if (!participantsMap.containsKey(result.participantFullName)) {
+            // Находим участника в команде
+            TeamMember? participant;
+            for (var team in teams) {
+              try {
+                participant = team.members.firstWhere(
+                      (m) => m.fullName.trim() == result.participantFullName.trim(),
+                );
+                break;
+              } catch (_) {}
+            }
+
+            participantsMap[result.participantFullName] = {
+              'fullName': result.participantFullName,
+              'rod': participant?.rod?.trim() ?? '',
+              'line': participant?.line?.trim() ?? competition.commonLine ?? '',
+              'attempts': <double>[],
+            };
+          }
+
+          final distance = result.attempts.isNotEmpty ? result.attempts[0].distance : 0.0;
+          (participantsMap[result.participantFullName]!['attempts'] as List<double>).add(distance);
+        }
+      }
+
+      final List<Map<String, dynamic>> participantsData = [];
+      final scoringMethod = competition.scoringMethod ?? 'average_distance';
+
+      for (var participant in participantsMap.values) {
+        final attempts = participant['attempts'] as List<double>;
+        final bestDistance = attempts.reduce((a, b) => a > b ? a : b);
+        final validAttempts = attempts.where((a) => a > 0).toList();
+        final averageDistance = validAttempts.isNotEmpty
+            ? validAttempts.reduce((a, b) => a + b) / validAttempts.length
+            : 0.0;
+
+        participantsData.add({
+          'fullName': participant['fullName'],
+          'rod': participant['rod'],
+          'line': participant['line'],
+          'attempts': attempts,
+          'bestDistance': bestDistance,
+          'averageDistance': averageDistance,
+        });
+      }
+
+      // Сортировка по методу подсчёта
+      if (scoringMethod == 'best_distance') {
+        participantsData.sort((a, b) => (b['bestDistance'] as double).compareTo(a['bestDistance'] as double));
+      } else {
+        participantsData.sort((a, b) => (b['averageDistance'] as double).compareTo(a['averageDistance'] as double));
+      }
+
+      // Присваиваем места
+      for (int i = 0; i < participantsData.length; i++) {
+        participantsData[i]['place'] = i + 1;
+      }
+
+      // Находим лучшие результаты в каждой попытке
+      final List<double> bestInAttempts = [];
+      for (int i = 0; i < upToAttempt; i++) {
+        double maxDistance = 0.0;
+        for (var participant in participantsData) {
+          final attempts = participant['attempts'] as List<double>;
+          if (i < attempts.length && attempts[i] > maxDistance) {
+            maxDistance = attempts[i];
+          }
+        }
+        bestInAttempts.add(maxDistance);
+      }
+
+      final protocol = ProtocolLocal()
+        ..competitionId = competitionId.toString()
+        ..type = 'casting_intermediate'
+        ..weighingNumber = upToAttempt
+        ..createdAt = DateTime.now()
+        ..dataJson = jsonEncode({
+          'competitionName': competition.name,
+          'city': competition.cityOrRegion,
+          'venue': competition.lakeName,
+          'organizer': competition.organizerName,
+          'upToAttempt': upToAttempt,
+          'scoringMethod': scoringMethod,
+          'commonLine': competition.commonLine,
+          'participantsData': participantsData,
+          'bestInAttempts': bestInAttempts,
+        });
+
+      await _isarService.saveProtocol(protocol);
+      print('✅ Casting intermediate protocol generated (up to attempt #$upToAttempt)');
+
+      return protocol;
+    } catch (e) {
+      print('❌ Error generating casting intermediate protocol: $e');
+      return null;
+    }
+  }
+
+  /// Генерация финального протокола кастинга (после всех попыток)
+  Future<ProtocolLocal?> generateCastingFinalProtocol(int competitionId) async {
+    try {
+      print('🎯 Generating casting final protocol for competition $competitionId');
+
+      final competition = await _isarService.getCompetition(competitionId);
+      final teams = await _isarService.getTeamsByCompetition(competitionId);
+
+      if (competition == null || teams.isEmpty) {
+        print('❌ Competition not found or no teams');
+        return null;
+      }
+
+      final castingSessions = await _isarService.getCastingSessionsByCompetition(competitionId);
+      final attemptsCount = competition.attemptsCount ?? 3;
+
+      if (castingSessions.length < attemptsCount) {
+        print('❌ Not all attempts completed yet');
+        return null;
+      }
+
+      final Map<String, Map<String, dynamic>> participantsMap = {};
+
+      // Собираем результаты всех попыток
+      for (int i = 0; i < attemptsCount; i++) {
+        final session = castingSessions[i];
+        final results = await _isarService.getResultsByCastingSession(session.id);
+
+        for (var result in results) {
+          if (!participantsMap.containsKey(result.participantFullName)) {
+            // Находим участника в команде
+            TeamMember? participant;
+            for (var team in teams) {
+              try {
+                participant = team.members.firstWhere(
+                      (m) => m.fullName.trim() == result.participantFullName.trim(),
+                );
+                break;
+              } catch (_) {}
+            }
+
+            participantsMap[result.participantFullName] = {
+              'fullName': result.participantFullName,
+              'rod': participant?.rod?.trim() ?? '',
+              'line': participant?.line?.trim() ?? competition.commonLine ?? '',
+              'attempts': <double>[],
+            };
+          }
+
+          final distance = result.attempts.isNotEmpty ? result.attempts[0].distance : 0.0;
+          (participantsMap[result.participantFullName]!['attempts'] as List<double>).add(distance);
+        }
+      }
+
+      final List<Map<String, dynamic>> participantsData = [];
+      final scoringMethod = competition.scoringMethod ?? 'average_distance';
+
+      for (var participant in participantsMap.values) {
+        final attempts = participant['attempts'] as List<double>;
+        final bestDistance = attempts.reduce((a, b) => a > b ? a : b);
+        final validAttempts = attempts.where((a) => a > 0).toList();
+        final averageDistance = validAttempts.isNotEmpty
+            ? validAttempts.reduce((a, b) => a + b) / validAttempts.length
+            : 0.0;
+
+        participantsData.add({
+          'fullName': participant['fullName'],
+          'rod': participant['rod'],
+          'line': participant['line'],
+          'attempts': attempts,
+          'bestDistance': bestDistance,
+          'averageDistance': averageDistance,
+        });
+      }
+
+      // Сортировка по методу подсчёта
+      if (scoringMethod == 'best_distance') {
+        participantsData.sort((a, b) => (b['bestDistance'] as double).compareTo(a['bestDistance'] as double));
+      } else {
+        participantsData.sort((a, b) => (b['averageDistance'] as double).compareTo(a['averageDistance'] as double));
+      }
+
+      // Присваиваем места
+      for (int i = 0; i < participantsData.length; i++) {
+        participantsData[i]['place'] = i + 1;
+      }
+
+      // Находим лучшие результаты в каждой попытке
+      final List<double> bestInAttempts = [];
+      for (int i = 0; i < attemptsCount; i++) {
+        double maxDistance = 0.0;
+        for (var participant in participantsData) {
+          final attempts = participant['attempts'] as List<double>;
+          if (i < attempts.length && attempts[i] > maxDistance) {
+            maxDistance = attempts[i];
+          }
+        }
+        bestInAttempts.add(maxDistance);
+      }
+
+      final protocol = ProtocolLocal()
+        ..competitionId = competitionId.toString()
+        ..type = 'casting_final'
+        ..createdAt = DateTime.now()
+        ..dataJson = jsonEncode({
+          'competitionName': competition.name,
+          'city': competition.cityOrRegion,
+          'venue': competition.lakeName,
+          'organizer': competition.organizerName,
+          'startTime': competition.startTime.toIso8601String(),
+          'finishTime': competition.finishTime.toIso8601String(),
+          'judges': competition.judges.map((j) => {
+            'name': j.fullName,
+            'rank': j.rank,
+          }).toList(),
+          'scoringMethod': scoringMethod,
+          'attemptsCount': attemptsCount,
+          'commonLine': competition.commonLine,
+          'participantsData': participantsData,
+          'bestInAttempts': bestInAttempts,
+        });
+
+      await _isarService.saveProtocol(protocol);
+      print('✅ Casting final protocol generated');
+
+      return protocol;
+    } catch (e) {
+      print('❌ Error generating casting final protocol: $e');
+      return null;
+    }
+  }
+
+  // ========== РЫБАЛКА ПРОТОКОЛЫ ==========
 
   Future<ProtocolLocal?> generateWeighingProtocol(
       int competitionId,
@@ -326,7 +683,6 @@ class ProtocolNotifier extends StateNotifier<ProtocolState> {
         return null;
       }
 
-      // ✅ ПРОВЕРЯЕМ: есть ли уже протокол Big Fish для этого дня?
       final existingProtocols = await _isarService.getProtocolsByCompetition(competitionId);
       final existingBigFish = existingProtocols.firstWhere(
             (p) => p.type == 'big_fish' && p.bigFishDay == dayNumber,
@@ -353,13 +709,11 @@ class ProtocolNotifier extends StateNotifier<ProtocolState> {
       ProtocolLocal protocol;
 
       if (existingBigFish.id != null) {
-        // ✅ ОБНОВЛЯЕМ существующий протокол
         print('🔄 Updating existing Big Fish protocol for day $dayNumber (ID: ${existingBigFish.id})');
         protocol = existingBigFish
           ..dataJson = jsonEncode(protocolData)
-          ..createdAt = DateTime.now(); // Обновляем время создания
+          ..createdAt = DateTime.now();
       } else {
-        // ✅ СОЗДАЁМ новый протокол
         print('➕ Creating new Big Fish protocol for day $dayNumber');
         protocol = ProtocolLocal()
           ..competitionId = competitionId.toString()

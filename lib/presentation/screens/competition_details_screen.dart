@@ -67,7 +67,12 @@ class _CompetitionDetailsScreenState extends ConsumerState<CompetitionDetailsScr
         onPressed: () => _navigateToAddTeam(context),
         backgroundColor: AppColors.primary,
         icon: const Icon(Icons.add, color: AppColors.text),
-        label: Text('add_team'.tr(), style: AppTextStyles.button),
+        label: Text(
+            widget.competition.fishingType == 'casting'
+                ? 'add_participant'.tr()
+                : 'add_team'.tr(),
+            style: AppTextStyles.button
+        ),
       )
           : null,
       bottomNavigationBar: SafeArea(

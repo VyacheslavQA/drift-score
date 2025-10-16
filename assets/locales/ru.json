@@ -518,6 +518,13 @@
   "cannot_edit": "нельзя изменить",
   "save_changes": "Сохранить изменения",
   "competition_updated": "Соревнование обновлено",
-  "edit": "Редактировать"
+  "edit": "Редактировать",
+  "add_participant": "Добавить участника",
+  "protocols_attempts": "Попытки",
+  "protocols_generate_casting": "Сгенерировать протокол кастинга",
+  "protocols_generate_intermediate": "Сгенерировать промежуточный протокол",
+  "protocols_generated_casting_success": "Протокол кастинга успешно создан",
+  "protocols_generating_casting": "Генерация протокола кастинга...",
+  "protocols_no_casting": "Нет протоколов попыток"
 
 }

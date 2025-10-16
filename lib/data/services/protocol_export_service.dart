@@ -9,14 +9,11 @@ import 'package:intl/intl.dart';
 import '../models/local/protocol_local.dart';
 
 class ProtocolExportService {
-  // Кэш для шрифта
   pw.Font? _regularFont;
   pw.Font? _boldFont;
 
-  // Загрузка шрифтов с поддержкой кириллицы
   Future<pw.Font> _loadRegularFont() async {
     if (_regularFont != null) return _regularFont!;
-
     final fontData = await PdfGoogleFonts.robotoRegular();
     _regularFont = fontData;
     return _regularFont!;
@@ -24,13 +21,11 @@ class ProtocolExportService {
 
   Future<pw.Font> _loadBoldFont() async {
     if (_boldFont != null) return _boldFont!;
-
     final fontData = await PdfGoogleFonts.robotoBold();
     _boldFont = fontData;
     return _boldFont!;
   }
 
-  // Экспорт в PDF
   Future<void> exportToPdf(ProtocolLocal protocol, Map<String, dynamic> data) async {
     final pdf = pw.Document();
     final font = await _loadRegularFont();
@@ -38,7 +33,7 @@ class ProtocolExportService {
 
     pdf.addPage(
       pw.Page(
-        pageFormat: PdfPageFormat.a4,
+        pageFormat: PdfPageFormat.a4.landscape, // Альбомная ориентация для кастинга
         build: (pw.Context context) {
           return pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -59,7 +54,6 @@ class ProtocolExportService {
     await _savePdf(pdf, protocol);
   }
 
-  // Экспорт в Excel
   Future<void> exportToExcel(ProtocolLocal protocol, Map<String, dynamic> data) async {
     final xlsio.Workbook workbook = xlsio.Workbook();
     final xlsio.Worksheet sheet = workbook.worksheets[0];
@@ -85,13 +79,10 @@ class ProtocolExportService {
     await _saveExcel(workbook, protocol);
   }
 
-  // ===== PDF HELPERS =====
-
   pw.Widget _buildPdfHeader(ProtocolLocal protocol, Map<String, dynamic> data, pw.Font font, pw.Font fontBold) {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.center,
       children: [
-        // Организатор (без слова "Организатор:")
         if (data['organizer'] != null)
           pw.Text(
             data['organizer'],
@@ -99,16 +90,12 @@ class ProtocolExportService {
             textAlign: pw.TextAlign.center,
           ),
         pw.SizedBox(height: 8),
-
-        // Тип протокола
         pw.Text(
           _getProtocolTitle(protocol),
           style: pw.TextStyle(fontSize: 16, font: fontBold),
           textAlign: pw.TextAlign.center,
         ),
         pw.SizedBox(height: 8),
-
-        // Название соревнования
         if (data['competitionName'] != null)
           pw.Text(
             data['competitionName'],
@@ -121,23 +108,27 @@ class ProtocolExportService {
 
   pw.Widget _buildPdfLocationAndDate(ProtocolLocal protocol, Map<String, dynamic> data, pw.Font font, pw.Font fontBold) {
     final isSummaryOrFinal = protocol.type == 'summary' || protocol.type == 'final';
+    final isCasting = protocol.type == 'casting';
 
     return pw.Row(
       mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
-        // Левая часть: место и даты
         pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
-            if (data['lake'] != null)
+            if (data['venue'] != null && isCasting)
+              pw.Text(
+                'Место проведения: ${data['venue']}',
+                style: pw.TextStyle(fontSize: 11, font: font),
+              ),
+            if (data['lake'] != null && !isCasting)
               pw.Text(
                 'Место проведения: ${data['lake']}',
                 style: pw.TextStyle(fontSize: 11, font: font),
               ),
             pw.SizedBox(height: 4),
 
-            // Дата в зависимости от типа протокола
             if (protocol.type == 'weighing' && data['weighingTime'] != null)
               pw.Text(
                 'Дата и время: ${DateFormat('dd.MM.yyyy HH:mm').format(DateTime.parse(data['weighingTime']))}',
@@ -150,7 +141,7 @@ class ProtocolExportService {
                 style: pw.TextStyle(fontSize: 11, font: font),
               ),
 
-            if (isSummaryOrFinal && data['startTime'] != null && data['finishTime'] != null)
+            if ((isSummaryOrFinal || isCasting) && data['startTime'] != null && data['finishTime'] != null)
               pw.Text(
                 'Даты соревнования: ${DateFormat('dd.MM.yyyy').format(DateTime.parse(data['startTime']))} - ${DateFormat('dd.MM.yyyy').format(DateTime.parse(data['finishTime']))}',
                 style: pw.TextStyle(fontSize: 11, font: font),
@@ -158,8 +149,7 @@ class ProtocolExportService {
           ],
         ),
 
-        // Правая часть: дата формирования (только для сводного и финального)
-        if (isSummaryOrFinal)
+        if (isSummaryOrFinal || isCasting)
           pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.end,
             children: [
@@ -188,9 +178,93 @@ class ProtocolExportService {
         return _buildPdfSummaryTable(data, font, fontBold);
       case 'final':
         return _buildPdfFinalTable(data, font, fontBold);
+      case 'casting':
+        return _buildPdfCastingTable(data, font, fontBold);
       default:
         return pw.Text('Тип протокола не поддерживается', style: pw.TextStyle(font: font));
     }
+  }
+
+  // ✅ НОВЫЙ МЕТОД: Таблица для кастинга (PDF)
+  pw.Widget _buildPdfCastingTable(Map<String, dynamic> data, pw.Font font, pw.Font fontBold) {
+    final participantsData = data['participantsData'] as List<dynamic>? ?? [];
+    final bestInAttempts = (data['bestInAttempts'] as List<dynamic>?)?.cast<double>() ?? [];
+    final scoringMethod = data['scoringMethod'] as String? ?? 'average_distance';
+    final attemptsCount = data['attemptsCount'] as int? ?? 3;
+
+    if (participantsData.isEmpty) {
+      return pw.Text('Нет данных', style: pw.TextStyle(font: font));
+    }
+
+    // Заголовки
+    final headers = [
+      '№',
+      'ФИО Спортсмена',
+      'Карповое удилище',
+      'Леска',
+      ...List.generate(attemptsCount, (i) => 'Попытка №${i + 1}'),
+      scoringMethod == 'best_distance' ? 'Лучший результат' : 'Средний балл',
+      'Место',
+    ];
+
+    final rows = <List<String>>[];
+
+    for (int i = 0; i < participantsData.length; i++) {
+      final participant = participantsData[i] as Map<String, dynamic>;
+      final attempts = (participant['attempts'] as List<dynamic>).cast<double>();
+      final place = participant['place'] as int;
+
+      final row = [
+        '${i + 1}',
+        participant['fullName']?.toString() ?? '',
+        participant['rod']?.toString() ?? '',
+        participant['line']?.toString() ?? '',
+        ...attempts.map((a) => a > 0 ? a.toStringAsFixed(2) : '0'),
+        scoringMethod == 'best_distance'
+            ? (participant['bestDistance'] as double).toStringAsFixed(2)
+            : (participant['averageDistance'] as double).toStringAsFixed(2),
+        '$place',
+      ];
+
+      rows.add(row);
+    }
+
+    return pw.Table.fromTextArray(
+      headerStyle: pw.TextStyle(font: fontBold, fontSize: 9),
+      cellStyle: pw.TextStyle(fontSize: 8, font: font),
+      headerDecoration: const pw.BoxDecoration(color: PdfColors.grey300),
+      cellAlignment: pw.Alignment.center,
+      headers: headers,
+      data: rows,
+      cellDecoration: (index, data, rowNum) {
+        if (rowNum == null) return pw.BoxDecoration();
+
+        final participant = participantsData[rowNum] as Map<String, dynamic>;
+        final place = participant['place'] as int;
+        final attempts = (participant['attempts'] as List<dynamic>).cast<double>();
+
+        // Выделяем места (строки целиком)
+        if (place == 1) {
+          return pw.BoxDecoration(color: PdfColor.fromHex('#c8e6c9')); // Зелёный
+        } else if (place == 2) {
+          return pw.BoxDecoration(color: PdfColor.fromHex('#bbdefb')); // Синий
+        } else if (place == 3) {
+          return pw.BoxDecoration(color: PdfColor.fromHex('#fff9c4')); // Жёлтый
+        }
+
+        // Выделяем лучшие результаты в попытках зелёным
+        if (index >= 4 && index < 4 + attemptsCount) {
+          final attemptIndex = index - 4;
+          if (attemptIndex < attempts.length && attemptIndex < bestInAttempts.length) {
+            if (attempts[attemptIndex] > 0 && attempts[attemptIndex] == bestInAttempts[attemptIndex]) {
+              return pw.BoxDecoration(color: PdfColor.fromHex('#a5d6a7')); // Светло-зелёный
+            }
+          }
+        }
+
+        return pw.BoxDecoration();
+      },
+    );
   }
 
   pw.Widget _buildPdfWeighingTable(Map<String, dynamic> data, bool showPlace, pw.Font font, pw.Font fontBold) {
@@ -398,13 +472,11 @@ class ProtocolExportService {
       ],
     );
   }
-
-  // ===== EXCEL HELPERS =====
+// ===== EXCEL HELPERS =====
 
   int _addExcelHeader(xlsio.Worksheet sheet, ProtocolLocal protocol, Map<String, dynamic> data, int row) {
-    // Организатор (без слова "Организатор:")
     if (data['organizer'] != null) {
-      final titleRange = sheet.getRangeByIndex(row, 1, row, 7);
+      final titleRange = sheet.getRangeByIndex(row, 1, row, 10);
       titleRange.merge();
       titleRange.setText(data['organizer']);
       titleRange.cellStyle.bold = true;
@@ -413,8 +485,7 @@ class ProtocolExportService {
       row++;
     }
 
-    // Тип протокола
-    final protocolRange = sheet.getRangeByIndex(row, 1, row, 7);
+    final protocolRange = sheet.getRangeByIndex(row, 1, row, 10);
     protocolRange.merge();
     protocolRange.setText(_getProtocolTitle(protocol));
     protocolRange.cellStyle.bold = true;
@@ -422,9 +493,8 @@ class ProtocolExportService {
     protocolRange.cellStyle.hAlign = xlsio.HAlignType.center;
     row++;
 
-    // Название соревнования
     if (data['competitionName'] != null) {
-      final nameRange = sheet.getRangeByIndex(row, 1, row, 7);
+      final nameRange = sheet.getRangeByIndex(row, 1, row, 10);
       nameRange.merge();
       nameRange.setText(data['competitionName']);
       nameRange.cellStyle.bold = true;
@@ -438,14 +508,16 @@ class ProtocolExportService {
 
   int _addExcelLocationAndDate(xlsio.Worksheet sheet, ProtocolLocal protocol, Map<String, dynamic> data, int row) {
     final isSummaryOrFinal = protocol.type == 'summary' || protocol.type == 'final';
+    final isCasting = protocol.type == 'casting';
 
-    // Место проведения
-    if (data['lake'] != null) {
+    if (data['venue'] != null && isCasting) {
+      sheet.getRangeByIndex(row, 1).setText('Место проведения: ${data['venue']}');
+      row++;
+    } else if (data['lake'] != null && !isCasting) {
       sheet.getRangeByIndex(row, 1).setText('Место проведения: ${data['lake']}');
       row++;
     }
 
-    // Дата в зависимости от типа протокола
     if (protocol.type == 'weighing' && data['weighingTime'] != null) {
       sheet.getRangeByIndex(row, 1).setText(
         'Дата и время: ${DateFormat('dd.MM.yyyy HH:mm').format(DateTime.parse(data['weighingTime']))}',
@@ -454,18 +526,17 @@ class ProtocolExportService {
       sheet.getRangeByIndex(row, 1).setText(
         'Период: ${DateFormat('dd.MM.yyyy HH:mm').format(DateTime.parse(data['startTime']))} - ${DateFormat('dd.MM.yyyy HH:mm').format(DateTime.parse(data['finishTime']))}',
       );
-    } else if (isSummaryOrFinal && data['startTime'] != null && data['finishTime'] != null) {
+    } else if ((isSummaryOrFinal || isCasting) && data['startTime'] != null && data['finishTime'] != null) {
       sheet.getRangeByIndex(row, 1).setText(
         'Даты соревнования: ${DateFormat('dd.MM.yyyy').format(DateTime.parse(data['startTime']))} - ${DateFormat('dd.MM.yyyy').format(DateTime.parse(data['finishTime']))}',
       );
     }
 
-    // Дата формирования протокола (справа, только для сводного и финального)
-    if (isSummaryOrFinal) {
-      sheet.getRangeByIndex(row, 7).setText(
+    if (isSummaryOrFinal || isCasting) {
+      sheet.getRangeByIndex(row, 10).setText(
         'Дата формирования протокола: ${DateFormat('dd.MM.yyyy').format(DateTime.now())}',
       );
-      sheet.getRangeByIndex(row, 7).cellStyle.hAlign = xlsio.HAlignType.right;
+      sheet.getRangeByIndex(row, 10).cellStyle.hAlign = xlsio.HAlignType.right;
     }
 
     row++;
@@ -473,6 +544,10 @@ class ProtocolExportService {
   }
 
   int _addExcelTable(xlsio.Worksheet sheet, ProtocolLocal protocol, Map<String, dynamic> data, int row) {
+    if (protocol.type == 'casting') {
+      return _addExcelCastingTable(sheet, data, row);
+    }
+
     final headers = _getExcelHeaders(protocol.type);
     for (int i = 0; i < headers.length; i++) {
       final cell = sheet.getRangeByIndex(row, i + 1);
@@ -487,6 +562,118 @@ class ProtocolExportService {
       for (int i = 0; i < rowData.length; i++) {
         sheet.getRangeByIndex(row, i + 1).setText(rowData[i]);
       }
+      row++;
+    }
+
+    return row;
+  }
+
+  // ✅ НОВЫЙ МЕТОД: Таблица для кастинга (Excel)
+  int _addExcelCastingTable(xlsio.Worksheet sheet, Map<String, dynamic> data, int row) {
+    final participantsData = data['participantsData'] as List<dynamic>? ?? [];
+    final bestInAttempts = (data['bestInAttempts'] as List<dynamic>?)?.cast<double>() ?? [];
+    final scoringMethod = data['scoringMethod'] as String? ?? 'average_distance';
+    final attemptsCount = data['attemptsCount'] as int? ?? 3;
+
+    // Заголовки
+    final headers = [
+      '№',
+      'ФИО Спортсмена',
+      'Карповое удилище',
+      'Леска',
+      ...List.generate(attemptsCount, (i) => 'Попытка №${i + 1}'),
+      scoringMethod == 'best_distance' ? 'Лучший результат' : 'Средний балл',
+      'Место',
+    ];
+
+    for (int i = 0; i < headers.length; i++) {
+      final cell = sheet.getRangeByIndex(row, i + 1);
+      cell.setText(headers[i]);
+      cell.cellStyle.bold = true;
+      cell.cellStyle.backColor = '#D3D3D3';
+      cell.cellStyle.hAlign = xlsio.HAlignType.center;
+    }
+    row++;
+
+    // Данные
+    for (int i = 0; i < participantsData.length; i++) {
+      final participant = participantsData[i] as Map<String, dynamic>;
+      final attempts = (participant['attempts'] as List<dynamic>).cast<double>();
+      final place = participant['place'] as int;
+
+      int col = 1;
+
+      // №
+      sheet.getRangeByIndex(row, col++).setNumber(i + 1);
+
+      // ФИО
+      sheet.getRangeByIndex(row, col++).setText(participant['fullName']?.toString() ?? '');
+
+      // Удилище
+      sheet.getRangeByIndex(row, col++).setText(participant['rod']?.toString() ?? '');
+
+      // Леска
+      sheet.getRangeByIndex(row, col++).setText(participant['line']?.toString() ?? '');
+
+      // Попытки
+      for (int attemptIndex = 0; attemptIndex < attemptsCount; attemptIndex++) {
+        final attemptCell = sheet.getRangeByIndex(row, col++);
+
+        if (attemptIndex < attempts.length) {
+          final distance = attempts[attemptIndex];
+
+          if (distance > 0) {
+            attemptCell.setNumber(distance);
+            attemptCell.numberFormat = '0.00';
+
+            // Выделяем лучший результат в попытке зелёным
+            if (attemptIndex < bestInAttempts.length && distance == bestInAttempts[attemptIndex]) {
+              attemptCell.cellStyle.backColor = '#A5D6A7'; // Светло-зелёный
+            }
+          } else {
+            attemptCell.setText('0');
+            attemptCell.cellStyle.backColor = '#FFCDD2'; // Красный (незасчитанная)
+          }
+        } else {
+          attemptCell.setText('0');
+        }
+
+        attemptCell.cellStyle.hAlign = xlsio.HAlignType.center;
+      }
+
+      // Результат (лучший или средний)
+      final resultCell = sheet.getRangeByIndex(row, col++);
+      if (scoringMethod == 'best_distance') {
+        resultCell.setNumber(participant['bestDistance'] as double);
+      } else {
+        resultCell.setNumber(participant['averageDistance'] as double);
+      }
+      resultCell.numberFormat = '0.00';
+      resultCell.cellStyle.hAlign = xlsio.HAlignType.center;
+      resultCell.cellStyle.bold = true;
+
+      // Место
+      final placeCell = sheet.getRangeByIndex(row, col++);
+      placeCell.setNumber(place.toDouble());
+      placeCell.cellStyle.hAlign = xlsio.HAlignType.center;
+      placeCell.cellStyle.bold = true;
+
+      // Выделяем места цветом (вся строка)
+      String? rowColor;
+      if (place == 1) {
+        rowColor = '#C8E6C9'; // Зелёный
+      } else if (place == 2) {
+        rowColor = '#BBDEFB'; // Синий
+      } else if (place == 3) {
+        rowColor = '#FFF9C4'; // Жёлтый
+      }
+
+      if (rowColor != null) {
+        for (int c = 1; c <= col; c++) {
+          sheet.getRangeByIndex(row, c).cellStyle.backColor = rowColor;
+        }
+      }
+
       row++;
     }
 
@@ -663,6 +850,8 @@ class ProtocolExportService {
         return 'Сводный протокол';
       case 'final':
         return 'Финальный протокол';
+      case 'casting':
+        return 'Протокол соревнования по кастингу';
       default:
         return 'Протокол соревнования';
     }

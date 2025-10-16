@@ -658,9 +658,9 @@ class _AddTeamScreenState extends ConsumerState<AddTeamScreen> {
       ..isCaptain = _isCasting ? false : m.isCaptain // Для кастинга нет капитана
       ..rank = _isCasting ? 'none' : m.rank          // Для кастинга нет разряда
       ..rod = _isCasting ? m.rodController.text.trim() : null
-      ..line = _isCasting && widget.competition.commonLine == null
-          ? m.lineController.text.trim()
-          : null) // Если есть общая леска, не сохраняем индивидуальную
+      ..line = _isCasting
+          ? (widget.competition.commonLine ?? m.lineController.text.trim())
+          : null)
         .toList();
 
     if (_isEditing) {

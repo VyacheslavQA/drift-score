@@ -161,22 +161,28 @@ class _ProtocolViewScreenState extends State<ProtocolViewScreen> {
         return 'protocol_summary_title'.tr();
       case 'final':
         return 'protocol_final_title'.tr();
+      case 'casting_attempt':
+        return 'Протокол попытки №${widget.protocol.weighingNumber}';
+      case 'casting_intermediate':
+        return 'Промежуточный протокол (после ${widget.protocol.weighingNumber} попыток)';
+      case 'casting_final':
+        return 'Финальный протокол кастинга';
       default:
         return 'protocol_title'.tr();
     }
   }
 
   Widget _buildHeader(Map<String, dynamic> data) {
-    // Проверяем, есть ли хоть какие-то данные для отображения
     final hasCity = data['city'] != null;
     final hasLake = data['lake'] != null;
-    final hasOrganizer = data['organizer'] != null && (widget.protocol.type == 'summary' || widget.protocol.type == 'final');
+    final hasVenue = data['venue'] != null;
+    final hasOrganizer = data['organizer'] != null;
     final hasWeighingTime = data['weighingTime'] != null;
+    final hasSessionTime = data['sessionTime'] != null;
     final hasTimeRange = data['startTime'] != null && data['finishTime'] != null;
-    final hasJudges = data['judges'] != null && (widget.protocol.type == 'summary' || widget.protocol.type == 'final');
+    final hasJudges = data['judges'] != null;
 
-    // Если нет данных, не показываем карточку
-    if (!hasCity && !hasLake && !hasOrganizer && !hasWeighingTime && !hasTimeRange && !hasJudges) {
+    if (!hasCity && !hasLake && !hasVenue && !hasOrganizer && !hasWeighingTime && !hasSessionTime && !hasTimeRange && !hasJudges) {
       return SizedBox.shrink();
     }
 
@@ -189,10 +195,19 @@ class _ProtocolViewScreenState extends State<ProtocolViewScreen> {
           children: [
             if (hasCity)
               _buildInfoRow(Icons.location_on, data['city']),
-            if (hasLake)
+            if (hasVenue)
+              _buildInfoRow(Icons.water, data['venue']),
+            if (hasLake && !hasVenue)
               _buildInfoRow(Icons.water, data['lake']),
             if (hasOrganizer)
               _buildInfoRow(Icons.person, '${'protocol_organizer'.tr()}: ${data['organizer']}'),
+            if (hasSessionTime)
+              _buildInfoRow(
+                Icons.access_time,
+                'Время сессии: ${DateFormat('dd.MM.yyyy HH:mm').format(
+                  DateTime.parse(data['sessionTime']),
+                )}',
+              ),
             if (hasWeighingTime)
               _buildInfoRow(
                 Icons.access_time,
@@ -247,7 +262,7 @@ class _ProtocolViewScreenState extends State<ProtocolViewScreen> {
           ...judges.map((judge) => Padding(
             padding: EdgeInsets.only(left: AppDimensions.paddingSmall, top: 2),
             child: Text(
-              '• ${judge['name']} - ${judge['rank']}',
+              '• ${judge['name']} - ${(judge['rank'] as String).tr()}',
               style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
             ),
           )),
@@ -267,10 +282,316 @@ class _ProtocolViewScreenState extends State<ProtocolViewScreen> {
         return _buildSummaryContent(data);
       case 'final':
         return _buildFinalContent(data);
+      case 'casting_attempt':
+        return _buildCastingAttemptContent(data);
+      case 'casting_intermediate':
+      case 'casting_final':
+        return _buildCastingIntermediateOrFinalContent(data);
       default:
         return Center(child: Text('protocol_type_not_supported'.tr()));
     }
   }
+
+  // ========== КАСТИНГ: ПРОТОКОЛ ПОПЫТКИ ==========
+  Widget _buildCastingAttemptContent(Map<String, dynamic> data) {
+    final participantsData = data['participantsData'] as List<dynamic>? ?? [];
+    final attemptNumber = data['attemptNumber'] as int? ?? 1;
+
+    if (participantsData.isEmpty) {
+      return Center(child: Text('protocol_no_data'.tr()));
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Card(
+          color: AppColors.primary.withOpacity(0.1),
+          child: Padding(
+            padding: EdgeInsets.all(AppDimensions.paddingMedium),
+            child: Row(
+              children: [
+                Icon(Icons.info_outline, color: AppColors.primary),
+                SizedBox(width: AppDimensions.paddingSmall),
+                Text(
+                  'Результаты попытки №$attemptNumber',
+                  style: AppTextStyles.h3.copyWith(color: AppColors.primary),
+                ),
+              ],
+            ),
+          ),
+        ),
+        SizedBox(height: AppDimensions.paddingMedium),
+        Card(
+          color: AppColors.surface,
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: DataTable(
+              headingRowColor: WidgetStateProperty.all(
+                AppColors.primary.withOpacity(0.1),
+              ),
+              columns: [
+                DataColumn(label: Text('Место', style: AppTextStyles.bodyBold)),
+                DataColumn(label: Text('ФИО', style: AppTextStyles.bodyBold)),
+                DataColumn(label: Text('Удилище', style: AppTextStyles.bodyBold)),
+                DataColumn(label: Text('Леска', style: AppTextStyles.bodyBold)),
+                DataColumn(label: Text('Дальность (м)', style: AppTextStyles.bodyBold)),
+              ],
+              rows: participantsData.map<DataRow>((participant) {
+                final place = participant['place'] as int;
+                final distance = participant['distance'] as double;
+
+                return DataRow(
+                  color: WidgetStateProperty.all(_getPlaceColor(place).withOpacity(0.2)),
+                  cells: [
+                    DataCell(
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: AppDimensions.paddingSmall,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _getPlaceColor(place).withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+                        ),
+                        child: Text(
+                          '$place',
+                          style: AppTextStyles.bodyBold.copyWith(
+                            color: _getPlaceColor(place),
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    ),
+                    DataCell(
+                      Container(
+                        constraints: BoxConstraints(maxWidth: 150),
+                        child: Text(
+                          participant['fullName']?.toString() ?? '',
+                          style: AppTextStyles.bodyMedium,
+                        ),
+                      ),
+                    ),
+                    DataCell(
+                      Container(
+                        constraints: BoxConstraints(maxWidth: 120),
+                        child: Text(
+                          participant['rod']?.toString() ?? '',
+                          style: AppTextStyles.bodyMedium.copyWith(fontSize: 12),
+                        ),
+                      ),
+                    ),
+                    DataCell(Text(participant['line']?.toString() ?? '')),
+                    DataCell(
+                      Text(
+                        distance > 0 ? distance.toStringAsFixed(2) : '0',
+                        style: AppTextStyles.bodyBold.copyWith(
+                          fontSize: 16,
+                          color: distance == 0 ? Colors.red : Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              }).toList(),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ========== КАСТИНГ: ПРОМЕЖУТОЧНЫЙ И ФИНАЛЬНЫЙ ==========
+  Widget _buildCastingIntermediateOrFinalContent(Map<String, dynamic> data) {
+    final participantsData = data['participantsData'] as List<dynamic>? ?? [];
+    final bestInAttempts = (data['bestInAttempts'] as List<dynamic>?)?.cast<double>() ?? [];
+    final scoringMethod = data['scoringMethod'] as String? ?? 'average_distance';
+    final upToAttempt = data['upToAttempt'] as int?;
+    final attemptsCount = data['attemptsCount'] as int? ?? upToAttempt ?? 3;
+    final commonLine = data['commonLine'] as String?;
+
+    if (participantsData.isEmpty) {
+      return Center(child: Text('protocol_no_data'.tr()));
+    }
+
+    // Информация об общей леске
+    Widget? commonLineInfo;
+    if (commonLine != null && commonLine.isNotEmpty) {
+      commonLineInfo = Card(
+        color: AppColors.primary.withOpacity(0.1),
+        child: Padding(
+          padding: EdgeInsets.all(AppDimensions.paddingMedium),
+          child: Row(
+            children: [
+              Icon(Icons.info_outline, color: AppColors.primary),
+              SizedBox(width: AppDimensions.paddingSmall),
+              Text(
+                'Общая леска: $commonLine',
+                style: AppTextStyles.bodyBold.copyWith(color: AppColors.primary),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Информация о методе подсчёта
+    Widget scoringInfo = Card(
+      color: Colors.orange.withOpacity(0.1),
+      child: Padding(
+        padding: EdgeInsets.all(AppDimensions.paddingMedium),
+        child: Row(
+          children: [
+            Icon(Icons.calculate, color: Colors.orange),
+            SizedBox(width: AppDimensions.paddingSmall),
+            Text(
+              'Метод подсчёта: ${scoringMethod == 'best_distance' ? 'Лучший результат' : 'Средняя дальность'}',
+              style: AppTextStyles.bodyBold.copyWith(color: Colors.orange.shade800),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (commonLineInfo != null) ...[
+          commonLineInfo,
+          SizedBox(height: AppDimensions.paddingMedium),
+        ],
+        scoringInfo,
+        SizedBox(height: AppDimensions.paddingMedium),
+        Card(
+          color: AppColors.surface,
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: DataTable(
+              headingRowColor: WidgetStateProperty.all(
+                AppColors.primary.withOpacity(0.1),
+              ),
+              columns: [
+                DataColumn(label: Text('№', style: AppTextStyles.bodyBold)),
+                DataColumn(label: Text('ФИО', style: AppTextStyles.bodyBold)),
+                DataColumn(label: Text('Удилище', style: AppTextStyles.bodyBold)),
+                DataColumn(label: Text('Леска', style: AppTextStyles.bodyBold)),
+                ...List.generate(
+                  attemptsCount,
+                      (i) => DataColumn(
+                    label: Text('П${i + 1}', style: AppTextStyles.bodyBold),
+                  ),
+                ),
+                DataColumn(
+                  label: Text(
+                    scoringMethod == 'best_distance' ? 'Лучший' : 'Средний',
+                    style: AppTextStyles.bodyBold,
+                  ),
+                ),
+                DataColumn(label: Text('Место', style: AppTextStyles.bodyBold)),
+              ],
+              rows: participantsData.asMap().entries.map<DataRow>((entry) {
+                final index = entry.key;
+                final participant = entry.value as Map<String, dynamic>;
+                final attempts = (participant['attempts'] as List<dynamic>).cast<double>();
+                final place = participant['place'] as int;
+
+                return DataRow(
+                  color: WidgetStateProperty.all(_getPlaceColor(place).withOpacity(0.2)),
+                  cells: [
+                    DataCell(Text('${index + 1}')),
+                    DataCell(
+                      Container(
+                        constraints: BoxConstraints(maxWidth: 150),
+                        child: Text(
+                          participant['fullName']?.toString() ?? '',
+                          style: AppTextStyles.bodyMedium,
+                        ),
+                      ),
+                    ),
+                    DataCell(
+                      Container(
+                        constraints: BoxConstraints(maxWidth: 120),
+                        child: Text(
+                          participant['rod']?.toString() ?? '',
+                          style: AppTextStyles.bodyMedium.copyWith(fontSize: 12),
+                        ),
+                      ),
+                    ),
+                    DataCell(Text(participant['line']?.toString() ?? '')),
+                    ...List.generate(attemptsCount, (attemptIndex) {
+                      if (attemptIndex >= attempts.length) {
+                        return DataCell(Text('-'));
+                      }
+
+                      final distance = attempts[attemptIndex];
+                      final isBestInAttempt = attemptIndex < bestInAttempts.length &&
+                          distance > 0 &&
+                          distance == bestInAttempts[attemptIndex];
+
+                      Color? cellColor;
+                      Color textColor = AppColors.textPrimary;
+
+                      if (distance == 0) {
+                        cellColor = Colors.red.withOpacity(0.2);
+                        textColor = Colors.red;
+                      } else if (isBestInAttempt) {
+                        cellColor = Colors.green.withOpacity(0.3);
+                        textColor = Colors.white;
+                      }
+
+                      return DataCell(
+                        Container(
+                          color: cellColor,
+                          padding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                          child: Text(
+                            distance > 0 ? distance.toStringAsFixed(2) : '0',
+                            style: AppTextStyles.bodyBold.copyWith(
+                              color: textColor,
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                    DataCell(
+                      Text(
+                        scoringMethod == 'best_distance'
+                            ? (participant['bestDistance'] as double).toStringAsFixed(2)
+                            : (participant['averageDistance'] as double).toStringAsFixed(2),
+                        style: AppTextStyles.bodyBold.copyWith(
+                          fontSize: 14,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    DataCell(
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: AppDimensions.paddingSmall,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _getPlaceColor(place).withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+                        ),
+                        child: Text(
+                          '$place',
+                          style: AppTextStyles.bodyBold.copyWith(
+                            color: _getPlaceColor(place),
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              }).toList(),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ========== РЫБАЛКА ПРОТОКОЛЫ ==========
 
   Widget _buildWeighingTable(Map<String, dynamic> data) {
     final tableData = data['tableData'] as List<dynamic>? ?? [];
@@ -344,7 +665,6 @@ class _ProtocolViewScreenState extends State<ProtocolViewScreen> {
       return Center(child: Text('protocol_big_fish_no_data'.tr()));
     }
 
-    // Информация о периоде
     final dayNumber = data['dayNumber'];
     final dayStart = DateTime.parse(data['dayStart']);
     final dayEnd = DateTime.parse(data['dayEnd']);
@@ -352,7 +672,6 @@ class _ProtocolViewScreenState extends State<ProtocolViewScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Период времени
         Card(
           color: AppColors.primary.withOpacity(0.1),
           child: Padding(
@@ -371,7 +690,6 @@ class _ProtocolViewScreenState extends State<ProtocolViewScreen> {
         ),
         SizedBox(height: AppDimensions.paddingMedium),
 
-        // Таблица Big Fish
         Card(
           color: AppColors.surface,
           child: SingleChildScrollView(
@@ -624,7 +942,7 @@ class _ProtocolViewScreenState extends State<ProtocolViewScreen> {
       case 3:
         return Colors.yellow.shade700; // 🥉 Жёлтый
       default:
-        return Colors.transparent; // Белый фон (прозрачный)
+        return Colors.transparent;
     }
   }
 }

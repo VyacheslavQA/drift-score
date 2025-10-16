@@ -33,6 +33,8 @@ void main() async {
   // Установка дефолтных значений
   await remoteConfig.setDefaults(<String, dynamic>{
     'master_code': 'DS-ADMIN-2025',
+    'test_fishing_code': 'TEST-FISH-2024',  // ← Добавить
+    'test_casting_code': 'TEST-CAST-2024',  // ← Добавить
   });
 
   // Fetch и активация
