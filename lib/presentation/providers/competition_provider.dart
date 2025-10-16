@@ -35,18 +35,26 @@ class CompetitionNotifier extends StateNotifier<AsyncValue<List<CompetitionLocal
     return 'unknown';
   }
 
-  // ✅ НОВЫЙ МЕТОД: Проверка существования кода
+  // ✅ МЕТОД: Проверка существования кода
   Future<List<CompetitionLocal>> checkCodeExists(String accessCode) async {
     print('🔍 checkCodeExists() called with code: $accessCode');
-    try {
-      final existingCompetitions = await isar.competitionLocals
-          .filter()
-          .accessCodeEqualTo(accessCode)
-          .findAll();
+    print('🔍 Trimming and uppercasing: "${accessCode.trim().toUpperCase()}"');
 
-      print('🔍 Found ${existingCompetitions.length} competition(s) with code: $accessCode');
+    final normalizedCode = accessCode.trim().toUpperCase();
+
+    try {
+      // Проверяем ВСЕ соревнования (не только этого устройства!)
+      final allCompetitions = await isar.competitionLocals.where().findAll();
+      print('🔍 Total competitions in database: ${allCompetitions.length}');
+
+      // Фильтруем по коду (с учётом регистра и пробелов)
+      final existingCompetitions = allCompetitions
+          .where((c) => (c.accessCode ?? '').trim().toUpperCase() == normalizedCode)
+          .toList();
+
+      print('🔍 Found ${existingCompetitions.length} competition(s) with code: $normalizedCode');
       for (var comp in existingCompetitions) {
-        print('   - ${comp.name} (ID: ${comp.id}, Status: ${comp.status})');
+        print('   - ${comp.name} (ID: ${comp.id}, Code: "${comp.accessCode}", Status: ${comp.status})');
       }
 
       return existingCompetitions;
@@ -141,17 +149,12 @@ class CompetitionNotifier extends StateNotifier<AsyncValue<List<CompetitionLocal
       // ⬇️ ПРОВЕРКА: Существует ли уже соревнование с этим кодом?
       print('🔍 Checking for existing competitions with code: $accessCode');
 
-      final existingCompetitions = await isar.competitionLocals
-          .filter()
-          .accessCodeEqualTo(accessCode)
-          .findAll();
-
-      print('🔍 Found ${existingCompetitions.length} existing competitions with this code');
+      final existingCompetitions = await checkCodeExists(accessCode);
 
       if (existingCompetitions.isNotEmpty) {
         print('❌ Competition with code $accessCode already exists!');
         for (var comp in existingCompetitions) {
-          print('   Existing: ${comp.name} (ID: ${comp.id}, Code: ${comp.accessCode})');
+          print('   Existing: ${comp.name} (ID: ${comp.id}, Code: "${comp.accessCode}")');
         }
         throw Exception('Соревнование с кодом $accessCode уже существует! Используйте другой код.');
       }
