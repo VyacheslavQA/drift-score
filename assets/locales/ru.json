@@ -529,7 +529,22 @@
   "casting_attempt": "Протокол попытки",
   "casting_intermediate": "Промежуточный протокол",
   "casting_final": "Финальный протокол",
-  "common_save": "Сохранить"
+  "common_save": "Сохранить",
+  "casting_attempt_number": "Попытка №{number}",
+  "attempt_number_1": "Попытка №1",
+  "attempt_number_2": "Попытка №2",
+  "attempt_number_3": "Попытка №3",
+  "attempt_number_4": "Попытка №4",
+  "attempt_number_5": "Попытка №5",
+  "intermediate_protocol_after_attempts": "Промежуточный протокол после {count} попыток",
+  "final_protocol_title": "Финальный протокол",
+  "venue_location": "Место проведения",
+  "competition_date_single": "Дата соревнования",
+  "competition_dates_multiple": "Даты соревнования",
+  "chief_judge_signature": "Главный судья",
+  "judge_signature": "Судья",
+  "secretary_signature": "Секретарь",
+  "signature_line": "_______________"
 
 
 }

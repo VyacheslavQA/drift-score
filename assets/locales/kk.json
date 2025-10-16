@@ -528,5 +528,20 @@
   "casting_attempt": "Әрекет хаттамасы",
   "casting_intermediate": "Аралық хаттама",
   "casting_final": "Қорытынды хаттама",
-  "common_save": "Сақтау"
+  "common_save": "Сақтау",
+  "casting_attempt_number": "Әрекет №{number}",
+  "attempt_number_1": "Әрекет №1",
+  "attempt_number_2": "Әрекет №2",
+  "attempt_number_3": "Әрекет №3",
+  "attempt_number_4": "Әрекет №4",
+  "attempt_number_5": "Әрекет №5",
+  "intermediate_protocol_after_attempts": "Аралық хаттама {count} әрекеттен кейін",
+  "final_protocol_title": "Қорытынды хаттама",
+  "venue_location": "Өткізілетін орны",
+  "competition_date_single": "Жарыс күні",
+  "competition_dates_multiple": "Жарыс күндері",
+  "chief_judge_signature": "Бас төреші",
+  "judge_signature": "Төреші",
+  "secretary_signature": "Хатшы",
+  "signature_line": "_______________"
 }

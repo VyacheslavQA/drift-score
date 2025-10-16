@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import '../../data/models/local/protocol_local.dart';
 import '../../data/models/local/competition_local.dart';
 import '../../data/models/local/team_local.dart';
@@ -52,6 +53,45 @@ class ProtocolNotifier extends StateNotifier<ProtocolState> {
       default:
         return fishType;
     }
+  }
+
+  // Форматирование даты соревнования
+  String _formatCompetitionDates(DateTime startTime, DateTime finishTime) {
+    final start = DateFormat('dd.MM.yyyy').format(startTime);
+    final finish = DateFormat('dd.MM.yyyy').format(finishTime);
+
+    if (start == finish) {
+      return start; // Один день
+    } else {
+      return '$start - $finish'; // Несколько дней
+    }
+  }
+
+  // Ключ локализации для даты
+  String _getDateKey(DateTime startTime, DateTime finishTime) {
+    final start = DateFormat('dd.MM.yyyy').format(startTime);
+    final finish = DateFormat('dd.MM.yyyy').format(finishTime);
+
+    if (start == finish) {
+      return 'competition_date_single'; // Дата соревнования
+    } else {
+      return 'competition_dates_multiple'; // Даты соревнования
+    }
+  }
+
+  // Форматирование места проведения
+  String _formatVenue(String? city, String? venue) {
+    final parts = <String>[];
+
+    if (city != null && city.isNotEmpty) {
+      parts.add('г. $city');
+    }
+
+    if (venue != null && venue.isNotEmpty) {
+      parts.add('оз. $venue');
+    }
+
+    return parts.join(', ');
   }
 
   Future<void> loadProtocols(int competitionId) async {
@@ -155,8 +195,15 @@ class ProtocolNotifier extends StateNotifier<ProtocolState> {
           'competitionName': competition.name,
           'city': competition.cityOrRegion,
           'venue': competition.lakeName,
+          'venueFormatted': _formatVenue(competition.cityOrRegion, competition.lakeName),
+          'competitionDates': _formatCompetitionDates(competition.startTime, competition.finishTime),
+          'dateKey': _getDateKey(competition.startTime, competition.finishTime),
           'attemptNumber': attemptNumber,
           'sessionTime': session.sessionTime.toIso8601String(),
+          'judges': competition.judges.map((j) => {
+            'name': j.fullName,
+            'rank': j.rank,
+          }).toList(),
           'participantsData': participantsData,
         });
 
@@ -281,10 +328,17 @@ class ProtocolNotifier extends StateNotifier<ProtocolState> {
           'competitionName': competition.name,
           'city': competition.cityOrRegion,
           'venue': competition.lakeName,
+          'venueFormatted': _formatVenue(competition.cityOrRegion, competition.lakeName),
+          'competitionDates': _formatCompetitionDates(competition.startTime, competition.finishTime),
+          'dateKey': _getDateKey(competition.startTime, competition.finishTime),
           'organizer': competition.organizerName,
           'upToAttempt': upToAttempt,
           'scoringMethod': scoringMethod,
           'commonLine': competition.commonLine,
+          'judges': competition.judges.map((j) => {
+            'name': j.fullName,
+            'rank': j.rank,
+          }).toList(),
           'participantsData': participantsData,
           'bestInAttempts': bestInAttempts,
         });
@@ -407,6 +461,9 @@ class ProtocolNotifier extends StateNotifier<ProtocolState> {
           'competitionName': competition.name,
           'city': competition.cityOrRegion,
           'venue': competition.lakeName,
+          'venueFormatted': _formatVenue(competition.cityOrRegion, competition.lakeName),
+          'competitionDates': _formatCompetitionDates(competition.startTime, competition.finishTime),
+          'dateKey': _getDateKey(competition.startTime, competition.finishTime),
           'organizer': competition.organizerName,
           'startTime': competition.startTime.toIso8601String(),
           'finishTime': competition.finishTime.toIso8601String(),
@@ -480,6 +537,9 @@ class ProtocolNotifier extends StateNotifier<ProtocolState> {
           'competitionName': competition.name,
           'city': competition.cityOrRegion,
           'lake': competition.lakeName,
+          'venueFormatted': _formatVenue(competition.cityOrRegion, competition.lakeName),
+          'competitionDates': _formatCompetitionDates(competition.startTime, competition.finishTime),
+          'dateKey': _getDateKey(competition.startTime, competition.finishTime),
           'organizer': competition.organizerName,
           'startTime': competition.startTime.toIso8601String(),
           'finishTime': competition.finishTime.toIso8601String(),
@@ -595,6 +655,9 @@ class ProtocolNotifier extends StateNotifier<ProtocolState> {
           'competitionName': competition.name,
           'city': competition.cityOrRegion,
           'lake': competition.lakeName,
+          'venueFormatted': _formatVenue(competition.cityOrRegion, competition.lakeName),
+          'competitionDates': _formatCompetitionDates(competition.startTime, competition.finishTime),
+          'dateKey': _getDateKey(competition.startTime, competition.finishTime),
           'organizer': competition.organizerName,
           'startTime': competition.startTime.toIso8601String(),
           'finishTime': competition.finishTime.toIso8601String(),
@@ -693,6 +756,9 @@ class ProtocolNotifier extends StateNotifier<ProtocolState> {
         'competitionName': competition.name,
         'city': competition.cityOrRegion,
         'lake': competition.lakeName,
+        'venueFormatted': _formatVenue(competition.cityOrRegion, competition.lakeName),
+        'competitionDates': _formatCompetitionDates(competition.startTime, competition.finishTime),
+        'dateKey': _getDateKey(competition.startTime, competition.finishTime),
         'organizer': competition.organizerName,
         'startTime': competition.startTime.toIso8601String(),
         'finishTime': competition.finishTime.toIso8601String(),
@@ -816,6 +882,9 @@ class ProtocolNotifier extends StateNotifier<ProtocolState> {
           'competitionName': competition.name,
           'city': competition.cityOrRegion,
           'lake': competition.lakeName,
+          'venueFormatted': _formatVenue(competition.cityOrRegion, competition.lakeName),
+          'competitionDates': _formatCompetitionDates(competition.startTime, competition.finishTime),
+          'dateKey': _getDateKey(competition.startTime, competition.finishTime),
           'organizer': competition.organizerName,
           'startTime': competition.startTime.toIso8601String(),
           'finishTime': competition.finishTime.toIso8601String(),
@@ -919,6 +988,9 @@ class ProtocolNotifier extends StateNotifier<ProtocolState> {
           'competitionName': competition.name,
           'city': competition.cityOrRegion,
           'lake': competition.lakeName,
+          'venueFormatted': _formatVenue(competition.cityOrRegion, competition.lakeName),
+          'competitionDates': _formatCompetitionDates(competition.startTime, competition.finishTime),
+          'dateKey': _getDateKey(competition.startTime, competition.finishTime),
           'organizer': competition.organizerName,
           'startTime': competition.startTime.toIso8601String(),
           'finishTime': competition.finishTime.toIso8601String(),

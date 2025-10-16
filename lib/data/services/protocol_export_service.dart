@@ -27,6 +27,23 @@ class ProtocolExportService {
     return _boldFont!;
   }
 
+  // Перевод рангов судей
+  String _translateJudgeRank(String rank) {
+    switch (rank.toLowerCase()) {
+      case 'chief_judge':
+      case 'judge_chief':
+        return 'Главный судья';
+      case 'judge':
+      case 'judge_regular':
+        return 'Судья';
+      case 'secretary':
+      case 'judge_assistant':
+        return 'Секретарь';
+      default:
+        return 'Судья';
+    }
+  }
+
   Future<void> exportToPdf(ProtocolLocal protocol, Map<String, dynamic> data) async {
     final pdf = pw.Document();
     final font = await _loadRegularFont();
@@ -80,98 +97,83 @@ class ProtocolExportService {
     await _saveExcel(workbook, protocol);
   }
 
+  // ========== PDF: ШАПКА (ПО ЦЕНТРУ) ==========
   pw.Widget _buildPdfHeader(ProtocolLocal protocol, Map<String, dynamic> data, pw.Font font, pw.Font fontBold) {
-    return pw.Column(
-      crossAxisAlignment: pw.CrossAxisAlignment.center,
-      children: [
-        if (data['organizer'] != null)
+    return pw.Center(
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.center,
+        children: [
           pw.Text(
-            data['organizer'],
-            style: pw.TextStyle(fontSize: 14, font: fontBold),
+            _getProtocolTitle(protocol),
+            style: pw.TextStyle(fontSize: 16, font: fontBold),
             textAlign: pw.TextAlign.center,
           ),
-        pw.SizedBox(height: 8),
-        pw.Text(
-          _getProtocolTitle(protocol),
-          style: pw.TextStyle(fontSize: 16, font: fontBold),
-          textAlign: pw.TextAlign.center,
-        ),
-        pw.SizedBox(height: 8),
-        if (data['competitionName'] != null)
-          pw.Text(
-            data['competitionName'],
-            style: pw.TextStyle(fontSize: 14, font: fontBold),
-            textAlign: pw.TextAlign.center,
-          ),
-      ],
+          pw.SizedBox(height: 8),
+          if (data['competitionName'] != null)
+            pw.Text(
+              data['competitionName'],
+              style: pw.TextStyle(fontSize: 14, font: fontBold),
+              textAlign: pw.TextAlign.center,
+            ),
+        ],
+      ),
     );
   }
 
+  // ========== PDF: МЕСТО ПРОВЕДЕНИЯ И ДАТЫ ==========
   pw.Widget _buildPdfLocationAndDate(ProtocolLocal protocol, Map<String, dynamic> data, pw.Font font, pw.Font fontBold) {
-    final isSummaryOrFinal = protocol.type == 'summary' || protocol.type == 'final';
-    final isCasting = protocol.type.startsWith('casting');
-
     return pw.Row(
       mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
+        // Левая часть: место и даты соревнования
         pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
-            if (data['venue'] != null && isCasting)
+            // Место проведения
+            if (data['venueFormatted'] != null && data['venueFormatted'].toString().isNotEmpty)
               pw.Text(
-                'Место проведения: ${data['venue']}',
+                'Место проведения: ${data['venueFormatted']}',
                 style: pw.TextStyle(fontSize: 11, font: font),
               ),
-            if (data['lake'] != null && !isCasting)
-              pw.Text(
-                'Место проведения: ${data['lake']}',
-                style: pw.TextStyle(fontSize: 11, font: font),
-              ),
+
             pw.SizedBox(height: 4),
 
-            if (protocol.type == 'casting_attempt' && data['sessionTime'] != null)
+            // Дата/даты соревнования
+            if (data['competitionDates'] != null)
               pw.Text(
-                'Дата и время: ${DateFormat('dd.MM.yyyy HH:mm').format(DateTime.parse(data['sessionTime']))}',
-                style: pw.TextStyle(fontSize: 11, font: font),
-              ),
-
-            if (protocol.type == 'weighing' && data['weighingTime'] != null)
-              pw.Text(
-                'Дата и время: ${DateFormat('dd.MM.yyyy HH:mm').format(DateTime.parse(data['weighingTime']))}',
-                style: pw.TextStyle(fontSize: 11, font: font),
-              ),
-
-            if (protocol.type == 'big_fish' && data['startTime'] != null && data['finishTime'] != null)
-              pw.Text(
-                'Период: ${DateFormat('dd.MM.yyyy HH:mm').format(DateTime.parse(data['startTime']))} - ${DateFormat('dd.MM.yyyy HH:mm').format(DateTime.parse(data['finishTime']))}',
-                style: pw.TextStyle(fontSize: 11, font: font),
-              ),
-
-            if ((isSummaryOrFinal || isCasting) && data['startTime'] != null && data['finishTime'] != null)
-              pw.Text(
-                'Даты соревнования: ${DateFormat('dd.MM.yyyy').format(DateTime.parse(data['startTime']))} - ${DateFormat('dd.MM.yyyy').format(DateTime.parse(data['finishTime']))}',
+                '${_getDateLabel(data)}: ${data['competitionDates']}',
                 style: pw.TextStyle(fontSize: 11, font: font),
               ),
           ],
         ),
 
-        if (isSummaryOrFinal || isCasting)
-          pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.end,
-            children: [
-              pw.Text(
-                'Дата формирования протокола:',
-                style: pw.TextStyle(fontSize: 10, font: font),
-              ),
-              pw.Text(
-                DateFormat('dd.MM.yyyy').format(DateTime.now()),
-                style: pw.TextStyle(fontSize: 11, font: fontBold),
-              ),
-            ],
-          ),
+        // Правая часть: дата формирования протокола
+        pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.end,
+          children: [
+            pw.Text(
+              'Дата формирования протокола:',
+              style: pw.TextStyle(fontSize: 10, font: font),
+            ),
+            pw.Text(
+              DateFormat('dd.MM.yyyy').format(DateTime.now()),
+              style: pw.TextStyle(fontSize: 10, font: fontBold),
+            ),
+          ],
+        ),
       ],
     );
+  }
+
+  // Определение подписи даты (единственное/множественное число)
+  String _getDateLabel(Map<String, dynamic> data) {
+    final dateKey = data['dateKey'] as String?;
+    if (dateKey == 'competition_date_single') {
+      return 'Дата соревнования';
+    } else {
+      return 'Даты соревнования';
+    }
   }
 
   pw.Widget _buildPdfContent(ProtocolLocal protocol, Map<String, dynamic> data, pw.Font font, pw.Font fontBold) {
@@ -195,7 +197,7 @@ class ProtocolExportService {
     }
   }
 
-  // ========== PDF: КАСТИНГ ПРОТОКОЛ ПОПЫТКИ (БЕЗ ЦВЕТОВ) ==========
+  // ========== PDF: КАСТИНГ ПРОТОКОЛ ПОПЫТКИ ==========
   pw.Widget _buildPdfCastingAttemptTable(Map<String, dynamic> data, pw.Font font, pw.Font fontBold) {
     final participantsData = data['participantsData'] as List<dynamic>? ?? [];
 
@@ -227,7 +229,7 @@ class ProtocolExportService {
     );
   }
 
-  // ========== PDF: КАСТИНГ ПРОМЕЖУТОЧНЫЙ/ФИНАЛЬНЫЙ (БЕЗ ЦВЕТОВ) ==========
+  // ========== PDF: КАСТИНГ ПРОМЕЖУТОЧНЫЙ/ФИНАЛЬНЫЙ ==========
   pw.Widget _buildPdfCastingFullTable(Map<String, dynamic> data, pw.Font font, pw.Font fontBold) {
     final participantsData = data['participantsData'] as List<dynamic>? ?? [];
     final scoringMethod = data['scoringMethod'] as String? ?? 'average_distance';
@@ -242,7 +244,7 @@ class ProtocolExportService {
       'ФИО',
       'Удилище',
       'Леска',
-      ...List.generate(attemptsCount, (i) => 'П${i + 1}'),
+      ...List.generate(attemptsCount, (i) => 'Попытка №${i + 1}'),
       scoringMethod == 'best_distance' ? 'Лучший' : 'Средний',
       'Место',
     ];
@@ -328,7 +330,7 @@ class ProtocolExportService {
     return pw.Table.fromTextArray(
       headerStyle: pw.TextStyle(font: fontBold, fontSize: 10),
       cellStyle: pw.TextStyle(fontSize: 9, font: font),
-      headerDecoration: const pw.BoxDecoration(color: PdfColors.amber100),
+      headerDecoration: const pw.BoxDecoration(color: PdfColors.grey300),
       headers: ['Команда', 'Вид рыбы', 'Вес (кг)', 'Длина (см)', 'Сектор', 'Время'],
       data: [
         [
@@ -447,34 +449,39 @@ class ProtocolExportService {
     );
   }
 
+  // ========== PDF: ПОДПИСИ СУДЕЙ (СПРАВА ВНИЗУ) ==========
   pw.Widget _buildPdfSignature(Map<String, dynamic> data, pw.Font font, pw.Font fontBold) {
     return pw.Column(
-      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      crossAxisAlignment: pw.CrossAxisAlignment.end,
       children: [
-        pw.Divider(),
-        pw.SizedBox(height: 15),
+        pw.SizedBox(height: 10),
 
         if (data['judges'] != null)
           ...((data['judges'] as List<dynamic>).map((judge) {
             final judgeMap = judge as Map<String, dynamic>;
-            final rank = (judgeMap['rank']?.toString() ?? 'judge').tr();
+            final rank = _translateJudgeRank(judgeMap['rank']?.toString() ?? '');
             final name = judgeMap['name']?.toString() ?? '';
 
             return pw.Padding(
-              padding: const pw.EdgeInsets.only(bottom: 20),
+              padding: const pw.EdgeInsets.only(bottom: 8),
               child: pw.Row(
-                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                mainAxisAlignment: pw.MainAxisAlignment.end,
                 children: [
                   pw.Text(
-                    '$rank: $name',
-                    style: pw.TextStyle(fontSize: 11, font: font),
+                    '$rank: ',
+                    style: pw.TextStyle(fontSize: 10, font: font),
                   ),
                   pw.Container(
-                    width: 200,
+                    width: 150,
                     decoration: const pw.BoxDecoration(
                       border: pw.Border(bottom: pw.BorderSide()),
                     ),
                     child: pw.SizedBox(height: 1),
+                  ),
+                  pw.SizedBox(width: 5),
+                  pw.Text(
+                    name,
+                    style: pw.TextStyle(fontSize: 10, font: font),
                   ),
                 ],
               ),
@@ -484,25 +491,16 @@ class ProtocolExportService {
     );
   }
 
-  // ========== EXCEL ==========
+  // ========== EXCEL: ШАПКА ==========
 
   int _addExcelHeader(xlsio.Worksheet sheet, ProtocolLocal protocol, Map<String, dynamic> data, int row) {
-    if (data['organizer'] != null) {
-      final titleRange = sheet.getRangeByIndex(row, 1, row, 10);
-      titleRange.merge();
-      titleRange.setText(data['organizer']);
-      titleRange.cellStyle.bold = true;
-      titleRange.cellStyle.fontSize = 14;
-      titleRange.cellStyle.hAlign = xlsio.HAlignType.center;
-      row++;
-    }
-
     final protocolRange = sheet.getRangeByIndex(row, 1, row, 10);
     protocolRange.merge();
     protocolRange.setText(_getProtocolTitle(protocol));
     protocolRange.cellStyle.bold = true;
     protocolRange.cellStyle.fontSize = 16;
     protocolRange.cellStyle.hAlign = xlsio.HAlignType.center;
+    protocolRange.cellStyle.vAlign = xlsio.VAlignType.center;
     row++;
 
     if (data['competitionName'] != null) {
@@ -512,6 +510,7 @@ class ProtocolExportService {
       nameRange.cellStyle.bold = true;
       nameRange.cellStyle.fontSize = 14;
       nameRange.cellStyle.hAlign = xlsio.HAlignType.center;
+      nameRange.cellStyle.vAlign = xlsio.VAlignType.center;
       row++;
     }
 
@@ -519,43 +518,23 @@ class ProtocolExportService {
   }
 
   int _addExcelLocationAndDate(xlsio.Worksheet sheet, ProtocolLocal protocol, Map<String, dynamic> data, int row) {
-    final isSummaryOrFinal = protocol.type == 'summary' || protocol.type == 'final';
-    final isCasting = protocol.type.startsWith('casting');
-
-    if (data['venue'] != null && isCasting) {
-      sheet.getRangeByIndex(row, 1).setText('Место проведения: ${data['venue']}');
-      row++;
-    } else if (data['lake'] != null && !isCasting) {
-      sheet.getRangeByIndex(row, 1).setText('Место проведения: ${data['lake']}');
-      row++;
+    // Место проведения (слева)
+    if (data['venueFormatted'] != null && data['venueFormatted'].toString().isNotEmpty) {
+      sheet.getRangeByIndex(row, 1).setText('Место проведения: ${data['venueFormatted']}');
     }
 
-    if (protocol.type == 'casting_attempt' && data['sessionTime'] != null) {
-      sheet.getRangeByIndex(row, 1).setText(
-        'Дата и время: ${DateFormat('dd.MM.yyyy HH:mm').format(DateTime.parse(data['sessionTime']))}',
-      );
-    } else if (protocol.type == 'weighing' && data['weighingTime'] != null) {
-      sheet.getRangeByIndex(row, 1).setText(
-        'Дата и время: ${DateFormat('dd.MM.yyyy HH:mm').format(DateTime.parse(data['weighingTime']))}',
-      );
-    } else if (protocol.type == 'big_fish' && data['startTime'] != null && data['finishTime'] != null) {
-      sheet.getRangeByIndex(row, 1).setText(
-        'Период: ${DateFormat('dd.MM.yyyy HH:mm').format(DateTime.parse(data['startTime']))} - ${DateFormat('dd.MM.yyyy HH:mm').format(DateTime.parse(data['finishTime']))}',
-      );
-    } else if ((isSummaryOrFinal || isCasting) && data['startTime'] != null && data['finishTime'] != null) {
-      sheet.getRangeByIndex(row, 1).setText(
-        'Даты соревнования: ${DateFormat('dd.MM.yyyy').format(DateTime.parse(data['startTime']))} - ${DateFormat('dd.MM.yyyy').format(DateTime.parse(data['finishTime']))}',
-      );
-    }
-
-    if (isSummaryOrFinal || isCasting) {
-      sheet.getRangeByIndex(row, 10).setText(
-        'Дата формирования протокола: ${DateFormat('dd.MM.yyyy').format(DateTime.now())}',
-      );
-      sheet.getRangeByIndex(row, 10).cellStyle.hAlign = xlsio.HAlignType.right;
-    }
-
+    // Дата формирования протокола (справа)
+    final dateFormationCell = sheet.getRangeByIndex(row, 10);
+    dateFormationCell.setText('Дата формирования протокола: ${DateFormat('dd.MM.yyyy').format(DateTime.now())}');
+    dateFormationCell.cellStyle.hAlign = xlsio.HAlignType.right;
     row++;
+
+    // Дата/даты соревнования (слева)
+    if (data['competitionDates'] != null) {
+      sheet.getRangeByIndex(row, 1).setText('${_getDateLabel(data)}: ${data['competitionDates']}');
+      row++;
+    }
+
     return row;
   }
 
@@ -586,7 +565,7 @@ class ProtocolExportService {
     return row;
   }
 
-  // ========== EXCEL: КАСТИНГ ПОПЫТКА (БЕЗ ЦВЕТОВ) ==========
+  // ========== EXCEL: КАСТИНГ ПОПЫТКА ==========
   int _addExcelCastingAttemptTable(xlsio.Worksheet sheet, Map<String, dynamic> data, int row) {
     final participantsData = data['participantsData'] as List<dynamic>? ?? [];
 
@@ -620,7 +599,7 @@ class ProtocolExportService {
     return row;
   }
 
-  // ========== EXCEL: КАСТИНГ ПРОМЕЖУТОЧНЫЙ/ФИНАЛЬНЫЙ (БЕЗ ЦВЕТОВ) ==========
+  // ========== EXCEL: КАСТИНГ ПРОМЕЖУТОЧНЫЙ/ФИНАЛЬНЫЙ ==========
   int _addExcelCastingFullTable(xlsio.Worksheet sheet, Map<String, dynamic> data, int row) {
     final participantsData = data['participantsData'] as List<dynamic>? ?? [];
     final scoringMethod = data['scoringMethod'] as String? ?? 'average_distance';
@@ -631,7 +610,7 @@ class ProtocolExportService {
       'ФИО',
       'Удилище',
       'Леска',
-      ...List.generate(attemptsCount, (i) => 'Попытка ${i + 1}'),
+      ...List.generate(attemptsCount, (i) => 'Попытка №${i + 1}'),
       scoringMethod == 'best_distance' ? 'Лучший' : 'Средний',
       'Место',
     ];
@@ -652,7 +631,7 @@ class ProtocolExportService {
 
       int col = 1;
 
-      sheet.getRangeByIndex(row, col++).setNumber(i + 1);
+      sheet.getRangeByIndex(row, col++).setNumber((i + 1).toDouble());
       sheet.getRangeByIndex(row, col++).setText(participant['fullName']?.toString() ?? '');
       sheet.getRangeByIndex(row, col++).setText(participant['rod']?.toString() ?? '');
       sheet.getRangeByIndex(row, col++).setText(participant['line']?.toString() ?? '');
@@ -697,14 +676,19 @@ class ProtocolExportService {
     return row;
   }
 
+  // ========== EXCEL: ПОДПИСИ СУДЕЙ (СПРАВА) ==========
   void _addExcelSignature(xlsio.Worksheet sheet, Map<String, dynamic> data, int row) {
     if (data['judges'] != null) {
       for (final judge in data['judges'] as List<dynamic>) {
         final judgeMap = judge as Map<String, dynamic>;
-        final rank = (judgeMap['rank']?.toString() ?? 'judge').tr();
+        final rank = _translateJudgeRank(judgeMap['rank']?.toString() ?? '');
         final name = judgeMap['name']?.toString() ?? '';
 
-        sheet.getRangeByIndex(row, 1).setText('$rank: $name _______________');
+        // Подпись справа (колонка 8-10)
+        final signatureRange = sheet.getRangeByIndex(row, 8, row, 10);
+        signatureRange.merge();
+        signatureRange.setText('$rank: _______________ $name');
+        signatureRange.cellStyle.hAlign = xlsio.HAlignType.right;
         row++;
       }
     }
@@ -870,7 +854,7 @@ class ProtocolExportService {
       case 'weighing':
         return 'Протокол взвешивания День ${protocol.dayNumber}, №${protocol.weighingNumber}';
       case 'intermediate':
-        return 'Промежуточный протокол №${protocol.weighingNumber}';
+        return 'Промежуточный протокол';
       case 'big_fish':
         return 'Big Fish - День ${protocol.bigFishDay}';
       case 'summary':
@@ -878,11 +862,11 @@ class ProtocolExportService {
       case 'final':
         return 'Финальный протокол';
       case 'casting_attempt':
-        return 'Протокол попытки №${protocol.weighingNumber}';
+        return 'Попытка №${protocol.weighingNumber}';
       case 'casting_intermediate':
-        return 'Промежуточный протокол кастинга (${protocol.weighingNumber} попыток)';
+        return 'Промежуточный протокол после ${protocol.weighingNumber} попыток';
       case 'casting_final':
-        return 'Финальный протокол кастинга';
+        return 'Финальный протокол';
       default:
         return 'Протокол соревнования';
     }

@@ -529,5 +529,20 @@
   "casting_attempt": "Attempt Protocol",
   "casting_intermediate": "Intermediate Protocol",
   "casting_final": "Final Protocol",
-  "common_save": "Save"
+  "common_save": "Save",
+  "casting_attempt_number": "Attempt №{number}",
+  "attempt_number_1": "Attempt №1",
+  "attempt_number_2": "Attempt №2",
+  "attempt_number_3": "Attempt №3",
+  "attempt_number_4": "Attempt №4",
+  "attempt_number_5": "Attempt №5",
+  "intermediate_protocol_after_attempts": "Intermediate Protocol after {count} attempts",
+  "final_protocol_title": "Final Protocol",
+  "venue_location": "Venue",
+  "competition_date_single": "Competition Date",
+  "competition_dates_multiple": "Competition Dates",
+  "chief_judge_signature": "Chief Judge",
+  "judge_signature": "Judge",
+  "secretary_signature": "Secretary",
+  "signature_line": "_______________"
 }
