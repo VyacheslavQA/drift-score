@@ -1,21 +1,31 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar_community/isar.dart';
 import '../../data/models/local/team_local.dart';
+import '../../data/models/local/competition_local.dart';
+import '../../data/services/sync_service.dart';
 import 'competition_provider.dart';
 
 final teamProvider = StateNotifierProvider.family<TeamNotifier, AsyncValue<List<TeamLocal>>, int>(
       (ref, competitionId) {
     final isar = ref.watch(isarProvider);
-    return TeamNotifier(isar, competitionId);
+    final syncService = ref.watch(syncServiceProvider);
+    return TeamNotifier(isar, syncService, competitionId);
   },
 );
 
 class TeamNotifier extends StateNotifier<AsyncValue<List<TeamLocal>>> {
   final Isar isar;
+  final SyncService syncService;
   final int competitionId;
 
-  TeamNotifier(this.isar, this.competitionId) : super(const AsyncValue.loading()) {
+  TeamNotifier(this.isar, this.syncService, this.competitionId) : super(const AsyncValue.loading()) {
     loadTeams();
+  }
+
+  /// Получить serverId соревнования
+  Future<String?> _getCompetitionServerId() async {
+    final competition = await isar.competitionLocals.get(competitionId);
+    return competition?.serverId;
   }
 
   Future<void> loadTeams() async {
@@ -30,9 +40,31 @@ class TeamNotifier extends StateNotifier<AsyncValue<List<TeamLocal>>> {
           .findAll();
 
       print('✅ Teams loaded: ${teams.length} teams');
+      for (var team in teams) {
+        print('   - ${team.name} (Synced: ${team.isSynced})');
+      }
       state = AsyncValue.data(teams);
     } catch (e, stack) {
       print('❌ Error loading teams: $e');
+      state = AsyncValue.error(e, stack);
+    }
+  }
+
+  /// ✅ НОВЫЙ МЕТОД: Синхронизировать команды из Firebase
+  Future<void> syncTeamsFromFirebase() async {
+    print('🔵 syncTeamsFromFirebase() called');
+    try {
+      final competitionServerId = await _getCompetitionServerId();
+      if (competitionServerId == null || competitionServerId.isEmpty) {
+        print('⚠️ Competition not synced to Firebase yet');
+        return;
+      }
+
+      await syncService.syncTeamsFromFirebase(competitionServerId);
+      print('✅ Teams synced from Firebase');
+      await loadTeams();
+    } catch (e, stack) {
+      print('❌ Error syncing teams from Firebase: $e');
       state = AsyncValue.error(e, stack);
     }
   }
@@ -60,7 +92,22 @@ class TeamNotifier extends StateNotifier<AsyncValue<List<TeamLocal>>> {
         await isar.teamLocals.put(team);
       });
 
-      print('✅ Team created: ${team.name}, ID: ${team.id}');
+      print('✅ Team created locally: ${team.name}, ID: ${team.id}');
+
+      // ✅ НОВОЕ: Синхронизация с Firebase
+      final competitionServerId = await _getCompetitionServerId();
+      if (competitionServerId != null && competitionServerId.isNotEmpty) {
+        print('🔄 Syncing team to Firebase...');
+        try {
+          await syncService.syncTeamToFirebase(team, competitionServerId);
+          print('✅ Team synced to Firebase successfully');
+        } catch (e) {
+          print('⚠️ Error syncing team to Firebase (will retry later): $e');
+        }
+      } else {
+        print('⚠️ Competition not synced to Firebase yet - team will sync later');
+      }
+
       await loadTeams();
     } catch (e, stack) {
       print('❌ Error creating team: $e');
@@ -97,7 +144,20 @@ class TeamNotifier extends StateNotifier<AsyncValue<List<TeamLocal>>> {
         await isar.teamLocals.put(team);
       });
 
-      print('✅ Team updated: ${team.name}');
+      print('✅ Team updated locally: ${team.name}');
+
+      // ✅ НОВОЕ: Синхронизация с Firebase
+      final competitionServerId = await _getCompetitionServerId();
+      if (competitionServerId != null && competitionServerId.isNotEmpty) {
+        print('🔄 Syncing updated team to Firebase...');
+        try {
+          await syncService.syncTeamToFirebase(team, competitionServerId);
+          print('✅ Team synced to Firebase successfully');
+        } catch (e) {
+          print('⚠️ Error syncing team to Firebase (will retry later): $e');
+        }
+      }
+
       await loadTeams();
     } catch (e, stack) {
       print('❌ Error updating team: $e');
@@ -109,10 +169,31 @@ class TeamNotifier extends StateNotifier<AsyncValue<List<TeamLocal>>> {
     print('🔵 deleteTeam() called: ID $teamId');
 
     try {
+      // Получаем serverId перед удалением
+      final team = await isar.teamLocals.get(teamId);
+      final teamServerId = team?.serverId;
+      final competitionServerId = await _getCompetitionServerId();
+
       await isar.writeTxn(() async {
         final success = await isar.teamLocals.delete(teamId);
-        print('✅ Team deleted: $success');
+        print('✅ Team deleted locally: $success');
       });
+
+      // ✅ НОВОЕ: Удаление из Firebase
+      if (teamServerId != null &&
+          teamServerId.isNotEmpty &&
+          competitionServerId != null &&
+          competitionServerId.isNotEmpty) {
+        print('🔄 Deleting team from Firebase...');
+        try {
+          await syncService.deleteTeamFromFirebase(competitionServerId, teamServerId);
+          print('✅ Team deleted from Firebase successfully');
+        } catch (e) {
+          print('⚠️ Error deleting team from Firebase: $e');
+        }
+      } else {
+        print('⚠️ Team was not synced to Firebase');
+      }
 
       await loadTeams();
     } catch (e, stack) {
@@ -141,7 +222,20 @@ class TeamNotifier extends StateNotifier<AsyncValue<List<TeamLocal>>> {
         await isar.teamLocals.put(team);
       });
 
-      print('✅ Sector assigned');
+      print('✅ Sector assigned locally');
+
+      // ✅ НОВОЕ: Синхронизация с Firebase
+      final competitionServerId = await _getCompetitionServerId();
+      if (competitionServerId != null && competitionServerId.isNotEmpty) {
+        print('🔄 Syncing sector assignment to Firebase...');
+        try {
+          await syncService.syncTeamToFirebase(team, competitionServerId);
+          print('✅ Sector synced to Firebase successfully');
+        } catch (e) {
+          print('⚠️ Error syncing sector to Firebase (will retry later): $e');
+        }
+      }
+
       await loadTeams();
     } catch (e, stack) {
       print('❌ Error assigning sector: $e');
@@ -174,7 +268,20 @@ class TeamNotifier extends StateNotifier<AsyncValue<List<TeamLocal>>> {
         await isar.teamLocals.put(team);
       });
 
-      print('✅ Penalty added');
+      print('✅ Penalty added locally');
+
+      // ✅ НОВОЕ: Синхронизация с Firebase
+      final competitionServerId = await _getCompetitionServerId();
+      if (competitionServerId != null && competitionServerId.isNotEmpty) {
+        print('🔄 Syncing penalty to Firebase...');
+        try {
+          await syncService.syncTeamToFirebase(team, competitionServerId);
+          print('✅ Penalty synced to Firebase successfully');
+        } catch (e) {
+          print('⚠️ Error syncing penalty to Firebase (will retry later): $e');
+        }
+      }
+
       await loadTeams();
     } catch (e, stack) {
       print('❌ Error adding penalty: $e');
@@ -187,6 +294,8 @@ class TeamNotifier extends StateNotifier<AsyncValue<List<TeamLocal>>> {
     print('🔵 saveDrawResults() called for ${drawResults.length} teams');
 
     try {
+      final updatedTeams = <TeamLocal>[];
+
       await isar.writeTxn(() async {
         for (var entry in drawResults.entries) {
           final teamId = entry.key;
@@ -200,11 +309,28 @@ class TeamNotifier extends StateNotifier<AsyncValue<List<TeamLocal>>> {
             team.updatedAt = DateTime.now();
             await isar.teamLocals.put(team);
             print('  ✅ Team ${team.name}: order=${drawData.drawOrder}, sector=${drawData.sector}');
+            updatedTeams.add(team);
           }
         }
       });
 
-      print('✅ Draw results saved successfully');
+      print('✅ Draw results saved locally');
+
+      // ✅ НОВОЕ: Синхронизация всех обновлённых команд с Firebase
+      final competitionServerId = await _getCompetitionServerId();
+      if (competitionServerId != null && competitionServerId.isNotEmpty) {
+        print('🔄 Syncing draw results to Firebase...');
+        for (var team in updatedTeams) {
+          try {
+            await syncService.syncTeamToFirebase(team, competitionServerId);
+            print('  ✅ Team ${team.name} synced');
+          } catch (e) {
+            print('  ⚠️ Error syncing team ${team.name}: $e');
+          }
+        }
+        print('✅ All draw results synced to Firebase');
+      }
+
       await loadTeams();
     } catch (e, stack) {
       print('❌ Error saving draw results: $e');

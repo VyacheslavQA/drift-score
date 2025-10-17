@@ -4,20 +4,28 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'dart:io';
 import '../../data/models/local/competition_local.dart';
+import '../../data/services/sync_service.dart';
 
 final isarProvider = Provider<Isar>((ref) {
   throw UnimplementedError('Isar instance must be overridden');
 });
 
+// ✅ НОВЫЙ ПРОВАЙДЕР: SyncService
+final syncServiceProvider = Provider<SyncService>((ref) {
+  return SyncService();
+});
+
 final competitionProvider = StateNotifierProvider<CompetitionNotifier, AsyncValue<List<CompetitionLocal>>>((ref) {
   final isar = ref.watch(isarProvider);
-  return CompetitionNotifier(isar);
+  final syncService = ref.watch(syncServiceProvider);
+  return CompetitionNotifier(isar, syncService);
 });
 
 class CompetitionNotifier extends StateNotifier<AsyncValue<List<CompetitionLocal>>> {
   final Isar isar;
+  final SyncService syncService;
 
-  CompetitionNotifier(this.isar) : super(const AsyncValue.loading()) {
+  CompetitionNotifier(this.isar, this.syncService) : super(const AsyncValue.loading()) {
     print('🔵 CompetitionNotifier initialized');
     loadAllCompetitionsForDevice();
   }
@@ -80,7 +88,7 @@ class CompetitionNotifier extends StateNotifier<AsyncValue<List<CompetitionLocal
 
       print('✅ All competitions for device loaded: ${competitions.length} items');
       for (var comp in competitions) {
-        print('   - ${comp.name} (Code: ${comp.accessCode}, Status: ${comp.status})');
+        print('   - ${comp.name} (Code: ${comp.accessCode}, Status: ${comp.status}, Synced: ${comp.isSynced})');
       }
 
       state = AsyncValue.data(competitions);
@@ -100,6 +108,19 @@ class CompetitionNotifier extends StateNotifier<AsyncValue<List<CompetitionLocal
       state = AsyncValue.data(competitions);
     } catch (e, stack) {
       print('❌ Error loading all competitions: $e');
+      state = AsyncValue.error(e, stack);
+    }
+  }
+
+  // ✅ НОВЫЙ МЕТОД: Синхронизировать все соревнования из Firebase
+  Future<void> syncAllCompetitionsFromFirebase() async {
+    print('🔵 syncAllCompetitionsFromFirebase() called');
+    try {
+      await syncService.syncAllCompetitions();
+      print('✅ All competitions synced from Firebase');
+      await loadAllCompetitionsForDevice();
+    } catch (e, stack) {
+      print('❌ Error syncing competitions from Firebase: $e');
       state = AsyncValue.error(e, stack);
     }
   }
@@ -184,7 +205,8 @@ class CompetitionNotifier extends StateNotifier<AsyncValue<List<CompetitionLocal
         ..status = 'active'
         ..isFinal = false
         ..isSynced = false
-        ..createdAt = DateTime.now();
+        ..createdAt = DateTime.now()
+        ..updatedAt = DateTime.now();
 
       print('✅ Competition object created');
       print('   Name: ${competition.name}');
@@ -201,6 +223,16 @@ class CompetitionNotifier extends StateNotifier<AsyncValue<List<CompetitionLocal
         print('✅ Competition saved to Isar with ID: $id');
       });
 
+      // ✅ НОВОЕ: Синхронизация с Firebase
+      print('🔄 Syncing competition to Firebase...');
+      try {
+        await syncService.syncCompetitionToFirebase(competition);
+        print('✅ Competition synced to Firebase successfully');
+      } catch (e) {
+        print('⚠️ Error syncing to Firebase (will retry later): $e');
+        // Не падаем, если синхронизация не удалась - она произойдёт позже
+      }
+
       print('🔵 Calling loadAllCompetitionsForDevice() after save');
       await loadAllCompetitionsForDevice();
     } catch (e, stack) {
@@ -211,7 +243,7 @@ class CompetitionNotifier extends StateNotifier<AsyncValue<List<CompetitionLocal
     }
   }
 
-  // ✅ НОВЫЙ МЕТОД: Обновление соревнования
+  // ✅ ОБНОВЛЕНО: Обновление соревнования с синхронизацией
   Future<void> updateCompetition({
     required int id,
     required String name,
@@ -250,6 +282,8 @@ class CompetitionNotifier extends StateNotifier<AsyncValue<List<CompetitionLocal
     }
 
     try {
+      CompetitionLocal? updatedCompetition;
+
       await isar.writeTxn(() async {
         final competition = await isar.competitionLocals.get(id);
 
@@ -277,6 +311,7 @@ class CompetitionNotifier extends StateNotifier<AsyncValue<List<CompetitionLocal
         competition.lakeNames = lakeNames ?? [];
         competition.attemptsCount = attemptsCount;
         competition.commonLine = commonLine;
+        competition.updatedAt = DateTime.now();
         competition.isSynced = false; // Помечаем как несинхронизированное
 
         await isar.competitionLocals.put(competition);
@@ -284,7 +319,20 @@ class CompetitionNotifier extends StateNotifier<AsyncValue<List<CompetitionLocal
         print('   Updated Name: ${competition.name}');
         print('   Updated Scoring: ${competition.scoringMethod}');
         print('   Updated Common Line: ${competition.commonLine ?? "null"}');
+
+        updatedCompetition = competition;
       });
+
+      // ✅ НОВОЕ: Синхронизация с Firebase
+      if (updatedCompetition != null) {
+        print('🔄 Syncing updated competition to Firebase...');
+        try {
+          await syncService.syncCompetitionToFirebase(updatedCompetition!);
+          print('✅ Competition synced to Firebase successfully');
+        } catch (e) {
+          print('⚠️ Error syncing to Firebase (will retry later): $e');
+        }
+      }
 
       print('🔵 Reloading competitions after update');
       await loadAllCompetitionsForDevice();
@@ -295,13 +343,31 @@ class CompetitionNotifier extends StateNotifier<AsyncValue<List<CompetitionLocal
     }
   }
 
+  // ✅ ОБНОВЛЕНО: Удаление соревнования с синхронизацией
   Future<void> deleteCompetition(int id) async {
     print('🔵 deleteCompetition() called with ID: $id');
     try {
+      // Получаем serverId перед удалением
+      final competition = await isar.competitionLocals.get(id);
+      final serverId = competition?.serverId;
+
       await isar.writeTxn(() async {
         final deleted = await isar.competitionLocals.delete(id);
-        print('✅ Competition deleted: $deleted');
+        print('✅ Competition deleted locally: $deleted');
       });
+
+      // ✅ НОВОЕ: Удаление из Firebase
+      if (serverId != null && serverId.isNotEmpty) {
+        print('🔄 Deleting competition from Firebase...');
+        try {
+          await syncService.deleteCompetitionFromFirebase(serverId);
+          print('✅ Competition deleted from Firebase successfully');
+        } catch (e) {
+          print('⚠️ Error deleting from Firebase: $e');
+        }
+      } else {
+        print('⚠️ No serverId found - competition was not synced to Firebase');
+      }
 
       await loadAllCompetitionsForDevice();
     } catch (e, stack) {
@@ -310,20 +376,37 @@ class CompetitionNotifier extends StateNotifier<AsyncValue<List<CompetitionLocal
     }
   }
 
+  // ✅ ОБНОВЛЕНО: Обновление статуса с синхронизацией
   Future<void> updateCompetitionStatus(int id, String newStatus) async {
     print('🔵 updateCompetitionStatus() called: ID=$id, Status=$newStatus');
     try {
+      CompetitionLocal? updatedCompetition;
+
       await isar.writeTxn(() async {
         final competition = await isar.competitionLocals.get(id);
         if (competition != null) {
           competition.status = newStatus;
+          competition.updatedAt = DateTime.now();
+          competition.isSynced = false;
           if (newStatus == 'completed') {
             competition.finalizedAt = DateTime.now();
           }
           await isar.competitionLocals.put(competition);
-          print('✅ Competition status updated');
+          print('✅ Competition status updated locally');
+          updatedCompetition = competition;
         }
       });
+
+      // ✅ НОВОЕ: Синхронизация с Firebase
+      if (updatedCompetition != null) {
+        print('🔄 Syncing status update to Firebase...');
+        try {
+          await syncService.syncCompetitionToFirebase(updatedCompetition!);
+          print('✅ Status synced to Firebase successfully');
+        } catch (e) {
+          print('⚠️ Error syncing status to Firebase (will retry later): $e');
+        }
+      }
 
       await loadAllCompetitionsForDevice();
     } catch (e, stack) {

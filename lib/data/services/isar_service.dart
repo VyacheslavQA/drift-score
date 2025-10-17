@@ -4,7 +4,6 @@ import '../models/local/competition_local.dart';
 import '../models/local/team_local.dart';
 import '../models/local/weighing_local.dart';
 import '../models/local/weighing_result_local.dart';
-import '../models/local/result_local.dart';
 import '../models/local/operation_queue.dart';
 import '../models/local/protocol_local.dart';
 import '../models/local/casting_session_local.dart';
@@ -27,7 +26,6 @@ class IsarService {
         TeamLocalSchema,
         WeighingLocalSchema,
         WeighingResultLocalSchema,
-        ResultLocalSchema,
         OperationQueueSchema,
         ProtocolLocalSchema,
         CastingSessionLocalSchema,
