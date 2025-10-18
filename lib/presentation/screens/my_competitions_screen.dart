@@ -446,147 +446,40 @@ class _MyCompetitionsScreenState extends ConsumerState<MyCompetitionsScreen> {
 
   Future<void> _handleCreateCompetition(BuildContext context) async {
     print('🔵 _handleCreateCompetition called for ${widget.fishingType}');
-    _showCodeRequiredForCreation(context);
-  }
 
-  void _showCodeRequiredForCreation(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        return Dialog(
-          backgroundColor: AppColors.background,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppDimensions.radiusLarge),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(AppDimensions.paddingLarge),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: AppColors.primary,
-                        borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
-                      ),
-                      child: const Icon(
-                        Icons.lock_outline,
-                        color: AppColors.text,
-                        size: 28,
-                      ),
-                    ),
-                    const SizedBox(width: AppDimensions.paddingMedium),
-                    Expanded(
-                      child: Text(
-                        'code_required'.tr(),
-                        style: AppTextStyles.h2,
-                      ),
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.close, color: AppColors.textTertiary),
-                      onPressed: () => Navigator.pop(dialogContext),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppDimensions.paddingLarge),
-                Text(
-                  'Для создания соревнования необходим код организатора',
-                  style: AppTextStyles.bodyLarge,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: AppDimensions.paddingLarge),
-                OutlinedButton.icon(
-                  onPressed: () async {
-                    Navigator.pop(dialogContext);
-                    await Future.delayed(Duration(milliseconds: 300));
-
-                    if (!mounted) return;
-
-                    final code = await Navigator.push<String>(
-                      context,
-                      MaterialPageRoute(builder: (_) => const EnterCodeScreen()),
-                    );
-
-                    print('🔑 Received code: $code');
-
-                    if (code != null && code.isNotEmpty && mounted) {
-                      final prefs = await SharedPreferences.getInstance();
-                      await prefs.setString('access_code', code);
-                      await prefs.setBool('is_admin', true);
-
-                      print('✅ Code saved to SharedPreferences: $code');
-
-                      // Передаём fishingType в CreateCompetitionScreen
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => CreateCompetitionScreen(
-                            accessCode: code,
-                            fishingType: widget.fishingType, // ✅ Передаём тип
-                          ),
-                        ),
-                      );
-
-                      if (mounted) {
-                        ref.read(competitionProvider.notifier).loadAllCompetitionsForDevice();
-                      }
-                    }
-                  },
-                  icon: const Icon(Icons.qr_code, size: AppDimensions.iconMedium),
-                  label: Text('enter_code'.tr()),
-                  style: OutlinedButton.styleFrom(
-                    backgroundColor: AppColors.surfaceMedium,
-                    foregroundColor: AppColors.text,
-                    side: BorderSide(color: AppColors.borderMedium, width: 2),
-                    padding: const EdgeInsets.symmetric(vertical: AppDimensions.paddingMedium),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
-                    ),
-                    textStyle: AppTextStyles.buttonMedium,
-                  ),
-                ),
-                const SizedBox(height: AppDimensions.paddingMedium - 4),
-                Row(
-                  children: [
-                    Expanded(child: Divider(color: AppColors.borderLight, thickness: 1)),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: AppDimensions.paddingMedium),
-                      child: Text('or'.tr(), style: AppTextStyles.bodyMedium),
-                    ),
-                    Expanded(child: Divider(color: AppColors.borderLight, thickness: 1)),
-                  ],
-                ),
-                const SizedBox(height: AppDimensions.paddingMedium - 4),
-                Opacity(
-                  opacity: 0.5,
-                  child: ElevatedButton.icon(
-                    onPressed: null,
-                    icon: const Icon(Icons.shopping_cart, size: 20),
-                    label: Text('Купить код (скоро)'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.upcoming,
-                      disabledBackgroundColor: AppColors.surfaceMedium,
-                      disabledForegroundColor: AppColors.textSecondary,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(vertical: AppDimensions.paddingMedium),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
-                      ),
-                      textStyle: AppTextStyles.buttonMedium,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+    // Сразу открываем экран ввода кода (там есть кнопка "Купить код")
+    final code = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(builder: (_) => const EnterCodeScreen()),
     );
+
+    print('🔑 Received code: $code');
+
+    if (code != null && code.isNotEmpty && mounted) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('access_code', code);
+      await prefs.setBool('is_admin', true);
+
+      print('✅ Code saved to SharedPreferences: $code');
+
+      // Открываем экран создания соревнования
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => CreateCompetitionScreen(
+            accessCode: code,
+            fishingType: widget.fishingType,
+          ),
+        ),
+      );
+
+      if (mounted) {
+        ref.read(competitionProvider.notifier).loadAllCompetitionsForDevice();
+      }
+    }
   }
+
+  
 
   Future<bool> _showDeleteCompetitionDialog(BuildContext context, CompetitionLocal competition) async {
     final confirmationController = TextEditingController();

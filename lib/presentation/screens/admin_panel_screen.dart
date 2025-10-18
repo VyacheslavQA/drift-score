@@ -48,7 +48,7 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
     try {
       final snapshot = await FirebaseFirestore.instance
           .collection('access_codes')
-          .orderBy('createdAt', descending: true)  // ← ДОБАВЬ ЭТУ СТРОКУ
+          .orderBy('createdAt', descending: true)
           .limit(50)
           .get();
 
@@ -165,7 +165,7 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
         'fishingType': _selectedFishingType,
         'customLabel': customLabel.isEmpty ? null : customLabel,
         'type': _codeType,
-        'maxUses': _codeType == 'single_use' ? 1 : 999,
+        'maxUses': _codeType == 'single_use' ? 1 : 5, // ✅ 1 или 5
         'currentUses': 0,
         'isActive': true,
         'createdAt': FieldValue.serverTimestamp(),
@@ -436,7 +436,6 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
     );
   }
 
-  // ============ ИСПРАВЛЕННЫЙ МЕТОД ============
   Widget _buildCreateCodeForm() {
     return Card(
       color: AppColors.surfaceLight,
@@ -506,22 +505,22 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
 
               SizedBox(height: AppDimensions.paddingLarge),
 
-              // ✅ НОВОЕ: Тип кода - ВЕРТИКАЛЬНО
-              Text('Тип кода:', style: AppTextStyles.bodyLarge),
+              // ✅ ОБНОВЛЁННОЕ: Количество соревнований
+              Text('Количество соревнований:', style: AppTextStyles.bodyLarge),
               SizedBox(height: AppDimensions.paddingSmall),
 
-// Одноразовый
+              // 1 соревнование
               GestureDetector(
                 onTap: () => setState(() => _codeType = 'single_use'),
                 child: Container(
                   padding: EdgeInsets.all(AppDimensions.paddingMedium),
                   decoration: BoxDecoration(
                     color: _codeType == 'single_use'
-                        ? AppColors.success.withOpacity(0.2)
+                        ? AppColors.secondary.withOpacity(0.2)
                         : AppColors.surfaceMedium,
                     border: Border.all(
                       color: _codeType == 'single_use'
-                          ? AppColors.success
+                          ? AppColors.secondary
                           : AppColors.borderDark,
                       width: 2,
                     ),
@@ -530,9 +529,9 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
                   child: Row(
                     children: [
                       Icon(
-                        Icons.check_circle,
+                        Icons.event,
                         color: _codeType == 'single_use'
-                            ? AppColors.success
+                            ? AppColors.secondary
                             : AppColors.textSecondary,
                         size: 28,
                       ),
@@ -542,24 +541,24 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Одноразовый',
+                              '1 соревнование',
                               style: AppTextStyles.bodyLarge.copyWith(
                                 fontWeight: FontWeight.bold,
                                 color: _codeType == 'single_use'
-                                    ? AppColors.success
+                                    ? AppColors.secondary
                                     : AppColors.textSecondary,
                               ),
                             ),
                             SizedBox(height: 2),
                             Text(
-                              '1 соревнование',
+                              'Базовый вариант',
                               style: AppTextStyles.caption,
                             ),
                           ],
                         ),
                       ),
                       if (_codeType == 'single_use')
-                        Icon(Icons.check, color: AppColors.success, size: 24),
+                        Icon(Icons.check, color: AppColors.secondary, size: 24),
                     ],
                   ),
                 ),
@@ -567,17 +566,17 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
 
               SizedBox(height: AppDimensions.paddingMedium),
 
-// Многоразовый
+              // 5 соревнований
               GestureDetector(
-                onTap: () => setState(() => _codeType = 'multi_use'),
+                onTap: () => setState(() => _codeType = 'pack_5'),
                 child: Container(
                   padding: EdgeInsets.all(AppDimensions.paddingMedium),
                   decoration: BoxDecoration(
-                    color: _codeType == 'multi_use'
+                    color: _codeType == 'pack_5'
                         ? AppColors.primary.withOpacity(0.2)
                         : AppColors.surfaceMedium,
                     border: Border.all(
-                      color: _codeType == 'multi_use'
+                      color: _codeType == 'pack_5'
                           ? AppColors.primary
                           : AppColors.borderDark,
                       width: 2,
@@ -587,8 +586,8 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
                   child: Row(
                     children: [
                       Icon(
-                        Icons.repeat,
-                        color: _codeType == 'multi_use'
+                        Icons.workspace_premium,
+                        color: _codeType == 'pack_5'
                             ? AppColors.primary
                             : AppColors.textSecondary,
                         size: 28,
@@ -599,23 +598,23 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Многоразовый',
+                              '5 соревнований',
                               style: AppTextStyles.bodyLarge.copyWith(
                                 fontWeight: FontWeight.bold,
-                                color: _codeType == 'multi_use'
+                                color: _codeType == 'pack_5'
                                     ? AppColors.primary
                                     : AppColors.textSecondary,
                               ),
                             ),
                             SizedBox(height: 2),
                             Text(
-                              '∞ соревнований',
+                              'Выгодный пакет',
                               style: AppTextStyles.caption,
                             ),
                           ],
                         ),
                       ),
-                      if (_codeType == 'multi_use')
+                      if (_codeType == 'pack_5')
                         Icon(Icons.check, color: AppColors.primary, size: 24),
                     ],
                   ),
@@ -718,7 +717,6 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
     );
   }
 
-  // ============ ИСПРАВЛЕННЫЙ МЕТОД ============
   Widget _buildCodeItem(Map<String, dynamic> codeData) {
     final code = codeData['code'] as String;
     final isActive = codeData['isActive'] as bool? ?? true;
@@ -856,7 +854,7 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
               // Использование
               _buildBadge(
                 icon: Icons.bar_chart,
-                text: '$currentUses/${maxUses == 999 ? "∞" : maxUses}',
+                text: '$currentUses/$maxUses',
               ),
 
               // Дата (короткая)
@@ -867,10 +865,10 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
                 ),
 
               // Тип
-              if (codeType == 'multi_use')
+              if (codeType == 'pack_5')
                 _buildBadge(
-                  icon: Icons.repeat,
-                  text: 'Многоразовый',
+                  icon: Icons.workspace_premium,
+                  text: 'Пакет 5',
                   color: AppColors.primary.withOpacity(0.2),
                   textColor: AppColors.primary,
                 ),

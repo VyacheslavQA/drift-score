@@ -545,5 +545,57 @@
   "judge_signature": "Judge",
   "secretary_signature": "Secretary",
   "signature_line": "_______________",
-  "admin_password": "Admin Password"
+  "admin_password": "Admin Password",
+  "purchase_single_code_title": "1 Competition",
+  "purchase_single_code_description": "Basic option",
+  "purchase_single_feature_1": "1 competition",
+  "purchase_single_feature_2": "Protocol generation",
+  "purchase_single_feature_3": "All app features",
+
+  "purchase_pack_code_title": "5 Competitions",
+  "purchase_pack_code_description": "Best value",
+  "purchase_pack_feature_1": "5 competitions",
+  "purchase_pack_feature_2": "Save 30%",
+  "purchase_pack_feature_3": "All app features",
+  "purchase_code_title": "Purchase Organizer Code",
+  "purchase_code_subtitle": "Choose the right option",
+  "purchase_code_description": "Organizer code is required to create competitions in the app",
+
+  "purchase_single_code_title": "1 Competition",
+  "purchase_single_code_description": "Basic option",
+  "purchase_single_feature_1": "1 competition",
+  "purchase_single_feature_2": "Protocol generation",
+  "purchase_single_feature_3": "All app features",
+
+  "purchase_pack_code_title": "5 Competitions",
+  "purchase_pack_code_description": "Best value",
+  "purchase_pack_feature_1": "5 competitions",
+  "purchase_pack_feature_2": "Save 30%",
+  "purchase_pack_feature_3": "All app features",
+
+  "purchase_recommended": "Recommended",
+  "purchase_price": "Price",
+  "purchase_buy_button": "Buy",
+  "purchase_loading": "Loading...",
+
+  "purchase_info_title": "How to get the code?",
+  "purchase_info_description": "After payment, the code will be sent to your email within 5 minutes. You can also contact support.",
+
+  "purchase_confirm_title": "Confirm Purchase",
+  "purchase_product": "Product",
+  "purchase_confirm_description": "After successful payment, you will receive the organizer code via email.",
+
+  "purchase_success_title": "Payment Successful!",
+  "purchase_success_description": "Thank you for your purchase! Your code will be sent to your email within 5 minutes.",
+  "purchase_error": "Purchase Error",
+  "purchase_cannot_open_url": "Cannot open link",
+
+  "contact_support": "Contact Support",
+  "privacy_policy": "Privacy Policy",
+  "terms_of_service": "Terms of Service",
+  "user_guide": "User Guide",
+  "close": "Close",
+  "cancel": "Cancel",
+  "buy_organizer_code": "Buy Organizer Code",
+  "where_to_get_code_purchase_only": "Organizer code can be purchased in the app."
 }

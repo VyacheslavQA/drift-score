@@ -544,5 +544,57 @@
   "judge_signature": "Төреші",
   "secretary_signature": "Хатшы",
   "signature_line": "_______________",
-  "admin_password": "Әкімші құпия сөзі"
+  "admin_password": "Әкімші құпия сөзі",
+  "purchase_single_code_title": "1 жарыс",
+  "purchase_single_code_description": "Базалық нұсқа",
+  "purchase_single_feature_1": "1 жарыс",
+  "purchase_single_feature_2": "Хаттамалар генерациясы",
+  "purchase_single_feature_3": "Барлық функциялар",
+
+  "purchase_pack_code_title": "5 жарыс",
+  "purchase_pack_code_description": "Тиімді жинақ",
+  "purchase_pack_feature_1": "5 жарыс",
+  "purchase_pack_feature_2": "30% үнем",
+  "purchase_pack_feature_3": "Барлық функциялар",
+  "purchase_code_title": "Ұйымдастырушы кодын сатып алу",
+  "purchase_code_subtitle": "Қолайлы нұсқаны таңдаңыз",
+  "purchase_code_description": "Қолданбада жарыстар құру үшін ұйымдастырушы коды қажет",
+
+  "purchase_single_code_title": "1 жарыс",
+  "purchase_single_code_description": "Базалық нұсқа",
+  "purchase_single_feature_1": "1 жарыс",
+  "purchase_single_feature_2": "Хаттамалар генерациясы",
+  "purchase_single_feature_3": "Барлық функциялар",
+
+  "purchase_pack_code_title": "5 жарыс",
+  "purchase_pack_code_description": "Тиімді жинақ",
+  "purchase_pack_feature_1": "5 жарыс",
+  "purchase_pack_feature_2": "30% үнем",
+  "purchase_pack_feature_3": "Барлық функциялар",
+
+  "purchase_recommended": "Ұсынамыз",
+  "purchase_price": "Бағасы",
+  "purchase_buy_button": "Сатып алу",
+  "purchase_loading": "Жүктелуде...",
+
+  "purchase_info_title": "Кодты қалай алуға болады?",
+  "purchase_info_description": "Төлегеннен кейін код 5 минут ішінде email-ға жіберіледі. Сондай-ақ қолдау қызметіне хабарласуыңызға болады.",
+
+  "purchase_confirm_title": "Сатып алуды растаңыз",
+  "purchase_product": "Өнім",
+  "purchase_confirm_description": "Төлем сәтті болғаннан кейін ұйымдастырушы коды email арқылы жіберіледі.",
+
+  "purchase_success_title": "Төлем сәтті!",
+  "purchase_success_description": "Сатып алғаныңыз үшін рахмет! Сіздің кодыңыз 5 минут ішінде email-ға жіберіледі.",
+  "purchase_error": "Сатып алу қатесі",
+  "purchase_cannot_open_url": "Сілтемені ашу мүмкін емес",
+
+  "contact_support": "Қолдау қызметіне хабарласу",
+  "privacy_policy": "Құпиялылық саясаты",
+  "terms_of_service": "Пайдалану шарттары",
+  "user_guide": "Пайдаланушы нұсқаулығы",
+  "close": "Жабу",
+  "cancel": "Болдырмау",
+  "buy_organizer_code": "Ұйымдастырушы кодын сатып алу",
+  "where_to_get_code_purchase_only": "Ұйымдастырушы кодын қолданбадан сатып алуға болады."
 }

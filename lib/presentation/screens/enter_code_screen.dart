@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_dimensions.dart';
 import '../providers/competition_provider.dart';
+import 'purchase_code_screen.dart';
 
 class EnterCodeScreen extends ConsumerStatefulWidget {
   const EnterCodeScreen({Key? key}) : super(key: key);
@@ -88,7 +88,7 @@ class _EnterCodeScreenState extends ConsumerState<EnterCodeScreen> {
                 color: AppColors.textPrimary,
               ),
               decoration: InputDecoration(
-                hintText: 'DS-XXXX-XX',
+                hintText: 'CARP-XXXX-XXXX',
                 hintStyle: AppTextStyles.body.copyWith(
                   color: AppColors.textSecondary,
                   letterSpacing: 4,
@@ -150,6 +150,28 @@ class _EnterCodeScreenState extends ConsumerState<EnterCodeScreen> {
               ),
             ),
 
+            // Кнопка покупки
+            SizedBox(height: AppDimensions.paddingMedium),
+
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _isLoading ? null : _showPurchaseScreen,
+                icon: Icon(Icons.shopping_cart, color: AppColors.secondary),
+                label: Text(
+                  'buy_organizer_code'.tr(),
+                  style: AppTextStyles.button.copyWith(color: AppColors.secondary),
+                ),
+                style: OutlinedButton.styleFrom(
+                  padding: EdgeInsets.symmetric(vertical: AppDimensions.paddingMedium),
+                  side: BorderSide(color: AppColors.secondary, width: 2),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+                  ),
+                ),
+              ),
+            ),
+
             SizedBox(height: AppDimensions.paddingXLarge),
 
             // Информационная карточка
@@ -172,7 +194,7 @@ class _EnterCodeScreenState extends ConsumerState<EnterCodeScreen> {
                   ),
                   SizedBox(height: 8),
                   Text(
-                    'where_to_get_code_description'.tr(),
+                    'where_to_get_code_purchase_only'.tr(),
                     style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
                   ),
                 ],
@@ -184,6 +206,15 @@ class _EnterCodeScreenState extends ConsumerState<EnterCodeScreen> {
     );
   }
 
+  /// Показать экран покупки
+  Future<void> _showPurchaseScreen() async {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const PurchaseCodeScreen()),
+    );
+  }
+
+  /// Проверка кода
   Future<void> _checkCode() async {
     final code = _codeController.text.trim().toUpperCase();
 
@@ -198,22 +229,17 @@ class _EnterCodeScreenState extends ConsumerState<EnterCodeScreen> {
     });
 
     try {
-      // Получаем мастер-код из Remote Config
       final remoteConfig = FirebaseRemoteConfig.instance;
       final masterCode = remoteConfig.getString('master_code');
 
       print('===================');
       print('DEBUG: Master code = "$masterCode"');
-      print('DEBUG: Master code length = ${masterCode.length}');
       print('DEBUG: Entered code = "$code"');
-      print('DEBUG: Entered code length = ${code.length}');
-      print('DEBUG: Are equal? ${code == masterCode}');
       print('===================');
 
       bool isValid = false;
       bool isAdmin = false;
 
-      // Проверка тестовых кодов
       if (code == masterCode ||
           code == 'DS-ADMIN-2025' ||
           code == 'TEST-FISH-2024' ||
@@ -225,24 +251,21 @@ class _EnterCodeScreenState extends ConsumerState<EnterCodeScreen> {
       if (isValid) {
         if (!mounted) return;
 
-        // ✅ НОВАЯ ПРОВЕРКА: Существует ли соревнование с этим кодом?
         print('🔍 Checking if code $code is already used...');
         final competitionNotifier = ref.read(competitionProvider.notifier);
         final existingCompetitions = await competitionNotifier.checkCodeExists(code);
 
         if (existingCompetitions.isNotEmpty) {
-          // ❌ Код уже используется!
-          print('❌ Code $code is already used by ${existingCompetitions.length} competition(s)');
+          print('❌ Code $code is already used');
           setState(() {
             _isLoading = false;
-            _errorMessage = 'Код $code уже используется! Введите другой код.';
+            _errorMessage = 'code_already_used'.tr();
           });
           return;
         }
 
         print('✅ Code $code is available');
 
-        // Показываем успех
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(isAdmin ? 'admin_access_granted'.tr() : 'code_accepted'.tr()),
@@ -250,8 +273,6 @@ class _EnterCodeScreenState extends ConsumerState<EnterCodeScreen> {
           ),
         );
 
-        // Возвращаем код на предыдущий экран
-        print('🔑 Received code: $code');
         Navigator.pop(context, code);
       } else {
         setState(() {

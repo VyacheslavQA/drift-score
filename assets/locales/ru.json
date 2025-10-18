@@ -545,5 +545,57 @@
   "judge_signature": "Судья",
   "secretary_signature": "Секретарь",
   "signature_line": "_______________",
-  "admin_password": "Пароль администратора"
+  "admin_password": "Пароль администратора",
+  "purchase_single_code_title": "1 соревнование",
+  "purchase_single_code_description": "Базовый вариант",
+  "purchase_single_feature_1": "1 соревнование",
+  "purchase_single_feature_2": "Генерация протоколов",
+  "purchase_single_feature_3": "Все функции приложения",
+
+  "purchase_pack_code_title": "5 соревнований",
+  "purchase_pack_code_description": "Выгодный пакет",
+  "purchase_pack_feature_1": "5 соревнований",
+  "purchase_pack_feature_2": "Экономия 30%",
+  "purchase_pack_feature_3": "Все функции приложения",
+  "purchase_code_title": "Покупка кода организатора",
+  "purchase_code_subtitle": "Выберите подходящий вариант",
+  "purchase_code_description": "Код организатора необходим для создания соревнований в приложении",
+
+  "purchase_single_code_title": "1 соревнование",
+  "purchase_single_code_description": "Базовый вариант",
+  "purchase_single_feature_1": "1 соревнование",
+  "purchase_single_feature_2": "Генерация протоколов",
+  "purchase_single_feature_3": "Все функции приложения",
+
+  "purchase_pack_code_title": "5 соревнований",
+  "purchase_pack_code_description": "Выгодный пакет",
+  "purchase_pack_feature_1": "5 соревнований",
+  "purchase_pack_feature_2": "Экономия 30%",
+  "purchase_pack_feature_3": "Все функции приложения",
+
+  "purchase_recommended": "Рекомендуем",
+  "purchase_price": "Цена",
+  "purchase_buy_button": "Купить",
+  "purchase_loading": "Загрузка...",
+
+  "purchase_info_title": "Как получить код?",
+  "purchase_info_description": "После оплаты код будет отправлен на ваш email в течение 5 минут. Также вы можете связаться с поддержкой.",
+
+  "purchase_confirm_title": "Подтвердите покупку",
+  "purchase_product": "Продукт",
+  "purchase_confirm_description": "После успешной оплаты вы получите код организатора на email.",
+
+  "purchase_success_title": "Оплата успешна!",
+  "purchase_success_description": "Спасибо за покупку! Ваш код будет отправлен на email в течение 5 минут.",
+  "purchase_error": "Ошибка покупки",
+  "purchase_cannot_open_url": "Не удалось открыть ссылку",
+
+  "contact_support": "Связаться с поддержкой",
+  "privacy_policy": "Политика конфиденциальности",
+  "terms_of_service": "Условия использования",
+  "user_guide": "Руководство пользователя",
+  "close": "Закрыть",
+  "cancel": "Отмена",
+  "buy_organizer_code": "Купить код организатора",
+  "where_to_get_code_purchase_only": "Код организатора можно приобрести в приложении."
 }
