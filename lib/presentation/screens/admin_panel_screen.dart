@@ -48,6 +48,7 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
     try {
       final snapshot = await FirebaseFirestore.instance
           .collection('access_codes')
+          .orderBy('createdAt', descending: true)  // ← ДОБАВЬ ЭТУ СТРОКУ
           .limit(50)
           .get();
 

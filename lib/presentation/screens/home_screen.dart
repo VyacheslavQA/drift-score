@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -46,7 +47,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final controller = TextEditingController();
     bool isLoading = false;
     String? errorMessage;
-    bool isPasswordVisible = false; // ← Добавили флаг видимости пароля
+    bool isPasswordVisible = false;
+
+    // ✅ ПРИНУДИТЕЛЬНО ОБНОВЛЯЕМ Remote Config ПЕРЕД ПОКАЗОМ ДИАЛОГА
+    print('🔄 Forcing Remote Config refresh...');
+    final remoteConfig = FirebaseRemoteConfig.instance;
+    await remoteConfig.setConfigSettings(RemoteConfigSettings(
+      fetchTimeout: const Duration(seconds: 10),
+      minimumFetchInterval: Duration.zero, // БЕЗ КЭША!
+    ));
+    await remoteConfig.fetchAndActivate();
+    print('✅ Remote Config refreshed');
 
     await showDialog(
       context: context,
@@ -59,12 +70,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               Icon(
                 Icons.shield,
                 color: AppColors.primary,
-                size: AppDimensions.iconMedium, // ← Адаптивный размер
+                size: AppDimensions.iconMedium,
               ),
-              const SizedBox(width: AppDimensions.paddingSmall), // ← Адаптивный отступ
+              const SizedBox(width: AppDimensions.paddingSmall),
               Flexible(
                 child: Text(
-                  'admin_password'.tr(), // ← Изменили на "Пароль администратора"
+                  'admin_password'.tr(),
                   style: AppTextStyles.h3,
                 ),
               ),
@@ -75,7 +86,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             children: [
               TextField(
                 controller: controller,
-                obscureText: !isPasswordVisible, // ← Переключаем видимость
+                obscureText: !isPasswordVisible,
                 autofocus: true,
                 enabled: !isLoading,
                 decoration: InputDecoration(
@@ -99,7 +110,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
                 onSubmitted: (_) async {
                   if (!isLoading) {
-                    await _checkPassword(controller.text, dialogContext, setState);
+                    await _checkPassword(controller.text, dialogContext, setState, () {
+                      isLoading = true;
+                      errorMessage = null;
+                    }, (error) {
+                      isLoading = false;
+                      errorMessage = error;
+                    });
                   }
                 },
               ),
@@ -115,8 +132,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               child: Text('cancel'.tr()),
             ),
             ElevatedButton(
-              onPressed: isLoading ? null : () async {
-                await _checkPassword(controller.text, dialogContext, setState);
+              onPressed: isLoading
+                  ? null
+                  : () async {
+                await _checkPassword(controller.text, dialogContext, setState, () {
+                  isLoading = true;
+                  errorMessage = null;
+                }, (error) {
+                  isLoading = false;
+                  errorMessage = error;
+                });
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
@@ -129,28 +154,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Future<void> _checkPassword(String password, BuildContext dialogContext, StateSetter setState) async {
+  Future<void> _checkPassword(
+      String password,
+      BuildContext dialogContext,
+      StateSetter setState,
+      Function() setLoading,
+      Function(String) setError,
+      ) async {
     if (password.isEmpty) {
       setState(() {
-        errorMessage = 'field_required'.tr();
+        setError('field_required'.tr());
       });
       return;
     }
 
     setState(() {
-      isLoading = true;
-      errorMessage = null;
+      setLoading();
     });
 
     try {
-      // Получаем пароль из Remote Config
+      // ✅ Получаем пароль из Remote Config (УЖЕ ОБНОВЛЁН выше)
       final remoteConfig = FirebaseRemoteConfig.instance;
-      await remoteConfig.fetchAndActivate();
       final adminPassword = remoteConfig.getString('admin_password');
 
       print('🔐 Checking password...');
-      print('   Entered: ${password.substring(0, 3)}***');
-      print('   Expected: ${adminPassword.substring(0, 3)}***');
+      print('   Entered: ${password.substring(0, min(3, password.length))}***');
+      print('   Expected: ${adminPassword.substring(0, min(3, adminPassword.length))}***');
 
       if (password == adminPassword) {
         print('✅ Password correct - opening Admin Panel');
@@ -171,21 +200,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       } else {
         print('❌ Password incorrect');
         setState(() {
-          isLoading = false;
-          errorMessage = 'invalid_master_code'.tr();
+          setError('invalid_master_code'.tr());
         });
       }
     } catch (e) {
       print('❌ Error checking password: $e');
       setState(() {
-        isLoading = false;
-        errorMessage = 'error_checking_code'.tr();
+        setError('error_checking_code'.tr());
       });
     }
   }
-
-  String? errorMessage;
-  bool isLoading = false;
 
   @override
   Widget build(BuildContext context) {
