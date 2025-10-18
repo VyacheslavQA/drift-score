@@ -544,5 +544,6 @@
   "chief_judge_signature": "Chief Judge",
   "judge_signature": "Judge",
   "secretary_signature": "Secretary",
-  "signature_line": "_______________"
+  "signature_line": "_______________",
+  "admin_password": "Admin Password"
 }

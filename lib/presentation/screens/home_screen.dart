@@ -1,17 +1,194 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:firebase_remote_config/firebase_remote_config.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_dimensions.dart';
 import 'select_fishing_type_screen.dart';
 import 'public_competitions_screen.dart';
+import 'admin_panel_screen.dart';
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  int _logoTapCount = 0;
+  DateTime? _lastTapTime;
+
+  void _onLogoTap() {
+    final now = DateTime.now();
+
+    // Сброс счётчика если прошло больше 2 секунд
+    if (_lastTapTime == null || now.difference(_lastTapTime!) > const Duration(seconds: 2)) {
+      _logoTapCount = 0;
+    }
+
+    _lastTapTime = now;
+    _logoTapCount++;
+
+    print('🔵 Logo tap: $_logoTapCount');
+
+    if (_logoTapCount == 3) {
+      _logoTapCount = 0;
+      _lastTapTime = null;
+
+      // Показываем диалог ввода пароля
+      _showAdminPasswordDialog();
+    }
+  }
+
+  Future<void> _showAdminPasswordDialog() async {
+    final controller = TextEditingController();
+    bool isLoading = false;
+    String? errorMessage;
+    bool isPasswordVisible = false; // ← Добавили флаг видимости пароля
+
+    await showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.shield,
+                color: AppColors.primary,
+                size: AppDimensions.iconMedium, // ← Адаптивный размер
+              ),
+              const SizedBox(width: AppDimensions.paddingSmall), // ← Адаптивный отступ
+              Flexible(
+                child: Text(
+                  'admin_password'.tr(), // ← Изменили на "Пароль администратора"
+                  style: AppTextStyles.h3,
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: controller,
+                obscureText: !isPasswordVisible, // ← Переключаем видимость
+                autofocus: true,
+                enabled: !isLoading,
+                decoration: InputDecoration(
+                  hintText: 'admin_password'.tr(),
+                  prefixIcon: Icon(Icons.lock_outline, color: AppColors.primary),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                      color: AppColors.textSecondary,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        isPasswordVisible = !isPasswordVisible;
+                      });
+                    },
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+                  ),
+                  errorText: errorMessage,
+                ),
+                onSubmitted: (_) async {
+                  if (!isLoading) {
+                    await _checkPassword(controller.text, dialogContext, setState);
+                  }
+                },
+              ),
+              if (isLoading) ...[
+                const SizedBox(height: 16),
+                CircularProgressIndicator(color: AppColors.primary),
+              ],
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: isLoading ? null : () => Navigator.pop(dialogContext),
+              child: Text('cancel'.tr()),
+            ),
+            ElevatedButton(
+              onPressed: isLoading ? null : () async {
+                await _checkPassword(controller.text, dialogContext, setState);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+              ),
+              child: Text('login'.tr()),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _checkPassword(String password, BuildContext dialogContext, StateSetter setState) async {
+    if (password.isEmpty) {
+      setState(() {
+        errorMessage = 'field_required'.tr();
+      });
+      return;
+    }
+
+    setState(() {
+      isLoading = true;
+      errorMessage = null;
+    });
+
+    try {
+      // Получаем пароль из Remote Config
+      final remoteConfig = FirebaseRemoteConfig.instance;
+      await remoteConfig.fetchAndActivate();
+      final adminPassword = remoteConfig.getString('admin_password');
+
+      print('🔐 Checking password...');
+      print('   Entered: ${password.substring(0, 3)}***');
+      print('   Expected: ${adminPassword.substring(0, 3)}***');
+
+      if (password == adminPassword) {
+        print('✅ Password correct - opening Admin Panel');
+
+        // Закрываем диалог
+        Navigator.pop(dialogContext);
+
+        // Небольшая задержка для завершения анимации
+        await Future.delayed(Duration(milliseconds: 300));
+
+        // Открываем админ-панель
+        if (mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => AdminPanelScreen()),
+          );
+        }
+      } else {
+        print('❌ Password incorrect');
+        setState(() {
+          isLoading = false;
+          errorMessage = 'invalid_master_code'.tr();
+        });
+      }
+    } catch (e) {
+      print('❌ Error checking password: $e');
+      setState(() {
+        isLoading = false;
+        errorMessage = 'error_checking_code'.tr();
+      });
+    }
+  }
+
+  String? errorMessage;
+  bool isLoading = false;
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -92,38 +269,42 @@ class HomeScreen extends ConsumerWidget {
                 Column(
                   children: [
                     const SizedBox(height: 20),
-                    Container(
-                      width: AppDimensions.logoLarge,
-                      height: AppDimensions.logoLarge,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(AppDimensions.radiusXLarge),
-                        gradient: const LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [AppColors.primary, AppColors.primaryDark],
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.shadowPrimary,
-                            blurRadius: 24,
-                            offset: const Offset(0, 8),
+                    // ✅ СКРЫТЫЙ ВХОД - ТРОЙНОЙ ТАП ПО ЛОГОТИПУ
+                    GestureDetector(
+                      onTap: _onLogoTap,
+                      child: Container(
+                        width: AppDimensions.logoLarge,
+                        height: AppDimensions.logoLarge,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(AppDimensions.radiusXLarge),
+                          gradient: const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [AppColors.primary, AppColors.primaryDark],
                           ),
-                        ],
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(AppDimensions.radiusXLarge),
-                        child: Image.asset(
-                          'assets/images/logo.png',
-                          width: AppDimensions.logoLarge,
-                          height: AppDimensions.logoLarge,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return const Icon(
-                              Icons.emoji_events,
-                              size: AppDimensions.iconXLarge,
-                              color: AppColors.text,
-                            );
-                          },
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.shadowPrimary,
+                              blurRadius: 24,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(AppDimensions.radiusXLarge),
+                          child: Image.asset(
+                            'assets/images/logo.png',
+                            width: AppDimensions.logoLarge,
+                            height: AppDimensions.logoLarge,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return const Icon(
+                                Icons.emoji_events,
+                                size: AppDimensions.iconXLarge,
+                                color: AppColors.text,
+                              );
+                            },
+                          ),
                         ),
                       ),
                     ),
@@ -154,7 +335,6 @@ class HomeScreen extends ConsumerWidget {
                   iconBackgroundColor: AppColors.primary,
                   iconColor: AppColors.text,
                   onPressed: () {
-                    // Переход на экран выбора типа рыбалки
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -184,39 +364,6 @@ class HomeScreen extends ConsumerWidget {
                 ),
 
                 const SizedBox(height: 40),
-
-                // Админ-панель (внизу)
-                Container(
-                  padding: const EdgeInsets.only(top: AppDimensions.paddingSmall),
-                  decoration: BoxDecoration(
-                    border: Border(
-                      top: BorderSide(
-                        color: AppColors.borderLight,
-                        width: 1,
-                      ),
-                    ),
-                  ),
-                  child: TextButton.icon(
-                    onPressed: () {
-                      _showNotImplemented(context, 'admin_panel'.tr());
-                    },
-                    icon: Icon(
-                      Icons.shield,
-                      size: AppDimensions.iconSmall,
-                      color: AppColors.textTertiary,
-                    ),
-                    label: Text(
-                      'admin_panel'.tr(),
-                      style: AppTextStyles.bodyMedium,
-                    ),
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppDimensions.paddingMedium,
-                        vertical: AppDimensions.paddingMedium - 4,
-                      ),
-                    ),
-                  ),
-                ),
               ],
             ),
           ),
@@ -291,20 +438,6 @@ class HomeScreen extends ConsumerWidget {
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-
-  void _showNotImplemented(BuildContext context, String feature) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$feature - ${'in_development'.tr()}'),
-        duration: const Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: AppColors.primary,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
         ),
       ),
     );

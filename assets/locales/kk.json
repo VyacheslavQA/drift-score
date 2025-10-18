@@ -543,5 +543,6 @@
   "chief_judge_signature": "Бас төреші",
   "judge_signature": "Төреші",
   "secretary_signature": "Хатшы",
-  "signature_line": "_______________"
+  "signature_line": "_______________",
+  "admin_password": "Әкімші құпия сөзі"
 }

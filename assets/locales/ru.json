@@ -544,7 +544,6 @@
   "chief_judge_signature": "Главный судья",
   "judge_signature": "Судья",
   "secretary_signature": "Секретарь",
-  "signature_line": "_______________"
-
-
+  "signature_line": "_______________",
+  "admin_password": "Пароль администратора"
 }
