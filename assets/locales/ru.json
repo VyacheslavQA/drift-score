@@ -613,5 +613,76 @@
   "protocol_draw_title": "Протокол жеребьёвки",
   "protocol_table_draw_number": "№ жеребьёвки",
   "protocol_table_order": "№ п/п",
-  "generate_protocol": "Сгенерировать протокол"
+  "generate_protocol": "Сгенерировать протокол",
+  "public_fishing_type_selection": "Выбор типа рыбалки",
+  "select_competition_type": "Выберите тип соревнований",
+  "view_public_protocols": "Просмотр публичных протоколов",
+
+  "all_competitions": "Все",
+  "active_competitions": "Активные",
+  "completed_competitions": "Завершённые",
+
+  "status": "Статус",
+  "active": "Активно",
+  "completed": "Завершено",
+
+  "no_competitions_found": "Соревнований не найдено",
+  "no_competitions_yet": "Пока нет соревнований этого типа",
+  "no_active_competitions": "Нет активных соревнований",
+  "no_completed_competitions": "Нет завершённых соревнований",
+
+  "protocols": "Протоколы",
+  "view_protocols": "Просмотр протоколов",
+
+  "protocol_draw": "Жеребьёвка",
+  "protocol_weighing": "Взвешивания",
+  "protocol_intermediate": "Промежуточные",
+  "protocol_big_fish": "Big Fish",
+  "protocol_summary": "Сводный",
+  "protocol_final": "Финальный",
+  "protocol_casting_attempt": "Попытки",
+  "protocol_casting_intermediate": "Промежуточные",
+  "protocol_casting_final": "Финальный",
+
+  "no_protocols_yet": "Протоколов пока нет",
+  "protocols_will_appear": "Протоколы появятся здесь после их создания организатором",
+
+  "created": "Создан",
+  "location": "Место",
+  "not_specified": "Не указано",
+
+  "protocol_data_unavailable": "Данные протокола недоступны",
+  "loading_error": "Ошибка загрузки",
+  "retry": "Повторить",
+
+  "draw_results": "Результаты жеребьёвки",
+  "no_draw_data": "Нет данных о жеребьёвке",
+  "draw_number": "Жеребьёвка",
+  "sector": "Сектор",
+
+  "weighing_results": "Результаты взвешивания",
+  "intermediate_results": "Промежуточные результаты",
+  "no_weighing_data": "Нет данных о взвешивании",
+  "fish_count": "Рыб",
+  "total_weight": "Общий вес",
+  "average_weight": "Средний вес",
+
+  "biggest_fish": "Самая большая рыба",
+  "no_big_fish_data": "Нет данных о трофее",
+  "weight": "Вес",
+  "length": "Длина",
+
+  "summary_results": "Сводные результаты",
+  "final_results": "Финальные результаты",
+  "trophy": "Трофей",
+
+  "attempt_results": "Результаты попытки",
+  "attempt_number": "Попытка",
+  "distance_m": "м",
+  "best_result": "Лучший результат",
+  "average_result": "Средний результат",
+
+  "protocol_info": "Информация о протоколе",
+  "competition_dates": "Даты соревнования",
+  "created_at": "Дата формирования протокола"
 }

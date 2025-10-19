@@ -726,4 +726,81 @@ class FirebaseService {
       rethrow;
     }
   }
+  // ========== PUBLIC VIEW: COMPETITIONS ==========
+
+  /// Получить все публичные соревнования с real-time обновлением
+  Stream<List<CompetitionRemote>> watchAllPublicCompetitions() {
+    return _firestore
+        .collection('competitions')
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+        .map((doc) => CompetitionRemote.fromFirestore(doc.data(), doc.id))
+        .toList());
+  }
+
+  /// Получить публичные соревнования по типу рыбалки (real-time)
+  Stream<List<CompetitionRemote>> watchCompetitionsByFishingType(String fishingType) {
+    return _firestore
+        .collection('competitions')
+        .where('fishingType', isEqualTo: fishingType)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+        .map((doc) => CompetitionRemote.fromFirestore(doc.data(), doc.id))
+        .toList());
+  }
+
+  /// Получить активные соревнования по типу рыбалки (real-time)
+  Stream<List<CompetitionRemote>> watchActiveCompetitionsByFishingType(String fishingType) {
+    return _firestore
+        .collection('competitions')
+        .where('fishingType', isEqualTo: fishingType)
+        .where('isActive', isEqualTo: true)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+        .map((doc) => CompetitionRemote.fromFirestore(doc.data(), doc.id))
+        .toList());
+  }
+
+  /// Получить завершённые соревнования по типу рыбалки (real-time)
+  Stream<List<CompetitionRemote>> watchCompletedCompetitionsByFishingType(String fishingType) {
+    return _firestore
+        .collection('competitions')
+        .where('fishingType', isEqualTo: fishingType)
+        .where('isActive', isEqualTo: false)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+        .map((doc) => CompetitionRemote.fromFirestore(doc.data(), doc.id))
+        .toList());
+  }
+
+  /// Слушать изменения протоколов соревнования (real-time)
+  Stream<List<ProtocolRemote>> watchProtocolsByCompetition(String competitionId) {
+    return _firestore
+        .collection('competitions')
+        .doc(competitionId)
+        .collection('protocols')
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+        .map((doc) => ProtocolRemote.fromFirestore(doc.data(), doc.id))
+        .toList());
+  }
+
+  /// Слушать протоколы определённого типа (real-time)
+  Stream<List<ProtocolRemote>> watchProtocolsByType(String competitionId, String type) {
+    return _firestore
+        .collection('competitions')
+        .doc(competitionId)
+        .collection('protocols')
+        .where('type', isEqualTo: type)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+        .map((doc) => ProtocolRemote.fromFirestore(doc.data(), doc.id))
+        .toList());
+  }
 }

@@ -9,6 +9,7 @@ import '../../core/theme/app_dimensions.dart';
 import 'select_fishing_type_screen.dart';
 import 'public_competitions_screen.dart';
 import 'admin_panel_screen.dart';
+import 'public_select_fishing_type_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -382,7 +383,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const PublicCompetitionsScreen()),
+                      MaterialPageRoute(builder: (_) => const PublicSelectFishingTypeScreen()),
                     );
                   },
                 ),

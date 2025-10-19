@@ -1,0 +1,42 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Разрешить чтение всех соревнований для публичного просмотра
+    match /competitions/{competitionId} {
+      allow read: if true;
+      allow write: if false; // Запись только через приложение
+
+      // Подколлекции competitions
+      match /teams/{teamId} {
+        allow read: if true;
+        allow write: if false;
+      }
+
+      match /weighings/{weighingId} {
+        allow read: if true;
+        allow write: if false;
+
+        match /results/{resultId} {
+          allow read: if true;
+          allow write: if false;
+        }
+      }
+
+      match /casting_sessions/{sessionId} {
+        allow read: if true;
+        allow write: if false;
+
+        match /results/{resultId} {
+          allow read: if true;
+          allow write: if false;
+        }
+      }
+
+      match /protocols/{protocolId} {
+        allow read: if true;
+        allow write: if false;
+      }
+    }
+  }
+}

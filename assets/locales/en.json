@@ -613,5 +613,76 @@
   "protocol_draw_title": "Draw Protocol",
   "protocol_table_draw_number": "Draw №",
   "protocol_table_order": "№",
-  "generate_protocol": "Generate Protocol"
+  "generate_protocol": "Generate Protocol",
+  "public_fishing_type_selection": "Select Fishing Type",
+  "select_competition_type": "Select Competition Type",
+  "view_public_protocols": "View Public Protocols",
+
+  "all_competitions": "All",
+  "active_competitions": "Active",
+  "completed_competitions": "Completed",
+
+  "status": "Status",
+  "active": "Active",
+  "completed": "Completed",
+
+  "no_competitions_found": "No Competitions Found",
+  "no_competitions_yet": "No competitions of this type yet",
+  "no_active_competitions": "No active competitions",
+  "no_completed_competitions": "No completed competitions",
+
+  "protocols": "Protocols",
+  "view_protocols": "View Protocols",
+
+  "protocol_draw": "Draw",
+  "protocol_weighing": "Weighing",
+  "protocol_intermediate": "Intermediate",
+  "protocol_big_fish": "Big Fish",
+  "protocol_summary": "Summary",
+  "protocol_final": "Final",
+  "protocol_casting_attempt": "Attempts",
+  "protocol_casting_intermediate": "Intermediate",
+  "protocol_casting_final": "Final",
+
+  "no_protocols_yet": "No protocols yet",
+  "protocols_will_appear": "Protocols will appear here after being created by organizer",
+
+  "created": "Created",
+  "location": "Location",
+  "not_specified": "Not specified",
+
+  "protocol_data_unavailable": "Protocol data unavailable",
+  "loading_error": "Loading Error",
+  "retry": "Retry",
+
+  "draw_results": "Draw Results",
+  "no_draw_data": "No draw data",
+  "draw_number": "Draw",
+  "sector": "Sector",
+
+  "weighing_results": "Weighing Results",
+  "intermediate_results": "Intermediate Results",
+  "no_weighing_data": "No weighing data",
+  "fish_count": "Fish",
+  "total_weight": "Total Weight",
+  "average_weight": "Average Weight",
+
+  "biggest_fish": "Biggest Fish",
+  "no_big_fish_data": "No trophy data",
+  "weight": "Weight",
+  "length": "Length",
+
+  "summary_results": "Summary Results",
+  "final_results": "Final Results",
+  "trophy": "Trophy",
+
+  "attempt_results": "Attempt Results",
+  "attempt_number": "Attempt",
+  "distance_m": "m",
+  "best_result": "Best Result",
+  "average_result": "Average Result",
+
+  "protocol_info": "Protocol Information",
+  "competition_dates": "Competition Dates",
+  "created_at": "Protocol Creation Date"
 }

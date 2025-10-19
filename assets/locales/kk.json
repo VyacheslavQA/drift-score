@@ -612,5 +612,76 @@
   "protocol_draw_title": "Жеребьевка хаттамасы",
   "protocol_table_draw_number": "Жеребьевка №",
   "protocol_table_order": "№ р/с",
-  "generate_protocol": "Хаттаманы жасау"
+  "generate_protocol": "Хаттаманы жасау",
+  "public_fishing_type_selection": "Балық аулау түрін таңдау",
+  "select_competition_type": "Жарыс түрін таңдаңыз",
+  "view_public_protocols": "Ашық хаттамаларды қарау",
+
+  "all_competitions": "Барлығы",
+  "active_competitions": "Белсенді",
+  "completed_competitions": "Аяқталған",
+
+  "status": "Мәртебе",
+  "active": "Белсенді",
+  "completed": "Аяқталған",
+
+  "no_competitions_found": "Жарыстар табылмады",
+  "no_competitions_yet": "Әзірге бұл түрдегі жарыстар жоқ",
+  "no_active_competitions": "Белсенді жарыстар жоқ",
+  "no_completed_competitions": "Аяқталған жарыстар жоқ",
+
+  "protocols": "Хаттамалар",
+  "view_protocols": "Хаттамаларды қарау",
+
+  "protocol_draw": "Жеребе",
+  "protocol_weighing": "Өлшеулер",
+  "protocol_intermediate": "Аралық",
+  "protocol_big_fish": "Үлкен балық",
+  "protocol_summary": "Жиынтық",
+  "protocol_final": "Қорытынды",
+  "protocol_casting_attempt": "Әрекеттер",
+  "protocol_casting_intermediate": "Аралық",
+  "protocol_casting_final": "Қорытынды",
+
+  "no_protocols_yet": "Хаттамалар әлі жоқ",
+  "protocols_will_appear": "Ұйымдастырушы жасағаннан кейін хаттамалар пайда болады",
+
+  "created": "Жасалды",
+  "location": "Орын",
+  "not_specified": "Көрсетілмеген",
+
+  "protocol_data_unavailable": "Хаттама деректері қолжетімсіз",
+  "loading_error": "Жүктеу қатесі",
+  "retry": "Қайталау",
+
+  "draw_results": "Жеребе нәтижелері",
+  "no_draw_data": "Жеребе туралы деректер жоқ",
+  "draw_number": "Жеребе",
+  "sector": "Сектор",
+
+  "weighing_results": "Өлшеу нәтижелері",
+  "intermediate_results": "Аралық нәтижелер",
+  "no_weighing_data": "Өлшеу туралы деректер жоқ",
+  "fish_count": "Балықтар",
+  "total_weight": "Жалпы салмақ",
+  "average_weight": "Орташа салмақ",
+
+  "biggest_fish": "Ең үлкен балық",
+  "no_big_fish_data": "Трофей туралы деректер жоқ",
+  "weight": "Салмақ",
+  "length": "Ұзындық",
+
+  "summary_results": "Жиынтық нәтижелер",
+  "final_results": "Қорытынды нәтижелер",
+  "trophy": "Трофей",
+
+  "attempt_results": "Әрекет нәтижелері",
+  "attempt_number": "Әрекет",
+  "distance_m": "м",
+  "best_result": "Ең жақсы нәтиже",
+  "average_result": "Орташа нәтиже",
+
+  "protocol_info": "Хаттама туралы ақпарат",
+  "competition_dates": "Жарыс күндері",
+  "created_at": "Хаттама жасалған күні"
 }
