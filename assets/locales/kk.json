@@ -683,5 +683,11 @@
 
   "protocol_info": "Хаттама туралы ақпарат",
   "competition_dates": "Жарыс күндері",
-  "created_at": "Хаттама жасалған күні"
+  "created_at": "Хаттама жасалған күні",
+  "protocol_venue_label": "Өткізу орны:",
+  "protocol_date_label": "Жарыс күні:",
+  "protocol_dates_label": "Жарыс күндері:",
+  "protocol_formation_date_label": "Хаттама құрылған күні:",
+  "protocol_no_participant_data": "Қатысушылар туралы деректер жоқ",
+  "protocol_attempt_number": "Әрекет №{number}"
 }

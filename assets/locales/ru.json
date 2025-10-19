@@ -684,5 +684,11 @@
 
   "protocol_info": "Информация о протоколе",
   "competition_dates": "Даты соревнования",
-  "created_at": "Дата формирования протокола"
+  "created_at": "Дата формирования протокола",
+  "protocol_venue_label": "Место проведения:",
+  "protocol_date_label": "Дата соревнования:",
+  "protocol_dates_label": "Даты соревнования:",
+  "protocol_formation_date_label": "Дата формирования протокола:",
+  "protocol_no_participant_data": "Нет данных участников",
+  "protocol_attempt_number": "Попытка №{number}"
 }

@@ -752,30 +752,14 @@ class _ProtocolViewScreenState extends State<ProtocolViewScreen> {
       return Center(child: Text('protocol_big_fish_no_data'.tr()));
     }
 
-    final dayNumber = data['dayNumber'];
-    final dayStart = DateTime.parse(data['dayStart']);
-    final dayEnd = DateTime.parse(data['dayEnd']);
+    // ✅ ИСПРАВЛЕНО: Убрали неиспользуемые поля dayNumber, dayStart, dayEnd
+    // Эти поля отсутствуют в JSON, поэтому вызывали ошибку
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Card(
-          color: AppColors.primary.withOpacity(0.1),
-          child: Padding(
-            padding: EdgeInsets.all(AppDimensions.paddingMedium),
-            child: Row(
-              children: [
-                Icon(Icons.calendar_today, color: AppColors.primary),
-                SizedBox(width: AppDimensions.paddingSmall),
-                Text(
-                  '${'protocol_period'.tr()}: ${DateFormat('dd.MM HH:mm').format(dayStart)} - ${DateFormat('dd.MM HH:mm').format(dayEnd)}',
-                  style: AppTextStyles.bodyBold,
-                ),
-              ],
-            ),
-          ),
-        ),
-        SizedBox(height: AppDimensions.paddingMedium),
+        // ✅ УБРАЛИ: Card с периодом (dayStart/dayEnd)
+        // Эта информация отсутствует в JSON протокола
 
         Card(
           color: AppColors.surface,
@@ -803,29 +787,31 @@ class _ProtocolViewScreenState extends State<ProtocolViewScreen> {
                           Icon(Icons.emoji_events, color: Colors.amber, size: 20),
                           SizedBox(width: 8),
                           Text(
-                            bigFish['teamName'] ?? '',
+                            bigFish['teamName']?.toString() ?? 'Unknown', // ✅ Добавлена проверка
                             style: AppTextStyles.bodyBold.copyWith(color: Colors.amber.shade800),
                           ),
                         ],
                       ),
                     ),
-                    DataCell(Text(bigFish['fishType'] ?? '')),
+                    DataCell(Text(bigFish['fishType']?.toString() ?? '-')), // ✅ Добавлена проверка
                     DataCell(
                       Text(
-                        '${(bigFish['weight'] as num).toStringAsFixed(3)}',
+                        '${((bigFish['weight'] as num?) ?? 0).toStringAsFixed(3)}', // ✅ Добавлена проверка
                         style: AppTextStyles.bodyBold.copyWith(
                           color: Colors.amber.shade800,
                           fontSize: 16,
                         ),
                       ),
                     ),
-                    DataCell(Text('${bigFish['length']}')),
-                    DataCell(Text('${bigFish['sector']}')),
+                    DataCell(Text('${bigFish['length'] ?? 0}')), // ✅ Добавлена проверка
+                    DataCell(Text('${bigFish['sector'] ?? 0}')), // ✅ Добавлена проверка
                     DataCell(
                       Text(
-                        DateFormat('dd.MM HH:mm').format(
+                        bigFish['weighingTime'] != null
+                            ? DateFormat('dd.MM HH:mm').format(
                           DateTime.parse(bigFish['weighingTime']),
-                        ),
+                        )
+                            : '-', // ✅ Добавлена проверка
                       ),
                     ),
                   ],

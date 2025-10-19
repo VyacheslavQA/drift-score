@@ -684,5 +684,11 @@
 
   "protocol_info": "Protocol Information",
   "competition_dates": "Competition Dates",
-  "created_at": "Protocol Creation Date"
+  "created_at": "Protocol Creation Date",
+  "protocol_venue_label": "Venue:",
+  "protocol_date_label": "Competition date:",
+  "protocol_dates_label": "Competition dates:",
+  "protocol_formation_date_label": "Protocol formation date:",
+  "protocol_no_participant_data": "No participant data",
+  "protocol_attempt_number": "Attempt #{number}"
 }

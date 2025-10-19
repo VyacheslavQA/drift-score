@@ -803,4 +803,15 @@ class SyncService {
       rethrow;
     }
   }
+
+  // ✅ ДОБАВЛЕНО: Удалить протокол из Firebase
+  Future<void> deleteProtocolFromFirebase(String protocolId, String competitionId) async {
+    try {
+      await _firebaseService.deleteProtocol(competitionId, protocolId);
+      print('✅ Deleted protocol from Firebase: $protocolId');
+    } catch (e) {
+      print('❌ Error deleting protocol from Firebase: $e');
+      rethrow;
+    }
+  }
 }
