@@ -597,5 +597,21 @@
   "close": "Закрыть",
   "cancel": "Отмена",
   "buy_organizer_code": "Купить код организатора",
-  "where_to_get_code_purchase_only": "Код организатора можно приобрести в приложении."
+  "where_to_get_code_purchase_only": "Код организатора можно приобрести в приложении.",
+  "competitions_by_code": "Соревнования по коду",
+  "code_label": "Код",
+  "found_competitions": "Найдено: {count} шт.",
+  "create_new_competition": "Создать новое соревнование",
+  "competition_status_active": "Активно",
+  "competition_status_completed": "Завершено",
+  "open_competition": "Открытие соревнования: {name}",
+  "draw_protocol_title": "Протокол жеребьёвки",
+  "draw_protocol_generated": "Протокол жеребьёвки сгенерирован",
+  "draw_protocol_error": "Ошибка генерации протокола жеребьёвки",
+  "draw_not_completed": "Жеребьёвка не завершена",
+  "complete_draw_first": "Сначала завершите жеребьёвку (все команды должны иметь номер жеребьёвки и сектор)",
+  "protocol_draw_title": "Протокол жеребьёвки",
+  "protocol_table_draw_number": "№ жеребьёвки",
+  "protocol_table_order": "№ п/п",
+  "generate_protocol": "Сгенерировать протокол"
 }

@@ -35,8 +35,8 @@ class _ProtocolListScreenState extends ConsumerState<ProtocolListScreen>
     _isCasting = widget.competition.fishingType == 'casting';
 
     // Для кастинга: 3 вкладки (Попытки, Промежуточный, Финальный)
-    // Для рыбалки: 5 вкладок (как было)
-    _tabController = TabController(length: _isCasting ? 3 : 5, vsync: this);
+    // Для рыбалки: 6 вкладок (Жеребьевка + 5 остальных)
+    _tabController = TabController(length: _isCasting ? 3 : 6, vsync: this);
 
     Future.microtask(() {
       _loadProtocols();
@@ -75,6 +75,7 @@ class _ProtocolListScreenState extends ConsumerState<ProtocolListScreen>
             Tab(text: 'protocols_final'.tr()), // Финальный
           ]
               : [
+            Tab(text: 'Жеребьевка'), // Протокол жеребьевки
             Tab(text: 'protocols_weighing'.tr()),
             Tab(text: 'protocols_intermediate'.tr()),
             Tab(text: 'protocols_big_fish'.tr()),
@@ -95,6 +96,7 @@ class _ProtocolListScreenState extends ConsumerState<ProtocolListScreen>
             _buildCastingFinalTab(state.protocols),
           ]
               : [
+            _buildDrawProtocolTab(state.protocols), // Новая вкладка жеребьевки
             _buildWeighingProtocolsTab(state.protocols),
             _buildIntermediateProtocolsTab(state.protocols),
             _buildBigFishProtocolsTab(state.protocols),
@@ -103,6 +105,36 @@ class _ProtocolListScreenState extends ConsumerState<ProtocolListScreen>
           ],
         ),
       ),
+    );
+  }
+
+  // ========== ПРОТОКОЛ ЖЕРЕБЬЁВКИ ==========
+
+  Widget _buildDrawProtocolTab(List<ProtocolLocal> allProtocols) {
+    final protocol = allProtocols.where((p) => p.type == 'draw').firstOrNull;
+
+    return Column(
+      children: [
+        Expanded(
+          child: protocol == null
+              ? _buildEmptyState('Протокол жеребьёвки ещё не создан.\nСоздайте его в разделе "Жеребьевка".')
+              : RefreshIndicator(
+            onRefresh: _loadProtocols,
+            child: ListView(
+              padding: EdgeInsets.all(AppDimensions.paddingMedium),
+              children: [
+                _buildProtocolCard(
+                  protocol: protocol,
+                  title: 'draw_protocol_title'.tr(),
+                  subtitle: _formatDateTime(protocol.createdAt),
+                  icon: Icons.casino,
+                  color: Colors.purple,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 

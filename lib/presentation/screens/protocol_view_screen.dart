@@ -161,6 +161,8 @@ class _ProtocolViewScreenState extends State<ProtocolViewScreen> {
         return 'protocol_summary_title'.tr();
       case 'final':
         return 'protocol_final_title'.tr();
+      case 'draw':
+        return 'draw_protocol_title'.tr();
       case 'casting_attempt':
         return 'Протокол попытки №${widget.protocol.weighingNumber}';
       case 'casting_intermediate':
@@ -282,6 +284,8 @@ class _ProtocolViewScreenState extends State<ProtocolViewScreen> {
         return _buildSummaryContent(data);
       case 'final':
         return _buildFinalContent(data);
+      case 'draw':
+        return _buildDrawTable(data);
       case 'casting_attempt':
         return _buildCastingAttemptContent(data);
       case 'casting_intermediate':
@@ -290,6 +294,89 @@ class _ProtocolViewScreenState extends State<ProtocolViewScreen> {
       default:
         return Center(child: Text('protocol_type_not_supported'.tr()));
     }
+  }
+
+  // ========== ПРОТОКОЛ ЖЕРЕБЬЁВКИ ==========
+  Widget _buildDrawTable(Map<String, dynamic> data) {
+    final drawData = data['drawData'] as List<dynamic>? ?? [];
+
+    if (drawData.isEmpty) {
+      return Center(child: Text('protocol_no_data'.tr()));
+    }
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: DataTable(
+        columnSpacing: AppDimensions.paddingMedium,
+        headingRowColor: MaterialStateProperty.all(AppColors.primary.withOpacity(0.1)),
+        columns: [
+          DataColumn(label: Text('protocol_table_order'.tr(), style: AppTextStyles.bodyBold)),
+          DataColumn(label: Text('protocol_table_team'.tr(), style: AppTextStyles.bodyBold)),
+          DataColumn(label: Text('protocol_table_city'.tr(), style: AppTextStyles.bodyBold)),
+          DataColumn(label: Text('protocol_table_draw_number'.tr(), style: AppTextStyles.bodyBold)),
+          DataColumn(label: Text('protocol_table_sector'.tr(), style: AppTextStyles.bodyBold)),
+        ],
+        rows: drawData.asMap().entries.map((entry) {
+          final index = entry.key + 1; // Порядковый номер
+          final row = entry.value as Map<String, dynamic>;
+
+          return DataRow(cells: [
+            // № п/п
+            DataCell(
+              Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppDimensions.paddingSmall,
+                  vertical: AppDimensions.paddingSmall,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceMedium,
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+                ),
+                child: Text('$index', style: AppTextStyles.bodyBold),
+              ),
+            ),
+            // Команда
+            DataCell(Text(row['teamName']?.toString() ?? '', style: AppTextStyles.bodyBold)),
+            // Город
+            DataCell(Text(row['city']?.toString() ?? '', style: AppTextStyles.body)),
+            // № жеребьёвки (очередность выбора)
+            DataCell(
+              Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppDimensions.paddingMedium,
+                  vertical: AppDimensions.paddingSmall,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+                ),
+                child: Text(
+                  '${row['drawOrder'] ?? '-'}',
+                  style: AppTextStyles.h3.copyWith(color: AppColors.primary),
+                ),
+              ),
+            ),
+            // Сектор
+            DataCell(
+              Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppDimensions.paddingMedium,
+                  vertical: AppDimensions.paddingSmall,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.success.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+                ),
+                child: Text(
+                  '${row['sector'] ?? '-'}',
+                  style: AppTextStyles.h3.copyWith(color: AppColors.success),
+                ),
+              ),
+            ),
+          ]);
+        }).toList(),
+      ),
+    );
   }
 
   // ========== КАСТИНГ: ПРОТОКОЛ ПОПЫТКИ ==========

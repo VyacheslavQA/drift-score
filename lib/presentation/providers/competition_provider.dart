@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar_community/isar.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'dart:io';
 import '../../data/models/local/competition_local.dart';
@@ -10,7 +10,6 @@ final isarProvider = Provider<Isar>((ref) {
   throw UnimplementedError('Isar instance must be overridden');
 });
 
-// ✅ НОВЫЙ ПРОВАЙДЕР: SyncService
 final syncServiceProvider = Provider<SyncService>((ref) {
   return SyncService();
 });
@@ -43,24 +42,38 @@ class CompetitionNotifier extends StateNotifier<AsyncValue<List<CompetitionLocal
     return 'unknown';
   }
 
-  // ✅ МЕТОД: Проверка существования кода
+  // ✅ ОБНОВЛЁННЫЙ МЕТОД: Проверка существования кода (ищет в Firebase + Isar)
   Future<List<CompetitionLocal>> checkCodeExists(String accessCode) async {
     print('🔍 checkCodeExists() called with code: $accessCode');
-    print('🔍 Trimming and uppercasing: "${accessCode.trim().toUpperCase()}"');
-
     final normalizedCode = accessCode.trim().toUpperCase();
+    print('🔍 Normalized code: "$normalizedCode"');
 
     try {
-      // Проверяем ВСЕ соревнования (не только этого устройства!)
-      final allCompetitions = await isar.competitionLocals.where().findAll();
-      print('🔍 Total competitions in database: ${allCompetitions.length}');
+      // 1️⃣ Сначала пытаемся загрузить из Firebase
+      print('🔍 Searching in Firebase...');
+      try {
+        final competitions = await syncService.getCompetitionsByCode(normalizedCode);
+        if (competitions.isNotEmpty) {
+          print('✅ Found ${competitions.length} competition(s) in Firebase');
+          for (var comp in competitions) {
+            print('   - ${comp.name} (Code: "${comp.accessCode}", Status: ${comp.status})');
+          }
+          return competitions;
+        }
+      } catch (e) {
+        print('⚠️ Firebase unavailable or error: $e');
+      }
 
-      // Фильтруем по коду (с учётом регистра и пробелов)
+      // 2️⃣ Если Firebase недоступен или не нашли - ищем локально
+      print('🔍 Searching in local database (Isar)...');
+      final allCompetitions = await isar.competitionLocals.where().findAll();
+      print('🔍 Total competitions in local database: ${allCompetitions.length}');
+
       final existingCompetitions = allCompetitions
           .where((c) => (c.accessCode ?? '').trim().toUpperCase() == normalizedCode)
           .toList();
 
-      print('🔍 Found ${existingCompetitions.length} competition(s) with code: $normalizedCode');
+      print('🔍 Found ${existingCompetitions.length} competition(s) locally with code: $normalizedCode');
       for (var comp in existingCompetitions) {
         print('   - ${comp.name} (ID: ${comp.id}, Code: "${comp.accessCode}", Status: ${comp.status})');
       }
@@ -72,14 +85,52 @@ class CompetitionNotifier extends StateNotifier<AsyncValue<List<CompetitionLocal
     }
   }
 
-  // Загрузить ВСЕ соревнования этого устройства (не фильтруем по коду!)
+  // ✅ НОВЫЙ МЕТОД: Обновить использование кода в Firebase
+  Future<void> _updateAccessCodeInFirebase(String code, String competitionId) async {
+    if (competitionId.isEmpty) {
+      print('⚠️ No competitionId - skipping code update');
+      return;
+    }
+
+    try {
+      print('🔄 Updating access code in Firebase: $code');
+
+      final snapshot = await FirebaseFirestore.instance
+          .collection('access_codes')
+          .where('code', isEqualTo: code)
+          .limit(1)
+          .get();
+
+      if (snapshot.docs.isEmpty) {
+        print('⚠️ Code not found in Firestore: $code');
+        return;
+      }
+
+      final deviceId = await _getDeviceId();
+
+      await snapshot.docs.first.reference.update({
+        'currentUses': FieldValue.increment(1),
+        'competitions': FieldValue.arrayUnion([competitionId]),
+        'usedBy': FieldValue.arrayUnion([deviceId]),
+      });
+
+      print('✅ Access code updated successfully');
+      print('   Code: $code');
+      print('   Competition ID: $competitionId');
+      print('   Device ID: $deviceId');
+    } catch (e) {
+      print('❌ Error updating access code: $e');
+      // Не падаем, если обновление не удалось
+    }
+  }
+
+  // Загрузить ВСЕ соревнования этого устройства
   Future<void> loadAllCompetitionsForDevice() async {
     print('🔵 loadAllCompetitionsForDevice() called');
     state = const AsyncValue.loading();
     try {
       final deviceId = await _getDeviceId();
 
-      // Загружаем ВСЕ соревнования, созданные на этом устройстве
       final competitions = await isar.competitionLocals
           .filter()
           .createdByDeviceIdEqualTo(deviceId)
@@ -112,7 +163,7 @@ class CompetitionNotifier extends StateNotifier<AsyncValue<List<CompetitionLocal
     }
   }
 
-  // ✅ НОВЫЙ МЕТОД: Синхронизировать все соревнования из Firebase
+  // Синхронизировать все соревнования из Firebase
   Future<void> syncAllCompetitionsFromFirebase() async {
     print('🔵 syncAllCompetitionsFromFirebase() called');
     try {
@@ -125,6 +176,7 @@ class CompetitionNotifier extends StateNotifier<AsyncValue<List<CompetitionLocal
     }
   }
 
+  // ✅ ОБНОВЛЁННЫЙ МЕТОД: Создание соревнования с обновлением кода
   Future<void> createCompetition({
     required String name,
     required String cityOrRegion,
@@ -164,12 +216,10 @@ class CompetitionNotifier extends StateNotifier<AsyncValue<List<CompetitionLocal
 
     try {
       final deviceId = await _getDeviceId();
-
       print('📱 Device ID: $deviceId');
 
       // ⬇️ ПРОВЕРКА: Существует ли уже соревнование с этим кодом?
       print('🔍 Checking for existing competitions with code: $accessCode');
-
       final existingCompetitions = await checkCodeExists(accessCode);
 
       if (existingCompetitions.isNotEmpty) {
@@ -209,28 +259,34 @@ class CompetitionNotifier extends StateNotifier<AsyncValue<List<CompetitionLocal
         ..updatedAt = DateTime.now();
 
       print('✅ Competition object created');
-      print('   Name: ${competition.name}');
-      print('   Access Code: ${competition.accessCode}');
-      print('   Fishing Type: ${competition.fishingType}');
-      print('   Scoring Method: ${competition.scoringMethod}');
-      print('   Sector Structure: ${competition.sectorStructure}');
-      print('   Attempts Count: ${competition.attemptsCount}');
-      print('   Common Line: ${competition.commonLine ?? "null"}');
-      print('   Device ID: ${competition.createdByDeviceId}');
 
+      // Сохраняем в Isar
       await isar.writeTxn(() async {
         final id = await isar.competitionLocals.put(competition);
         print('✅ Competition saved to Isar with ID: $id');
       });
 
-      // ✅ НОВОЕ: Синхронизация с Firebase
+      // ✅ Синхронизация с Firebase
       print('🔄 Syncing competition to Firebase...');
+      String? firebaseCompetitionId;
       try {
-        await syncService.syncCompetitionToFirebase(competition);
-        print('✅ Competition synced to Firebase successfully');
+        firebaseCompetitionId = await syncService.syncCompetitionToFirebase(competition);
+        print('✅ Competition synced to Firebase with ID: $firebaseCompetitionId');
       } catch (e) {
         print('⚠️ Error syncing to Firebase (will retry later): $e');
-        // Не падаем, если синхронизация не удалась - она произойдёт позже
+      }
+
+      // ✅ НОВОЕ: Обновить код в Firebase
+      if (firebaseCompetitionId != null && firebaseCompetitionId.isNotEmpty) {
+        print('🔄 Updating access code usage...');
+        try {
+          await _updateAccessCodeInFirebase(accessCode, firebaseCompetitionId);
+          print('✅ Access code updated');
+        } catch (e) {
+          print('⚠️ Error updating access code: $e');
+        }
+      } else {
+        print('⚠️ No Firebase ID - skipping code update');
       }
 
       print('🔵 Calling loadAllCompetitionsForDevice() after save');
@@ -243,7 +299,7 @@ class CompetitionNotifier extends StateNotifier<AsyncValue<List<CompetitionLocal
     }
   }
 
-  // ✅ ОБНОВЛЕНО: Обновление соревнования с синхронизацией
+  // Обновление соревнования с синхронизацией
   Future<void> updateCompetition({
     required int id,
     required String name,
@@ -312,18 +368,15 @@ class CompetitionNotifier extends StateNotifier<AsyncValue<List<CompetitionLocal
         competition.attemptsCount = attemptsCount;
         competition.commonLine = commonLine;
         competition.updatedAt = DateTime.now();
-        competition.isSynced = false; // Помечаем как несинхронизированное
+        competition.isSynced = false;
 
         await isar.competitionLocals.put(competition);
         print('✅ Competition updated successfully');
-        print('   Updated Name: ${competition.name}');
-        print('   Updated Scoring: ${competition.scoringMethod}');
-        print('   Updated Common Line: ${competition.commonLine ?? "null"}');
 
         updatedCompetition = competition;
       });
 
-      // ✅ НОВОЕ: Синхронизация с Firebase
+      // Синхронизация с Firebase
       if (updatedCompetition != null) {
         print('🔄 Syncing updated competition to Firebase...');
         try {
@@ -343,7 +396,7 @@ class CompetitionNotifier extends StateNotifier<AsyncValue<List<CompetitionLocal
     }
   }
 
-  // ✅ ОБНОВЛЕНО: Удаление соревнования с синхронизацией
+  // Удаление соревнования с синхронизацией
   Future<void> deleteCompetition(int id) async {
     print('🔵 deleteCompetition() called with ID: $id');
     try {
@@ -356,7 +409,7 @@ class CompetitionNotifier extends StateNotifier<AsyncValue<List<CompetitionLocal
         print('✅ Competition deleted locally: $deleted');
       });
 
-      // ✅ НОВОЕ: Удаление из Firebase
+      // Удаление из Firebase
       if (serverId != null && serverId.isNotEmpty) {
         print('🔄 Deleting competition from Firebase...');
         try {
@@ -376,7 +429,7 @@ class CompetitionNotifier extends StateNotifier<AsyncValue<List<CompetitionLocal
     }
   }
 
-  // ✅ ОБНОВЛЕНО: Обновление статуса с синхронизацией
+  // Обновление статуса с синхронизацией
   Future<void> updateCompetitionStatus(int id, String newStatus) async {
     print('🔵 updateCompetitionStatus() called: ID=$id, Status=$newStatus');
     try {
@@ -397,7 +450,7 @@ class CompetitionNotifier extends StateNotifier<AsyncValue<List<CompetitionLocal
         }
       });
 
-      // ✅ НОВОЕ: Синхронизация с Firebase
+      // Синхронизация с Firebase
       if (updatedCompetition != null) {
         print('🔄 Syncing status update to Firebase...');
         try {

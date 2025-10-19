@@ -192,9 +192,79 @@ class ProtocolExportService {
       case 'casting_intermediate':
       case 'casting_final':
         return _buildPdfCastingFullTable(data, font, fontBold);
+      case 'draw':
+        return _buildPdfDrawTable(data, font, fontBold);
       default:
         return pw.Text('Тип протокола не поддерживается', style: pw.TextStyle(font: font));
     }
+  }
+
+  // ========== PDF: ПРОТОКОЛ ЖЕРЕБЬЁВКИ ==========
+  pw.Widget _buildPdfDrawTable(Map<String, dynamic> data, pw.Font font, pw.Font fontBold) {
+    final drawData = data['drawData'] as List<dynamic>? ?? [];
+
+    if (drawData.isEmpty) {
+      return pw.Center(
+        child: pw.Text(
+          'Нет данных о жеребьёвке',
+          style: pw.TextStyle(font: font, fontSize: 12),
+        ),
+      );
+    }
+
+    return pw.Table(
+      border: pw.TableBorder.all(color: PdfColors.grey400),
+      columnWidths: {
+        0: const pw.FixedColumnWidth(40),  // № п/п
+        1: const pw.FlexColumnWidth(3),    // Команда
+        2: const pw.FlexColumnWidth(2),    // Город
+        3: const pw.FixedColumnWidth(80),  // № жеребьёвки
+        4: const pw.FixedColumnWidth(60),  // Сектор
+      },
+      children: [
+        // Заголовок таблицы
+        pw.TableRow(
+          decoration: const pw.BoxDecoration(color: PdfColors.grey300),
+          children: [
+            _buildPdfCell('№ п/п', fontBold, isHeader: true),
+            _buildPdfCell('Команда', fontBold, isHeader: true),
+            _buildPdfCell('Город', fontBold, isHeader: true),
+            _buildPdfCell('№ жеребьёвки', fontBold, isHeader: true),
+            _buildPdfCell('Сектор', fontBold, isHeader: true),
+          ],
+        ),
+        // Строки данных
+        ...drawData.asMap().entries.map((entry) {
+          final index = entry.key + 1;
+          final row = entry.value as Map<String, dynamic>;
+
+          return pw.TableRow(
+            children: [
+              _buildPdfCell('$index', font),
+              _buildPdfCell(row['teamName']?.toString() ?? '', fontBold),
+              _buildPdfCell(row['city']?.toString() ?? '', font),
+              _buildPdfCell('${row['drawOrder'] ?? '-'}', fontBold),
+              _buildPdfCell('${row['sector'] ?? '-'}', fontBold),
+            ],
+          );
+        }).toList(),
+      ],
+    );
+  }
+
+  // Вспомогательный метод для создания ячейки таблицы
+  pw.Widget _buildPdfCell(String text, pw.Font font, {bool isHeader = false}) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.all(4),
+      child: pw.Text(
+        text,
+        style: pw.TextStyle(
+          font: font,
+          fontSize: isHeader ? 10 : 9,
+        ),
+        textAlign: pw.TextAlign.center,
+      ),
+    );
   }
 
   // ========== PDF: КАСТИНГ ПРОТОКОЛ ПОПЫТКИ ==========
@@ -543,6 +613,8 @@ class ProtocolExportService {
       return _addExcelCastingAttemptTable(sheet, data, row);
     } else if (protocol.type == 'casting_intermediate' || protocol.type == 'casting_final') {
       return _addExcelCastingFullTable(sheet, data, row);
+    } else if (protocol.type == 'draw') {
+      return _addExcelDrawTable(sheet, data, row);
     }
 
     final headers = _getExcelHeaders(protocol.type);
@@ -563,6 +635,89 @@ class ProtocolExportService {
     }
 
     return row;
+  }
+
+  // ========== EXCEL: ПРОТОКОЛ ЖЕРЕБЬЁВКИ ==========
+  int _addExcelDrawTable(xlsio.Worksheet sheet, Map<String, dynamic> data, int startRow) {
+    final drawData = data['drawData'] as List<dynamic>? ?? [];
+
+    if (drawData.isEmpty) {
+      sheet.getRangeByIndex(startRow, 1).setText('Нет данных о жеребьёвке');
+      return startRow + 1;
+    }
+
+    int currentRow = startRow;
+
+    // Заголовки таблицы
+    final headers = ['№ п/п', 'Команда', 'Город', '№ жеребьёвки', 'Сектор'];
+
+    for (int col = 0; col < headers.length; col++) {
+      final cell = sheet.getRangeByIndex(currentRow, col + 1);
+      cell.setText(headers[col]);
+      cell.cellStyle.bold = true;
+      cell.cellStyle.backColor = '#E0E0E0';
+      cell.cellStyle.hAlign = xlsio.HAlignType.center;
+      cell.cellStyle.vAlign = xlsio.VAlignType.center;
+      cell.cellStyle.borders.all.lineStyle = xlsio.LineStyle.thin;
+    }
+
+    currentRow++;
+
+    // Данные таблицы
+    for (int i = 0; i < drawData.length; i++) {
+      final row = drawData[i] as Map<String, dynamic>;
+      final rowNumber = i + 1;
+
+      // № п/п
+      var cell = sheet.getRangeByIndex(currentRow, 1);
+      cell.setNumber(rowNumber.toDouble());
+      cell.cellStyle.hAlign = xlsio.HAlignType.center;
+      cell.cellStyle.borders.all.lineStyle = xlsio.LineStyle.thin;
+
+      // Команда
+      cell = sheet.getRangeByIndex(currentRow, 2);
+      cell.setText(row['teamName']?.toString() ?? '');
+      cell.cellStyle.bold = true;
+      cell.cellStyle.borders.all.lineStyle = xlsio.LineStyle.thin;
+
+      // Город
+      cell = sheet.getRangeByIndex(currentRow, 3);
+      cell.setText(row['city']?.toString() ?? '');
+      cell.cellStyle.borders.all.lineStyle = xlsio.LineStyle.thin;
+
+      // № жеребьёвки
+      cell = sheet.getRangeByIndex(currentRow, 4);
+      final drawOrder = row['drawOrder'];
+      if (drawOrder != null) {
+        cell.setNumber(drawOrder.toDouble());
+      } else {
+        cell.setText('-');
+      }
+      cell.cellStyle.bold = true;
+      cell.cellStyle.hAlign = xlsio.HAlignType.center;
+      cell.cellStyle.backColor = '#BBDEFB';
+      cell.cellStyle.borders.all.lineStyle = xlsio.LineStyle.thin;
+
+      // Сектор
+      cell = sheet.getRangeByIndex(currentRow, 5);
+      final sector = row['sector'];
+      if (sector != null) {
+        cell.setNumber(sector.toDouble());
+      } else {
+        cell.setText('-');
+      }
+      cell.cellStyle.bold = true;
+      cell.cellStyle.hAlign = xlsio.HAlignType.center;
+      cell.cellStyle.backColor = '#C8E6C9';
+      cell.cellStyle.borders.all.lineStyle = xlsio.LineStyle.thin;
+
+      currentRow++;
+    }
+
+    // Автоподбор ширины столбцов
+    sheet.getRangeByIndex(startRow, 1, currentRow - 1, 5).autoFitColumns();
+
+    return currentRow;
   }
 
   // ========== EXCEL: КАСТИНГ ПОПЫТКА ==========
@@ -706,6 +861,8 @@ class ProtocolExportService {
         return ['Команда', 'Участники', 'Сектор', 'Рыб', 'Общий вес', 'Трофей', 'Место'];
       case 'final':
         return ['Команда', 'Участники', 'Сектор', 'Рыб', 'Общий вес', 'Трофей', 'Место'];
+      case 'draw':
+        return ['№ п/п', 'Команда', 'Город', '№ жеребьёвки', 'Сектор'];
       default:
         return [];
     }
@@ -867,6 +1024,8 @@ class ProtocolExportService {
         return 'Промежуточный протокол после ${protocol.weighingNumber} попыток';
       case 'casting_final':
         return 'Финальный протокол';
+      case 'draw':
+        return 'Протокол жеребьёвки';
       default:
         return 'Протокол соревнования';
     }

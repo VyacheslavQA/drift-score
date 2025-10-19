@@ -596,5 +596,21 @@
   "close": "Жабу",
   "cancel": "Болдырмау",
   "buy_organizer_code": "Ұйымдастырушы кодын сатып алу",
-  "where_to_get_code_purchase_only": "Ұйымдастырушы кодын қолданбадан сатып алуға болады."
+  "where_to_get_code_purchase_only": "Ұйымдастырушы кодын қолданбадан сатып алуға болады.",
+  "competitions_by_code": "Код бойынша жарыстар",
+  "code_label": "Код",
+  "found_competitions": "Табылды: {count} дана",
+  "create_new_competition": "Жаңа жарыс жасау",
+  "competition_status_active": "Белсенді",
+  "competition_status_completed": "Аяқталған",
+  "open_competition": "Жарысты ашу: {name}",
+  "draw_protocol_title": "Жеребьевка хаттамасы",
+  "draw_protocol_generated": "Жеребьевка хаттамасы жасалды",
+  "draw_protocol_error": "Жеребьевка хаттамасын жасау қатесі",
+  "draw_not_completed": "Жеребьевка аяқталмаған",
+  "complete_draw_first": "Алдымен жеребьевканы аяқтаңыз (барлық командаларда жеребьевка нөмірі мен сектор болуы керек)",
+  "protocol_draw_title": "Жеребьевка хаттамасы",
+  "protocol_table_draw_number": "Жеребьевка №",
+  "protocol_table_order": "№ р/с",
+  "generate_protocol": "Хаттаманы жасау"
 }

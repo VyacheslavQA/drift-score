@@ -597,5 +597,21 @@
   "close": "Close",
   "cancel": "Cancel",
   "buy_organizer_code": "Buy Organizer Code",
-  "where_to_get_code_purchase_only": "Organizer code can be purchased in the app."
+  "where_to_get_code_purchase_only": "Organizer code can be purchased in the app.",
+  "competitions_by_code": "Competitions by code",
+  "code_label": "Code",
+  "found_competitions": "Found: {count} items",
+  "create_new_competition": "Create new competition",
+  "competition_status_active": "Active",
+  "competition_status_completed": "Completed",
+  "open_competition": "Opening competition: {name}",
+  "draw_protocol_title": "Draw Protocol",
+  "draw_protocol_generated": "Draw protocol generated",
+  "draw_protocol_error": "Error generating draw protocol",
+  "draw_not_completed": "Draw not completed",
+  "complete_draw_first": "Complete the draw first (all teams must have draw number and sector)",
+  "protocol_draw_title": "Draw Protocol",
+  "protocol_table_draw_number": "Draw №",
+  "protocol_table_order": "№",
+  "generate_protocol": "Generate Protocol"
 }

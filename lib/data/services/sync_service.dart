@@ -1,4 +1,5 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'firebase_service.dart';
 import 'isar_service.dart';
 import '../models/local/competition_local.dart';
@@ -17,20 +18,13 @@ import '../models/remote/casting_result_remote.dart';
 import '../models/remote/protocol_remote.dart';
 
 /// Сервис для синхронизации данных между Isar (Local) и Firestore (Remote)
-///
-/// Основные функции:
-/// - Синхронизация Local → Remote (при создании/изменении)
-/// - Синхронизация Remote → Local (при загрузке/подписке)
-/// - Маппинг ID (localId ↔ serverId)
-/// - Обработка оффлайн режима через Operation Queue
-/// - Разрешение конфликтов (last-write-wins по updatedAt)
 class SyncService {
   final FirebaseService _firebaseService = FirebaseService();
   final IsarService _isarService = IsarService();
   final Connectivity _connectivity = Connectivity();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   // ========== ID MAPPING ==========
-  // Хранение связей localId (int) ↔ serverId (String)
   final Map<int, String> _competitionIdMap = {};
   final Map<int, String> _teamIdMap = {};
   final Map<int, String> _weighingIdMap = {};
@@ -39,7 +33,6 @@ class SyncService {
   final Map<int, String> _castingResultIdMap = {};
   final Map<int, String> _protocolIdMap = {};
 
-  /// Сохранить маппинг localId → serverId
   void _saveIdMapping(String type, int localId, String serverId) {
     switch (type) {
       case 'competition':
@@ -67,7 +60,6 @@ class SyncService {
     print('💾 Saved ID mapping: $type localId=$localId → serverId=$serverId');
   }
 
-  /// Получить serverId по localId
   String? _getServerId(String type, int localId) {
     switch (type) {
       case 'competition':
@@ -89,7 +81,6 @@ class SyncService {
     }
   }
 
-  /// Получить localId по serverId
   int? _getLocalId(String type, String serverId) {
     Map<int, String>? map;
     switch (type) {
@@ -128,7 +119,6 @@ class SyncService {
 
   // ========== CONNECTIVITY CHECK ==========
 
-  /// Проверить наличие интернета
   Future<bool> hasInternetConnection() async {
     try {
       final connectivityResult = await _connectivity.checkConnectivity();
@@ -141,12 +131,52 @@ class SyncService {
 
   // ========== SYNC COMPETITIONS ==========
 
-  /// Синхронизировать соревнование Local → Remote
-  Future<void> syncCompetitionToFirebase(CompetitionLocal competition) async {
+  /// ✅ НОВЫЙ МЕТОД: Получить соревнования по коду из Firebase
+  Future<List<CompetitionLocal>> getCompetitionsByCode(String code) async {
+    try {
+      print('🔍 Getting competitions by code from Firebase: $code');
+
+      if (!await hasInternetConnection()) {
+        print('⚠️ No internet - cannot get competitions from Firebase');
+        return [];
+      }
+
+      final snapshot = await _firestore
+          .collection('competitions')
+          .where('accessCode', isEqualTo: code)
+          .orderBy('createdAt', descending: true)
+          .get();
+
+      print('✅ Found ${snapshot.docs.length} competition(s) in Firebase with code: $code');
+
+      final competitions = <CompetitionLocal>[];
+
+      for (var doc in snapshot.docs) {
+        try {
+          final remote = CompetitionRemote.fromFirestore(doc.data(), doc.id);
+          final local = remote.toLocal(0);
+
+          local.serverId = doc.id;
+          competitions.add(local);
+          print('   - ${local.name} (ServerID: ${doc.id}, Code: ${local.accessCode})');
+        } catch (e) {
+          print('⚠️ Error converting competition: $e');
+        }
+      }
+
+      return competitions;
+    } catch (e) {
+      print('❌ Error getting competitions by code: $e');
+      return [];
+    }
+  }
+
+  /// ✅ ОБНОВЛЕНО: Синхронизировать соревнование Local → Remote (возвращает serverId)
+  Future<String?> syncCompetitionToFirebase(CompetitionLocal competition) async {
     try {
       if (!await hasInternetConnection()) {
         print('⚠️ No internet - competition sync queued');
-        return;
+        return null;
       }
 
       final remote = CompetitionRemote.fromLocal(competition);
@@ -169,13 +199,14 @@ class SyncService {
       competition.isSynced = true;
       competition.lastSyncedAt = DateTime.now();
       await _isarService.updateCompetition(competition);
+
+      return serverId;
     } catch (e) {
       print('❌ Error syncing competition to Firebase: $e');
-      rethrow;
+      return null;
     }
   }
 
-  /// Синхронизировать соревнование Remote → Local
   Future<void> syncCompetitionFromFirebase(String serverId) async {
     try {
       final remote = await _firebaseService.getCompetition(serverId);
@@ -209,7 +240,6 @@ class SyncService {
     }
   }
 
-  /// Синхронизировать все соревнования Remote → Local
   Future<void> syncAllCompetitions() async {
     try {
       if (!await hasInternetConnection()) {
@@ -233,7 +263,6 @@ class SyncService {
 
   // ========== SYNC TEAMS ==========
 
-  /// Синхронизировать команду Local → Remote
   Future<void> syncTeamToFirebase(TeamLocal team, String competitionServerId) async {
     try {
       if (!await hasInternetConnection()) {
@@ -267,7 +296,6 @@ class SyncService {
     }
   }
 
-  /// Синхронизировать все команды соревнования Remote → Local
   Future<void> syncTeamsFromFirebase(String competitionServerId) async {
     try {
       final remoteTeams = await _firebaseService.getTeamsByCompetition(competitionServerId);
@@ -304,7 +332,6 @@ class SyncService {
 
   // ========== SYNC WEIGHINGS ==========
 
-  /// Синхронизировать взвешивание Local → Remote
   Future<void> syncWeighingToFirebase(WeighingLocal weighing, String competitionServerId) async {
     try {
       if (!await hasInternetConnection()) {
@@ -338,7 +365,6 @@ class SyncService {
     }
   }
 
-  /// Синхронизировать все взвешивания соревнования Remote → Local
   Future<void> syncWeighingsFromFirebase(String competitionServerId) async {
     try {
       final remoteWeighings = await _firebaseService.getWeighingsByCompetition(competitionServerId);
@@ -375,7 +401,6 @@ class SyncService {
 
   // ========== SYNC WEIGHING RESULTS ==========
 
-  /// Синхронизировать результат взвешивания Local → Remote
   Future<void> syncWeighingResultToFirebase(
       WeighingResultLocal result,
       String competitionServerId,
@@ -423,7 +448,6 @@ class SyncService {
     }
   }
 
-  /// Синхронизировать все результаты взвешивания Remote → Local
   Future<void> syncWeighingResultsFromFirebase(
       String competitionServerId,
       String weighingServerId,
@@ -472,7 +496,6 @@ class SyncService {
 
   // ========== SYNC CASTING SESSIONS ==========
 
-  /// Синхронизировать сессию кастинга Local → Remote
   Future<void> syncCastingSessionToFirebase(
       CastingSessionLocal session,
       String competitionServerId,
@@ -509,7 +532,6 @@ class SyncService {
     }
   }
 
-  /// Синхронизировать все сессии кастинга Remote → Local
   Future<void> syncCastingSessionsFromFirebase(String competitionServerId) async {
     try {
       final remoteSessions = await _firebaseService.getCastingSessionsByCompetition(competitionServerId);
@@ -546,7 +568,6 @@ class SyncService {
 
   // ========== SYNC CASTING RESULTS ==========
 
-  /// Синхронизировать результат участника кастинга Local → Remote
   Future<void> syncCastingResultToFirebase(
       CastingResultLocal result,
       String competitionServerId,
@@ -594,7 +615,6 @@ class SyncService {
     }
   }
 
-  /// Синхронизировать все результаты сессии кастинга Remote → Local
   Future<void> syncCastingResultsFromFirebase(
       String competitionServerId,
       String sessionServerId,
@@ -643,7 +663,6 @@ class SyncService {
 
   // ========== SYNC PROTOCOLS ==========
 
-  /// Синхронизировать протокол Local → Remote
   Future<void> syncProtocolToFirebase(ProtocolLocal protocol, String competitionServerId) async {
     try {
       if (!await hasInternetConnection()) {
@@ -676,7 +695,6 @@ class SyncService {
     }
   }
 
-  /// Синхронизировать все протоколы соревнования Remote → Local
   Future<void> syncProtocolsFromFirebase(String competitionServerId) async {
     try {
       final remoteProtocols = await _firebaseService.getProtocolsByCompetition(competitionServerId);
@@ -699,8 +717,6 @@ class SyncService {
 
   // ========== CONFLICT RESOLUTION ==========
 
-  /// Разрешить конфликт: нужно ли обновлять локальную версию
-  /// Last-write-wins: сравниваем updatedAt
   bool _shouldUpdateLocal(DateTime? localUpdatedAt, DateTime? remoteUpdatedAt) {
     if (localUpdatedAt == null) return true;
     if (remoteUpdatedAt == null) return false;
@@ -709,20 +725,17 @@ class SyncService {
 
   // ========== SYNC STATUS ==========
 
-  /// Проверить, синхронизирована ли сущность
   Future<bool> isSynced(int localId, String entityType) async {
     final serverId = _getServerId(entityType, localId);
     return serverId != null && serverId.isNotEmpty;
   }
 
-  /// Получить serverId по localId
   String? getServerId(int localId, String entityType) {
     return _getServerId(entityType, localId);
   }
 
   // ========== PUBLIC DELETE METHODS ==========
 
-  /// Удалить соревнование из Firebase
   Future<void> deleteCompetitionFromFirebase(String serverId) async {
     try {
       await _firebaseService.deleteCompetition(serverId);
@@ -733,7 +746,6 @@ class SyncService {
     }
   }
 
-  /// Удалить команду из Firebase
   Future<void> deleteTeamFromFirebase(String competitionId, String teamId) async {
     try {
       await _firebaseService.deleteTeam(competitionId, teamId);
@@ -744,7 +756,6 @@ class SyncService {
     }
   }
 
-  /// Удалить взвешивание из Firebase
   Future<void> deleteWeighingFromFirebase(String competitionId, String weighingId) async {
     try {
       await _firebaseService.deleteWeighing(competitionId, weighingId);
@@ -755,7 +766,6 @@ class SyncService {
     }
   }
 
-  /// Удалить результат взвешивания из Firebase
   Future<void> deleteWeighingResultFromFirebase(
       String competitionId,
       String weighingId,
@@ -770,7 +780,6 @@ class SyncService {
     }
   }
 
-  /// Удалить сессию кастинга из Firebase
   Future<void> deleteCastingSessionFromFirebase(String competitionId, String sessionId) async {
     try {
       await _firebaseService.deleteCastingSession(competitionId, sessionId);
@@ -781,7 +790,6 @@ class SyncService {
     }
   }
 
-  /// Удалить результат кастинга из Firebase
   Future<void> deleteCastingResultFromFirebase(
       String competitionId,
       String sessionId,

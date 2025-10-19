@@ -28,6 +28,9 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
   List<Map<String, dynamic>> _codes = [];
   bool _isLoadingCodes = true;
 
+  // Фильтр кодов
+  String _codeFilter = 'all'; // 'all', 'active', 'used', 'deactivated'
+
   @override
   void initState() {
     super.initState();
@@ -49,7 +52,7 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
       final snapshot = await FirebaseFirestore.instance
           .collection('access_codes')
           .orderBy('createdAt', descending: true)
-          .limit(50)
+          .limit(100)
           .get();
 
       setState(() {
@@ -67,6 +70,34 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
       print('❌ Error loading codes: $e');
       setState(() => _isLoadingCodes = false);
     }
+  }
+
+  /// Фильтрация кодов
+  List<Map<String, dynamic>> get _filteredCodes {
+    if (_codeFilter == 'all') {
+      return _codes;
+    }
+
+    return _codes.where((codeData) {
+      final isActive = codeData['isActive'] as bool? ?? true;
+      final currentUses = codeData['currentUses'] as int? ?? 0;
+      final maxUses = codeData['maxUses'] as int? ?? 1;
+      final deactivatedBy = codeData['deactivatedBy'] as String?;
+
+      final bool isUsedUp = currentUses >= maxUses && maxUses > 0;
+      final bool isManuallyDeactivated = !isActive && deactivatedBy == 'admin';
+
+      switch (_codeFilter) {
+        case 'active':
+          return isActive && !isUsedUp;
+        case 'used':
+          return isUsedUp;
+        case 'deactivated':
+          return isManuallyDeactivated;
+        default:
+          return true;
+      }
+    }).toList();
   }
 
   /// Сгенерировать уникальный код
@@ -165,13 +196,15 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
         'fishingType': _selectedFishingType,
         'customLabel': customLabel.isEmpty ? null : customLabel,
         'type': _codeType,
-        'maxUses': _codeType == 'single_use' ? 1 : 5, // ✅ 1 или 5
+        'maxUses': _codeType == 'single_use' ? 1 : 5,
         'currentUses': 0,
         'isActive': true,
         'createdAt': FieldValue.serverTimestamp(),
         'createdBy': 'admin',
+        'purchaseMethod': 'manual',
         'note': _noteController.text.trim(),
         'usedBy': [],
+        'competitions': [],
       });
 
       if (!mounted) return;
@@ -268,7 +301,7 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text('Деактивировать код?'),
-        content: Text('Все соревнования созданные с этим кодом будут заблокированы. Данные не удалятся.'),
+        content: Text('Код станет неактивным. Существующие соревнования останутся доступными.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -286,7 +319,6 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
     if (confirmed != true) return;
 
     try {
-      // 1. Деактивируем код
       await FirebaseFirestore.instance
           .collection('access_codes')
           .doc(codeId)
@@ -296,27 +328,9 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
         'deactivatedBy': 'admin',
       });
 
-      // 2. Блокируем все соревнования с этим кодом
-      final competitions = await FirebaseFirestore.instance
-          .collection('competitions')
-          .where('accessCode', isEqualTo: code)
-          .where('status', whereIn: ['draft', 'active'])
-          .get();
-
-      print('🚫 Blocking ${competitions.docs.length} competitions with code: $code');
-
-      for (var comp in competitions.docs) {
-        await comp.reference.update({
-          'status': 'blocked',
-          'blockedReason': 'Код деактивирован администратором',
-          'blockedAt': FieldValue.serverTimestamp(),
-        });
-        print('   ✅ Blocked competition: ${comp.id}');
-      }
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Код деактивирован. Заблокировано соревнований: ${competitions.docs.length}'),
+          content: Text('Код деактивирован'),
           backgroundColor: Colors.orange,
         ),
       );
@@ -339,7 +353,7 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text('Активировать код?'),
-        content: Text('Все заблокированные соревнования будут разблокированы.'),
+        content: Text('Код снова станет активным.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -357,7 +371,6 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
     if (confirmed != true) return;
 
     try {
-      // 1. Активируем код
       await FirebaseFirestore.instance
           .collection('access_codes')
           .doc(codeId)
@@ -367,27 +380,9 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
         'reactivatedBy': 'admin',
       });
 
-      // 2. Разблокируем соревнования
-      final competitions = await FirebaseFirestore.instance
-          .collection('competitions')
-          .where('accessCode', isEqualTo: code)
-          .where('status', isEqualTo: 'blocked')
-          .get();
-
-      print('♻️ Unblocking ${competitions.docs.length} competitions with code: $code');
-
-      for (var comp in competitions.docs) {
-        await comp.reference.update({
-          'status': 'active',
-          'blockedReason': null,
-          'unblockedAt': FieldValue.serverTimestamp(),
-        });
-        print('   ✅ Unblocked competition: ${comp.id}');
-      }
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Код активирован. Разблокировано соревнований: ${competitions.docs.length}'),
+          content: Text('Код активирован'),
           backgroundColor: AppColors.success,
         ),
       );
@@ -402,6 +397,16 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
         ),
       );
     }
+  }
+
+  /// Показать соревнования по коду
+  Future<void> _showCompetitionsByCode(String code) async {
+    // TODO: Реализовать загрузку соревнований из Firestore или Isar
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Просмотр соревнований по коду: $code'),
+      ),
+    );
   }
 
   @override
@@ -505,7 +510,7 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
 
               SizedBox(height: AppDimensions.paddingLarge),
 
-              // ✅ ОБНОВЛЁННОЕ: Количество соревнований
+              // Количество соревнований
               Text('Количество соревнований:', style: AppTextStyles.bodyLarge),
               SizedBox(height: AppDimensions.paddingSmall),
 
@@ -682,6 +687,25 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
                 ),
               ],
             ),
+
+            SizedBox(height: AppDimensions.paddingMedium),
+
+            // Фильтры
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _buildFilterChip('Все', 'all'),
+                  SizedBox(width: 8),
+                  _buildFilterChip('Активные', 'active'),
+                  SizedBox(width: 8),
+                  _buildFilterChip('Использованные', 'used'),
+                  SizedBox(width: 8),
+                  _buildFilterChip('Деактивированные', 'deactivated'),
+                ],
+              ),
+            ),
+
             SizedBox(height: AppDimensions.paddingMedium),
 
             if (_isLoadingCodes)
@@ -691,12 +715,12 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
                   child: CircularProgressIndicator(color: AppColors.primary),
                 ),
               )
-            else if (_codes.isEmpty)
+            else if (_filteredCodes.isEmpty)
               Center(
                 child: Padding(
                   padding: EdgeInsets.all(AppDimensions.paddingXLarge),
                   child: Text(
-                    'Нет созданных кодов',
+                    'Нет кодов в этой категории',
                     style: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
                   ),
                 ),
@@ -705,14 +729,37 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
               ListView.builder(
                 shrinkWrap: true,
                 physics: NeverScrollableScrollPhysics(),
-                itemCount: _codes.length,
+                itemCount: _filteredCodes.length,
                 itemBuilder: (context, index) {
-                  final codeData = _codes[index];
+                  final codeData = _filteredCodes[index];
                   return _buildCodeItem(codeData);
                 },
               ),
           ],
         ),
+      ),
+    );
+  }
+
+  /// Фильтр-чип
+  Widget _buildFilterChip(String label, String value) {
+    final isSelected = _codeFilter == value;
+    return FilterChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (selected) {
+        setState(() => _codeFilter = value);
+      },
+      backgroundColor: AppColors.surfaceMedium,
+      selectedColor: AppColors.primary.withOpacity(0.2),
+      checkmarkColor: AppColors.primary,
+      labelStyle: AppTextStyles.caption.copyWith(
+        color: isSelected ? AppColors.primary : AppColors.textSecondary,
+        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+      ),
+      side: BorderSide(
+        color: isSelected ? AppColors.primary : AppColors.divider,
+        width: isSelected ? 2 : 1,
       ),
     );
   }
@@ -726,6 +773,7 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
     final createdAt = codeData['createdAt'] as Timestamp?;
     final codeType = codeData['type'] as String?;
     final deactivatedBy = codeData['deactivatedBy'] as String?;
+    final competitions = codeData['competitions'] as List?;
 
     // Определяем состояние кода
     final bool isUsedUp = currentUses >= maxUses && maxUses > 0;
@@ -736,7 +784,7 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
     IconData statusIcon;
     String statusText;
 
-    if (isActive) {
+    if (isActive && !isUsedUp) {
       statusColor = AppColors.success;
       statusIcon = Icons.check_circle;
       statusText = 'Активен';
@@ -744,17 +792,21 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
       statusColor = Colors.orange;
       statusIcon = Icons.block;
       statusText = 'Деактивирован';
+    } else if (isUsedUp) {
+      statusColor = Colors.grey;
+      statusIcon = Icons.hourglass_empty;
+      statusText = 'Использован';
     } else {
       statusColor = Colors.grey;
       statusIcon = Icons.cancel;
-      statusText = 'Использован';
+      statusText = 'Неактивен';
     }
 
     return Container(
       margin: EdgeInsets.only(bottom: AppDimensions.paddingMedium),
       padding: EdgeInsets.all(AppDimensions.paddingMedium),
       decoration: BoxDecoration(
-        color: isActive
+        color: isActive && !isUsedUp
             ? AppColors.surfaceMedium
             : AppColors.surfaceMedium.withOpacity(0.5),
         borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
@@ -807,6 +859,14 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
                   );
                 },
               ),
+              // Кнопка просмотра соревнований
+              if (competitions != null && competitions.isNotEmpty)
+                IconButton(
+                  icon: Icon(Icons.visibility, size: 20),
+                  tooltip: 'Просмотр соревнований',
+                  color: AppColors.secondary,
+                  onPressed: () => _showCompetitionsByCode(code),
+                ),
               if (isActive && !isUsedUp)
                 IconButton(
                   icon: Icon(Icons.block, size: 20),
@@ -857,6 +917,15 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
                 text: '$currentUses/$maxUses',
               ),
 
+              // Количество соревнований
+              if (competitions != null && competitions.isNotEmpty)
+                _buildBadge(
+                  icon: Icons.event,
+                  text: '${competitions.length} сорев.',
+                  color: AppColors.secondary.withOpacity(0.2),
+                  textColor: AppColors.secondary,
+                ),
+
               // Дата (короткая)
               if (createdAt != null)
                 _buildBadge(
@@ -872,6 +941,9 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
                   color: AppColors.primary.withOpacity(0.2),
                   textColor: AppColors.primary,
                 ),
+
+              // ✅ НОВОЕ: Метод создания кода
+              _buildPurchaseMethodBadge(codeData),
             ],
           ),
         ],
@@ -905,6 +977,48 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  /// ✅ НОВОЕ: Бейдж метода создания кода
+  Widget _buildPurchaseMethodBadge(Map<String, dynamic> codeData) {
+    final purchaseMethod = codeData['purchaseMethod'] as String?;
+
+    if (purchaseMethod == null) return SizedBox.shrink();
+
+    IconData icon;
+    String text;
+    Color bgColor;
+    Color textColor;
+
+    switch (purchaseMethod) {
+      case 'manual':
+        icon = Icons.admin_panel_settings;
+        text = 'Вручную';
+        bgColor = Colors.blue.withOpacity(0.2);
+        textColor = Colors.blue;
+        break;
+      case 'app_store':
+        icon = Icons.shopping_bag;
+        text = 'App Store';
+        bgColor = Colors.purple.withOpacity(0.2);
+        textColor = Colors.purple;
+        break;
+      case 'google_play':
+        icon = Icons.shop;
+        text = 'Google Play';
+        bgColor = Colors.green.withOpacity(0.2);
+        textColor = Colors.green;
+        break;
+      default:
+        return SizedBox.shrink();
+    }
+
+    return _buildBadge(
+      icon: icon,
+      text: text,
+      color: bgColor,
+      textColor: textColor,
     );
   }
 }
