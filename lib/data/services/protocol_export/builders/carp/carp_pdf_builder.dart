@@ -7,15 +7,6 @@ import '../../core/base_pdf_builder.dart';
 import '../../core/export_types.dart';
 import '../../core/font_loader.dart';
 
-/// PDF Builder для карповой рыбалки
-///
-/// Поддерживает все типы протоколов:
-/// - weighing - Протокол взвешивания
-/// - intermediate - Промежуточный протокол
-/// - big_fish - Big Fish протокол
-/// - summary - Сводный протокол
-/// - finalProtocol - Финальный протокол
-/// - draw - Протокол жеребьёвки
 class CarpPdfBuilder extends BasePdfBuilder {
   @override
   Future<pw.Widget> buildContent(
@@ -89,7 +80,6 @@ class CarpPdfBuilder extends BasePdfBuilder {
     }
   }
 
-  /// Построение таблицы протокола взвешивания/промежуточного
   pw.Widget _buildPdfWeighingTable(
       Map<String, dynamic> data,
       bool showPlace,
@@ -105,7 +95,6 @@ class CarpPdfBuilder extends BasePdfBuilder {
       );
     }
 
-    // Заголовки таблицы с локализацией
     final headers = showPlace
         ? [
       'field_number'.tr(),
@@ -125,7 +114,6 @@ class CarpPdfBuilder extends BasePdfBuilder {
       'average_weight'.tr(),
     ];
 
-    // Строки данных
     final rows = <List<String>>[];
 
     for (final row in tableData) {
@@ -160,7 +148,6 @@ class CarpPdfBuilder extends BasePdfBuilder {
     );
   }
 
-  /// Построение таблицы Big Fish
   pw.Widget _buildPdfBigFishTable(
       Map<String, dynamic> data,
       pw.Font font,
@@ -202,7 +189,6 @@ class CarpPdfBuilder extends BasePdfBuilder {
     );
   }
 
-  /// Построение таблицы сводного протокола
   pw.Widget _buildPdfSummaryTable(
       Map<String, dynamic> data,
       pw.Font font,
@@ -263,13 +249,13 @@ class CarpPdfBuilder extends BasePdfBuilder {
     );
   }
 
-  /// Построение таблицы финального протокола
   pw.Widget _buildPdfFinalTable(
       Map<String, dynamic> data,
       pw.Font font,
       pw.Font fontBold,
       ) {
     final finalData = data['finalData'] as List<dynamic>? ?? [];
+    final competitionBiggestFish = data['competitionBiggestFish'] as Map<String, dynamic>?;
 
     if (finalData.isEmpty) {
       return pw.Text(
@@ -278,7 +264,7 @@ class CarpPdfBuilder extends BasePdfBuilder {
       );
     }
 
-    return pw.Table.fromTextArray(
+    final mainTable = pw.Table.fromTextArray(
       headerStyle: pw.TextStyle(font: fontBold, fontSize: 7),
       cellStyle: pw.TextStyle(fontSize: 6, font: font),
       headerDecoration: const pw.BoxDecoration(color: PdfColors.grey300),
@@ -326,9 +312,113 @@ class CarpPdfBuilder extends BasePdfBuilder {
         ];
       }).toList(),
     );
+
+    if (competitionBiggestFish == null) {
+      return mainTable;
+    }
+
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        mainTable,
+        pw.SizedBox(height: 20),
+        pw.Container(
+          padding: const pw.EdgeInsets.all(10),
+          decoration: pw.BoxDecoration(
+            color: PdfColors.amber100,
+            border: pw.Border.all(color: PdfColors.amber, width: 2),
+          ),
+          child: pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text(
+                'BIG FISH',
+                style: pw.TextStyle(
+                  font: fontBold,
+                  fontSize: 14,
+                  color: PdfColors.orange900,
+                ),
+              ),
+              pw.SizedBox(height: 10),
+              pw.Table(
+                border: pw.TableBorder.all(color: PdfColors.amber),
+                children: [
+                  pw.TableRow(
+                    decoration: const pw.BoxDecoration(color: PdfColors.amber200),
+                    children: [
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.all(5),
+                        child: pw.Text('team'.tr(), style: pw.TextStyle(font: fontBold, fontSize: 9)),
+                      ),
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.all(5),
+                        child: pw.Text('field_fish_type'.tr(), style: pw.TextStyle(font: fontBold, fontSize: 9)),
+                      ),
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.all(5),
+                        child: pw.Text('weight'.tr(), style: pw.TextStyle(font: fontBold, fontSize: 9)),
+                      ),
+                      if ((competitionBiggestFish['length'] as int?) != null && competitionBiggestFish['length'] != 0)
+                        pw.Padding(
+                          padding: const pw.EdgeInsets.all(5),
+                          child: pw.Text('length'.tr(), style: pw.TextStyle(font: fontBold, fontSize: 9)),
+                        ),
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.all(5),
+                        child: pw.Text('sector'.tr(), style: pw.TextStyle(font: fontBold, fontSize: 9)),
+                      ),
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.all(5),
+                        child: pw.Text('field_time'.tr(), style: pw.TextStyle(font: fontBold, fontSize: 9)),
+                      ),
+                    ],
+                  ),
+                  pw.TableRow(
+                    children: [
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.all(5),
+                        child: pw.Text(competitionBiggestFish['teamName']?.toString() ?? '', style: pw.TextStyle(font: font, fontSize: 8)),
+                      ),
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.all(5),
+                        child: pw.Text(competitionBiggestFish['fishType']?.toString() ?? '', style: pw.TextStyle(font: font, fontSize: 8)),
+                      ),
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.all(5),
+                        child: pw.Text(
+                          ((competitionBiggestFish['weight'] as num?) ?? 0).toStringAsFixed(3),
+                          style: pw.TextStyle(font: fontBold, fontSize: 10),
+                        ),
+                      ),
+                      if ((competitionBiggestFish['length'] as int?) != null && competitionBiggestFish['length'] != 0)
+                        pw.Padding(
+                          padding: const pw.EdgeInsets.all(5),
+                          child: pw.Text('${competitionBiggestFish['length']}', style: pw.TextStyle(font: font, fontSize: 8)),
+                        ),
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.all(5),
+                        child: pw.Text('${competitionBiggestFish['sector'] ?? ''}', style: pw.TextStyle(font: font, fontSize: 8)),
+                      ),
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.all(5),
+                        child: pw.Text(
+                          competitionBiggestFish['weighingTime'] != null
+                              ? _formatDateTime(competitionBiggestFish['weighingTime'])
+                              : '',
+                          style: pw.TextStyle(font: font, fontSize: 8),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 
-  /// Построение таблицы жеребьёвки
   pw.Widget _buildPdfDrawTable(
       Map<String, dynamic> data,
       pw.Font font,
@@ -370,7 +460,6 @@ class CarpPdfBuilder extends BasePdfBuilder {
     );
   }
 
-  /// Форматирование даты и времени
   String _formatDateTime(String? dateTimeStr) {
     if (dateTimeStr == null || dateTimeStr.isEmpty) return '';
 

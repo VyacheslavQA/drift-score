@@ -177,7 +177,7 @@ class CarpProtocolGenerator extends BaseProtocolGenerator {
           'sector': team['sector'],
           'fishCount': team['totalFishCount'],
           'totalWeight': team['totalWeight'],
-          'place': i + 1, // ✅ ИСПРАВЛЕНО: Добавлено поле place
+          'place': i + 1,
         });
       }
 
@@ -242,7 +242,7 @@ class CarpProtocolGenerator extends BaseProtocolGenerator {
 
       if (dayWeighings.isEmpty) return null;
 
-      // ✅ ИСПРАВЛЕНО: Ищем ОДНУ самую большую рыбу за день
+      // ✅ Ищем ОДНУ самую большую рыбу за день
       Map<String, dynamic>? biggestFish;
       double maxWeight = 0.0;
 
@@ -256,9 +256,9 @@ class CarpProtocolGenerator extends BaseProtocolGenerator {
             if (fish.weight > maxWeight) {
               maxWeight = fish.weight;
               biggestFish = {
-                'teamName': team.name ?? 'Unknown', // ✅ Добавлена проверка на null
+                'teamName': team.name ?? 'Unknown',
                 'sector': team.sector ?? 0,
-                'fishType': getFishTypeName(fish.fishType ?? ''), // ✅ Добавлена проверка на null
+                'fishType': getFishTypeName(fish.fishType ?? ''),
                 'weight': fish.weight,
                 'length': fish.length ?? 0,
                 'weighingTime': weighing.weighingTime.toIso8601String(),
@@ -268,7 +268,6 @@ class CarpProtocolGenerator extends BaseProtocolGenerator {
         }
       }
 
-      // Если не найдено ни одной рыбы
       if (biggestFish == null) {
         print('⚠️ No fish found for day #$dayNumber');
         return null;
@@ -294,7 +293,7 @@ class CarpProtocolGenerator extends BaseProtocolGenerator {
           'judges': competition.judges
               .map((j) => {'name': j.fullName, 'rank': translateRank(j.rank)})
               .toList(),
-          'bigFish': biggestFish, // ✅ ИСПРАВЛЕНО: Один объект вместо массива topFish
+          'bigFish': biggestFish,
         });
 
       await isarService.saveProtocol(protocol);
@@ -313,13 +312,8 @@ class CarpProtocolGenerator extends BaseProtocolGenerator {
     try {
       print('🎯 Generating summary protocol');
 
-      // ✅ Проверка на существование
-      final existingProtocols =
-      await isarService.getProtocolsByType(competitionId, 'summary');
-      if (existingProtocols.isNotEmpty) {
-        print('ℹ️ Summary protocol already exists (id=${existingProtocols.first.id})');
-        return existingProtocols.first;
-      }
+      // ❌ УДАЛЕНА проверка на существование - каждый раз создаём новый
+      // Сводный протокол генерируется по требованию судей
 
       final competition = await isarService.getCompetition(competitionId);
       final teams = await isarService.getTeamsByCompetition(competitionId);
@@ -328,7 +322,7 @@ class CarpProtocolGenerator extends BaseProtocolGenerator {
       final weighings = await isarService.getWeighingsByCompetition(competitionId);
       if (weighings.isEmpty) return null;
 
-      // ✅ ИСПРАВЛЕНО: Собираем результаты с учётом members, biggestFish, penalties
+      // Собираем результаты с учётом members, biggestFish, penalties
       final Map<int, Map<String, dynamic>> teamResults = {};
       for (var team in teams) {
         teamResults[team.id!] = {
@@ -340,47 +334,28 @@ class CarpProtocolGenerator extends BaseProtocolGenerator {
             'rank': translateRank(m.rank),
           })
               .toList(),
-          'dayResults': <Map<String, dynamic>>[],
           'totalWeight': 0.0,
           'totalFishCount': 0,
-          'biggestFish': 0.0, // ✅ ДОБАВЛЕНО
-          'penalties': 0, // ✅ ДОБАВЛЕНО
+          'biggestFish': 0.0, // Самая большая рыба команды на текущий момент
+          'penalties': 0,
         };
       }
 
-      // Группируем взвешивания по дням
-      final dayNumbers = weighings.map((w) => w.dayNumber).toSet().toList()..sort();
+      // Собираем все результаты взвешиваний
+      for (var weighing in weighings) {
+        final results = await isarService.getResultsByWeighing(weighing.id);
+        for (var result in results) {
+          if (teamResults.containsKey(result.teamLocalId)) {
+            teamResults[result.teamLocalId]!['totalWeight'] += result.totalWeight;
+            teamResults[result.teamLocalId]!['totalFishCount'] += result.fishCount;
 
-      for (var dayNumber in dayNumbers) {
-        final dayWeighings = weighings.where((w) => w.dayNumber == dayNumber).toList();
-
-        for (var team in teams) {
-          double dayWeight = 0.0;
-          int dayFishCount = 0;
-
-          for (var weighing in dayWeighings) {
-            final results = await isarService.getResultsByWeighing(weighing.id);
-            final teamResult = results.where((r) => r.teamLocalId == team.id).firstOrNull;
-            if (teamResult != null) {
-              dayWeight += teamResult.totalWeight;
-              dayFishCount += teamResult.fishCount;
-
-              // ✅ ИСПРАВЛЕНО: Находим самую большую рыбу команды
-              for (var fish in teamResult.fishes) {
-                if (fish.weight > teamResults[team.id]!['biggestFish']) {
-                  teamResults[team.id]!['biggestFish'] = fish.weight;
-                }
+            // Находим самую большую рыбу команды
+            for (var fish in result.fishes) {
+              if (fish.weight > teamResults[result.teamLocalId]!['biggestFish']) {
+                teamResults[result.teamLocalId]!['biggestFish'] = fish.weight;
               }
             }
           }
-
-          teamResults[team.id]!['dayResults'].add({
-            'dayNumber': dayNumber,
-            'weight': dayWeight,
-            'fishCount': dayFishCount,
-          });
-          teamResults[team.id]!['totalWeight'] += dayWeight;
-          teamResults[team.id]!['totalFishCount'] += dayFishCount;
         }
       }
 
@@ -388,7 +363,6 @@ class CarpProtocolGenerator extends BaseProtocolGenerator {
       sortedTeams.sort((a, b) =>
           (b['totalWeight'] as double).compareTo(a['totalWeight'] as double));
 
-      // ✅ ИСПРАВЛЕНО: Изменён ключ с tableData на summaryData
       final List<Map<String, dynamic>> summaryData = [];
       for (int i = 0; i < sortedTeams.length; i++) {
         final team = sortedTeams[i];
@@ -396,13 +370,12 @@ class CarpProtocolGenerator extends BaseProtocolGenerator {
           'order': i + 1,
           'teamName': team['teamName'],
           'sector': team['sector'],
-          'members': team['members'], // ✅ ДОБАВЛЕНО
-          'dayResults': team['dayResults'],
+          'members': team['members'],
           'totalWeight': team['totalWeight'],
           'totalFishCount': team['totalFishCount'],
-          'biggestFish': team['biggestFish'], // ✅ ДОБАВЛЕНО
-          'penalties': team['penalties'], // ✅ ДОБАВЛЕНО
-          'place': i + 1, // ✅ ДОБАВЛЕНО
+          'biggestFish': team['biggestFish'], // ⭐ Трофей - самая большая рыба команды
+          'penalties': team['penalties'],
+          'place': i + 1,
         });
       }
 
@@ -421,11 +394,10 @@ class CarpProtocolGenerator extends BaseProtocolGenerator {
           formatCompetitionDates(competition.startTime, competition.finishTime),
           'dateKey': getDateKey(competition.startTime, competition.finishTime),
           'organizer': competition.organizerName,
-          'dayCount': dayNumbers.length,
           'judges': competition.judges
               .map((j) => {'name': j.fullName, 'rank': translateRank(j.rank)})
               .toList(),
-          'summaryData': summaryData, // ✅ ИСПРАВЛЕНО: Изменён ключ
+          'summaryData': summaryData,
         });
 
       await isarService.saveProtocol(protocol);
@@ -444,7 +416,7 @@ class CarpProtocolGenerator extends BaseProtocolGenerator {
     try {
       print('🎯 Generating final protocol');
 
-      // ✅ Проверка на существование
+      // ✅ Проверка на существование - финальный протокол создаётся только один раз
       final existingProtocols =
       await isarService.getProtocolsByType(competitionId, 'final');
       if (existingProtocols.isNotEmpty) {
@@ -459,13 +431,18 @@ class CarpProtocolGenerator extends BaseProtocolGenerator {
       final weighings = await isarService.getWeighingsByCompetition(competitionId);
       if (weighings.isEmpty) return null;
 
-      // ✅ ИСПРАВЛЕНО: Собираем результаты с полными данными для финального протокола
+      // Собираем результаты с полными данными для финального протокола
       final Map<int, Map<String, dynamic>> teamResults = {};
+
+      // ⭐ НОВОЕ: Ищем самую большую рыбу за ВСЁ соревнование
+      Map<String, dynamic>? competitionBiggestFish;
+      double maxCompetitionWeight = 0.0;
+
       for (var team in teams) {
         teamResults[team.id!] = {
           'teamName': team.name,
-          'city': team.city ?? '', // ✅ ДОБАВЛЕНО
-          'club': team.club ?? '', // ✅ ДОБАВЛЕНО
+          'city': team.city ?? '',
+          'club': team.club ?? '',
           'sector': team.sector ?? 0,
           'members': team.members
               .map((m) => {
@@ -475,8 +452,8 @@ class CarpProtocolGenerator extends BaseProtocolGenerator {
               .toList(),
           'totalWeight': 0.0,
           'totalFishCount': 0,
-          'biggestFish': 0.0, // ✅ ДОБАВЛЕНО
-          'penalties': 0, // ✅ ДОБАВЛЕНО
+          'biggestFish': 0.0, // Самая большая рыба команды
+          'penalties': 0,
         };
       }
 
@@ -488,10 +465,26 @@ class CarpProtocolGenerator extends BaseProtocolGenerator {
             teamResults[result.teamLocalId]!['totalWeight'] += result.totalWeight;
             teamResults[result.teamLocalId]!['totalFishCount'] += result.fishCount;
 
-            // ✅ ИСПРАВЛЕНО: Находим самую большую рыбу команды
+            final team = teams.firstWhere((t) => t.id == result.teamLocalId,
+                orElse: () => TeamLocal()..name = 'Unknown');
+
+            // Находим самую большую рыбу команды
             for (var fish in result.fishes) {
               if (fish.weight > teamResults[result.teamLocalId]!['biggestFish']) {
                 teamResults[result.teamLocalId]!['biggestFish'] = fish.weight;
+              }
+
+              // ⭐ НОВОЕ: Ищем самую большую рыбу за ВСЁ соревнование
+              if (fish.weight > maxCompetitionWeight) {
+                maxCompetitionWeight = fish.weight;
+                competitionBiggestFish = {
+                  'teamName': team.name ?? 'Unknown',
+                  'sector': team.sector ?? 0,
+                  'fishType': getFishTypeName(fish.fishType ?? ''),
+                  'weight': fish.weight,
+                  'length': fish.length ?? 0,
+                  'weighingTime': weighing.weighingTime.toIso8601String(),
+                };
               }
             }
           }
@@ -502,22 +495,21 @@ class CarpProtocolGenerator extends BaseProtocolGenerator {
       sortedTeams.sort((a, b) =>
           (b['totalWeight'] as double).compareTo(a['totalWeight'] as double));
 
-      // ✅ ИСПРАВЛЕНО: Создаём finalData с полными данными
       final List<Map<String, dynamic>> finalData = [];
       for (int i = 0; i < sortedTeams.length; i++) {
         final team = sortedTeams[i];
         finalData.add({
           'order': i + 1,
           'teamName': team['teamName'],
-          'city': team['city'], // ✅ ДОБАВЛЕНО
-          'club': team['club'], // ✅ ДОБАВЛЕНО
+          'city': team['city'],
+          'club': team['club'],
           'sector': team['sector'],
-          'members': team['members'], // ✅ ДОБАВЛЕНО
+          'members': team['members'],
           'totalWeight': team['totalWeight'],
           'totalFishCount': team['totalFishCount'],
-          'biggestFish': team['biggestFish'], // ✅ ДОБАВЛЕНО
-          'penalties': team['penalties'], // ✅ ДОБАВЛЕНО
-          'place': i + 1, // ✅ ДОБАВЛЕНО
+          'biggestFish': team['biggestFish'], // Трофей команды
+          'penalties': team['penalties'],
+          'place': i + 1,
         });
       }
 
@@ -539,7 +531,8 @@ class CarpProtocolGenerator extends BaseProtocolGenerator {
           'judges': competition.judges
               .map((j) => {'name': j.fullName, 'rank': translateRank(j.rank)})
               .toList(),
-          'finalData': finalData, // ✅ ИСПРАВЛЕНО: Создаём finalData вместо копирования summaryData
+          'finalData': finalData,
+          'competitionBiggestFish': competitionBiggestFish, // ⭐ НОВОЕ: Самая большая рыба соревнования
         });
 
       await isarService.saveProtocol(protocol);

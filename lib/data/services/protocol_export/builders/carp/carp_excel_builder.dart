@@ -5,15 +5,6 @@ import 'package:drift_score/data/models/local/protocol_local.dart';
 import '../../core/base_excel_builder.dart';
 import '../../core/export_types.dart';
 
-/// Excel Builder для карповой рыбалки
-///
-/// Поддерживает все типы протоколов:
-/// - weighing - Протокол взвешивания
-/// - intermediate - Промежуточный протокол
-/// - big_fish - Big Fish протокол
-/// - summary - Сводный протокол
-/// - finalProtocol - Финальный протокол
-/// - draw - Протокол жеребьёвки
 class CarpExcelBuilder extends BaseExcelBuilder {
   @override
   int buildTableContent(
@@ -83,7 +74,6 @@ class CarpExcelBuilder extends BaseExcelBuilder {
     }
   }
 
-  /// Добавление таблицы взвешивания/промежуточного протокола
   int _addWeighingTable(
       xlsio.Worksheet sheet,
       Map<String, dynamic> data,
@@ -98,7 +88,6 @@ class CarpExcelBuilder extends BaseExcelBuilder {
 
     int currentRow = startRow;
 
-    // Заголовки с локализацией
     final headers = showPlace
         ? [
       'field_number'.tr(),
@@ -118,7 +107,6 @@ class CarpExcelBuilder extends BaseExcelBuilder {
       'average_weight'.tr(),
     ];
 
-    // Добавляем заголовок
     for (int i = 0; i < headers.length; i++) {
       final cell = sheet.getRangeByIndex(currentRow, i + 1);
       cell.setText(headers[i]);
@@ -128,7 +116,6 @@ class CarpExcelBuilder extends BaseExcelBuilder {
     }
     currentRow++;
 
-    // Данные
     for (final row in tableData) {
       final rowMap = row as Map<String, dynamic>;
       final totalWeight = (rowMap['totalWeight'] as num?) ?? 0;
@@ -157,7 +144,6 @@ class CarpExcelBuilder extends BaseExcelBuilder {
     return currentRow;
   }
 
-  /// Добавление таблицы Big Fish
   int _addBigFishTable(
       xlsio.Worksheet sheet,
       Map<String, dynamic> data,
@@ -171,7 +157,6 @@ class CarpExcelBuilder extends BaseExcelBuilder {
 
     int currentRow = startRow;
 
-    // Заголовки с локализацией
     final headers = [
       'team'.tr(),
       'field_fish_type'.tr(),
@@ -190,7 +175,6 @@ class CarpExcelBuilder extends BaseExcelBuilder {
     }
     currentRow++;
 
-    // Данные
     final rowData = [
       bigFish['teamName']?.toString() ?? '',
       bigFish['fishType']?.toString() ?? '',
@@ -210,7 +194,6 @@ class CarpExcelBuilder extends BaseExcelBuilder {
     return currentRow;
   }
 
-  /// Добавление таблицы сводного протокола
   int _addSummaryTable(
       xlsio.Worksheet sheet,
       Map<String, dynamic> data,
@@ -224,7 +207,6 @@ class CarpExcelBuilder extends BaseExcelBuilder {
 
     int currentRow = startRow;
 
-    // Заголовки с локализацией
     final headers = [
       'team'.tr(),
       'participants'.tr(),
@@ -247,7 +229,6 @@ class CarpExcelBuilder extends BaseExcelBuilder {
     }
     currentRow++;
 
-    // Данные
     for (final teamData in summaryData) {
       final teamMap = teamData as Map<String, dynamic>;
       final members = (teamMap['members'] as List<dynamic>?) ?? [];
@@ -284,13 +265,13 @@ class CarpExcelBuilder extends BaseExcelBuilder {
     return currentRow;
   }
 
-  /// Добавление таблицы финального протокола
   int _addFinalTable(
       xlsio.Worksheet sheet,
       Map<String, dynamic> data,
       int startRow,
       ) {
     final finalData = data['finalData'] as List<dynamic>? ?? [];
+    final competitionBiggestFish = data['competitionBiggestFish'] as Map<String, dynamic>?;
 
     if (finalData.isEmpty) {
       return startRow;
@@ -298,7 +279,6 @@ class CarpExcelBuilder extends BaseExcelBuilder {
 
     int currentRow = startRow;
 
-    // Заголовки с локализацией
     final headers = [
       'team'.tr(),
       'city'.tr(),
@@ -323,7 +303,6 @@ class CarpExcelBuilder extends BaseExcelBuilder {
     }
     currentRow++;
 
-    // Данные
     for (final row in finalData) {
       final rowMap = row as Map<String, dynamic>;
       final members = (rowMap['members'] as List<dynamic>?) ?? [];
@@ -359,10 +338,68 @@ class CarpExcelBuilder extends BaseExcelBuilder {
       currentRow++;
     }
 
+    if (competitionBiggestFish != null) {
+      currentRow += 2;
+
+      final titleCell = sheet.getRangeByIndex(currentRow, 1);
+      titleCell.setText('BIG FISH');
+      titleCell.cellStyle.bold = true;
+      titleCell.cellStyle.fontSize = 14;
+      titleCell.cellStyle.backColor = '#FFD700';
+      sheet.getRangeByIndex(currentRow, 1, currentRow, 6).merge();
+      currentRow++;
+
+      final bigFishHeaders = ['team'.tr(), 'field_fish_type'.tr(), 'weight'.tr()];
+      int colIndex = 4;
+
+      if ((competitionBiggestFish['length'] as int?) != null && competitionBiggestFish['length'] != 0) {
+        bigFishHeaders.add('length'.tr());
+        colIndex++;
+      }
+
+      bigFishHeaders.add('sector'.tr());
+      bigFishHeaders.add('field_time'.tr());
+
+      for (int i = 0; i < bigFishHeaders.length; i++) {
+        final cell = sheet.getRangeByIndex(currentRow, i + 1);
+        cell.setText(bigFishHeaders[i]);
+        cell.cellStyle.bold = true;
+        cell.cellStyle.backColor = '#FFE4B5';
+        cell.cellStyle.hAlign = xlsio.HAlignType.center;
+      }
+      currentRow++;
+
+      final bigFishData = [
+        competitionBiggestFish['teamName']?.toString() ?? '',
+        competitionBiggestFish['fishType']?.toString() ?? '',
+        ((competitionBiggestFish['weight'] as num?) ?? 0).toStringAsFixed(3),
+      ];
+
+      if ((competitionBiggestFish['length'] as int?) != null && competitionBiggestFish['length'] != 0) {
+        bigFishData.add('${competitionBiggestFish['length']}');
+      }
+
+      bigFishData.add('${competitionBiggestFish['sector'] ?? ''}');
+      bigFishData.add(
+        competitionBiggestFish['weighingTime'] != null
+            ? _formatDateTime(competitionBiggestFish['weighingTime'])
+            : '',
+      );
+
+      for (int i = 0; i < bigFishData.length; i++) {
+        final cell = sheet.getRangeByIndex(currentRow, i + 1);
+        cell.setText(bigFishData[i]);
+        if (i == 2) {
+          cell.cellStyle.bold = true;
+          cell.cellStyle.fontSize = 12;
+        }
+      }
+      currentRow++;
+    }
+
     return currentRow;
   }
 
-  /// Добавление таблицы жеребьёвки
   int _addDrawTable(
       xlsio.Worksheet sheet,
       Map<String, dynamic> data,
@@ -376,7 +413,6 @@ class CarpExcelBuilder extends BaseExcelBuilder {
 
     int currentRow = startRow;
 
-    // Заголовки с локализацией
     final headers = [
       'field_order'.tr(),
       'team'.tr(),
@@ -394,7 +430,6 @@ class CarpExcelBuilder extends BaseExcelBuilder {
     }
     currentRow++;
 
-    // Данные
     for (int i = 0; i < drawData.length; i++) {
       final row = drawData[i] as Map<String, dynamic>;
       final index = i + 1;
@@ -416,7 +451,6 @@ class CarpExcelBuilder extends BaseExcelBuilder {
     return currentRow;
   }
 
-  /// Форматирование даты и времени
   String _formatDateTime(String? dateTimeStr) {
     if (dateTimeStr == null || dateTimeStr.isEmpty) return '';
 
