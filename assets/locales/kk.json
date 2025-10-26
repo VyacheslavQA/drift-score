@@ -694,6 +694,8 @@
   "delete_competition": "Жарысты жою",
   "delete_competition_warning": "Жарысты жою туралы ескерту",
   "enter_word_to_confirm": "Растау үшін сөздердің бірін енгізіңіз:",
-  "delete_upper": "ЖОЮ"
+  "delete_upper": "ЖОЮ",
+  "draw_order_input": "Кезектілікті енгізу",
+  "draw_sector_input": "Секторларды енгізу"
 
 }

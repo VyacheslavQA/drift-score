@@ -695,5 +695,7 @@
   "delete_competition": "Удалить соревнование",
   "delete_competition_warning": "Предупреждение об удалении соревнования",
   "enter_word_to_confirm": "Введите одно из слов для подтверждения:",
-  "delete_upper": "УДАЛИТЬ"
+  "delete_upper": "УДАЛИТЬ",
+  "draw_order_input": "Ввод очерёдности",
+  "draw_sector_input": "Ввод секторов"
 }

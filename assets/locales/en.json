@@ -695,5 +695,7 @@
   "delete_competition": "Delete Competition",
   "delete_competition_warning": "Delete Competition Warning",
   "enter_word_to_confirm": "Enter one of the words to confirm:",
-  "delete_upper": "DELETE"
+  "delete_upper": "DELETE",
+  "draw_order_input": "Enter Draw Order",
+  "draw_sector_input": "Enter Sectors"
 }

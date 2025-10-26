@@ -174,7 +174,7 @@ class _DrawScreenState extends ConsumerState<DrawScreen> {
 // ПРОСМОТР ЗАВЕРШЁННОЙ ЖЕРЕБЬЁВКИ
 // ========================================
 
-class _DrawCompletedView extends ConsumerWidget {
+class _DrawCompletedView extends StatelessWidget {
   final CompetitionLocal competition;
   final List<TeamLocal> teams;
   final VoidCallback onEdit;
@@ -186,13 +186,15 @@ class _DrawCompletedView extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
+    // Сортируем команды по номеру очередности
     final sortedTeams = List<TeamLocal>.from(teams)
       ..sort((a, b) => (a.drawOrder ?? 0).compareTo(b.drawOrder ?? 0));
 
     return SafeArea(
       child: Column(
         children: [
+          // Баннер успешного завершения
           Container(
             padding: EdgeInsets.all(AppDimensions.paddingMedium),
             margin: EdgeInsets.all(AppDimensions.paddingMedium),
@@ -206,14 +208,25 @@ class _DrawCompletedView extends ConsumerWidget {
                 Icon(Icons.check_circle, color: AppColors.success, size: 28),
                 SizedBox(width: AppDimensions.paddingMedium),
                 Expanded(
-                  child: Text(
-                    'Жеребьёвка завершена',
-                    style: AppTextStyles.h3.copyWith(color: AppColors.success),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'draw_completed'.tr(),
+                        style: AppTextStyles.h3.copyWith(color: AppColors.success),
+                      ),
+                      Text(
+                        'draw_completed_description'.tr(),
+                        style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
           ),
+
+          // Список команд с результатами жеребьёвки
           Expanded(
             child: ListView.builder(
               padding: EdgeInsets.all(AppDimensions.paddingMedium),
@@ -227,12 +240,34 @@ class _DrawCompletedView extends ConsumerWidget {
                     padding: EdgeInsets.all(AppDimensions.paddingMedium),
                     child: Row(
                       children: [
-                        // 1. Название команды (сначала!)
+                        // Номер по очередности
+                        Container(
+                          width: 60,
+                          height: 60,
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withOpacity(0.1),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: AppColors.primary, width: 2),
+                          ),
+                          child: Center(
+                            child: Text(
+                              '${team.drawOrder}',
+                              style: AppTextStyles.h2.copyWith(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: AppDimensions.paddingMedium),
+
+                        // Информация о команде
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(team.name, style: AppTextStyles.bodyBold),
+                              SizedBox(height: 4),
                               Text(
                                 team.city,
                                 style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
@@ -241,102 +276,93 @@ class _DrawCompletedView extends ConsumerWidget {
                           ),
                         ),
 
-                        SizedBox(width: AppDimensions.paddingMedium),
-
-                        // 2. Номер жеребьевки (потом)
-                        Container(
-                          width: 50,
-                          height: 50,
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
-                          ),
-                          child: Center(
-                            child: Text(
-                              '${team.drawOrder}',
-                              style: AppTextStyles.h2.copyWith(color: AppColors.primary),
-                            ),
-                          ),
-                        ),
-
-                        SizedBox(width: AppDimensions.paddingSmall),
-
-                        // 3. Сектор (в конце)
+                        // Номер сектора
                         Container(
                           padding: EdgeInsets.symmetric(
                             horizontal: AppDimensions.paddingMedium,
                             vertical: AppDimensions.paddingSmall,
                           ),
                           decoration: BoxDecoration(
-                            color: AppColors.success.withOpacity(0.2),
+                            color: AppColors.secondary.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+                            border: Border.all(color: AppColors.secondary),
                           ),
                           child: Column(
                             children: [
                               Text(
-                                'Сектор',
-                                style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
+                                'sector'.tr(),
+                                style: AppTextStyles.caption.copyWith(
+                                  color: AppColors.secondary,
+                                  fontSize: 10,
+                                ),
                               ),
                               Text(
                                 '${team.sector}',
-                                style: AppTextStyles.h2.copyWith(color: AppColors.success),
+                                style: AppTextStyles.bodyBold.copyWith(
+                                  color: AppColors.secondary,
+                                  fontSize: 18,
+                                ),
                               ),
                             ],
                           ),
                         ),
                       ],
-                    )
+                    ),
                   ),
                 );
               },
             ),
           ),
+
           // Кнопка генерации протокола
-          Container(
-            padding: EdgeInsets.all(AppDimensions.paddingMedium),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 4,
-                  offset: Offset(0, -2),
-                ),
-              ],
-            ),
-            child: SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: () => _generateDrawProtocol(context, ref, teams, competition),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.description, color: AppColors.text),
-                    SizedBox(width: AppDimensions.paddingSmall),
-                    Text(
-                      'generate_protocol'.tr(),
-                      style: AppTextStyles.button,
-                    ),
-                  ],
-                ),
-              ),
-            ),
+          _buildGenerateProtocolButton(context),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGenerateProtocolButton(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(AppDimensions.paddingMedium),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 4,
+            offset: Offset(0, -2),
           ),
         ],
+      ),
+      child: SizedBox(
+        width: double.infinity,
+        height: 50,
+        child: ElevatedButton(
+          onPressed: () => _generateDrawProtocol(context, teams, competition),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.description, color: AppColors.text),
+              SizedBox(width: AppDimensions.paddingSmall),
+              Text(
+                'generate_protocol'.tr(),
+                style: AppTextStyles.button,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 
   Future<void> _generateDrawProtocol(
       BuildContext context,
-      WidgetRef ref,
       List<TeamLocal> teams,
       CompetitionLocal competition,
       ) async {
@@ -413,28 +439,29 @@ class _DrawCompletedView extends ConsumerWidget {
         print('⚠️ Соревнование не имеет serverId - протокол не синхронизирован с Firebase');
       }
 
-      await ref.read(protocolProvider.notifier).loadProtocols(competition.id);
+      if (!context.mounted) return;
 
-      if (context.mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('draw_protocol_generated'.tr()),
-            backgroundColor: AppColors.success,
-          ),
-        );
-      }
+      Navigator.pop(context);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('draw_protocol_generated'.tr()),
+          backgroundColor: AppColors.success,
+        ),
+      );
     } catch (e) {
       print('❌ Ошибка: $e');
-      if (context.mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('draw_protocol_error'.tr()),
-            backgroundColor: AppColors.error,
-          ),
-        );
-      }
+
+      if (!context.mounted) return;
+
+      Navigator.pop(context);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('draw_protocol_error'.tr()),
+          backgroundColor: AppColors.error,
+        ),
+      );
     }
   }
 }
@@ -475,7 +502,7 @@ class _DrawEditViewState extends ConsumerState<_DrawEditView> {
       );
       _hasChanges[team.id] = false;
 
-      // Отслеживаем изменения
+      // Слушатели для отслеживания изменений
       _orderControllers[team.id]!.addListener(() {
         setState(() {
           _hasChanges[team.id] = true;
@@ -508,44 +535,49 @@ class _DrawEditViewState extends ConsumerState<_DrawEditView> {
     return SafeArea(
       child: Column(
         children: [
+          // Баннер режима редактирования
           Container(
             padding: EdgeInsets.all(AppDimensions.paddingMedium),
             margin: EdgeInsets.all(AppDimensions.paddingMedium),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.upcoming.withOpacity(0.1),
               borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
-              border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+              border: Border.all(color: AppColors.upcoming.withOpacity(0.3)),
             ),
             child: Row(
               children: [
-                Icon(Icons.edit, color: AppColors.primary, size: 28),
+                Icon(Icons.edit, color: AppColors.upcoming, size: 24),
                 SizedBox(width: AppDimensions.paddingMedium),
                 Expanded(
                   child: Text(
-                    'Режим редактирования',
-                    style: AppTextStyles.h3.copyWith(color: AppColors.primary),
+                    'edit_mode_active'.tr(),
+                    style: AppTextStyles.body.copyWith(color: AppColors.upcoming),
                   ),
                 ),
               ],
             ),
           ),
+
+          // Список команд для редактирования
           Expanded(
             child: ListView.builder(
               padding: EdgeInsets.all(AppDimensions.paddingMedium),
               itemCount: sortedTeams.length,
               itemBuilder: (context, index) {
                 final team = sortedTeams[index];
-                return _buildEditableTeamCard(team);
+                return _buildEditCard(team);
               },
             ),
           ),
-          _buildBottomButtons(),
+
+          // Кнопка завершения редактирования
+          _buildCompleteEditButton(),
         ],
       ),
     );
   }
 
-  Widget _buildEditableTeamCard(TeamLocal team) {
+  Widget _buildEditCard(TeamLocal team) {
     final hasChanges = _hasChanges[team.id] ?? false;
 
     return Card(
@@ -652,7 +684,7 @@ class _DrawEditViewState extends ConsumerState<_DrawEditView> {
                         textAlign: TextAlign.center,
                         style: AppTextStyles.h3.copyWith(color: AppColors.textPrimary),
                         decoration: InputDecoration(
-                          hintText: 'С',
+                          hintText: '№',
                           hintStyle: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
                           filled: true,
                           fillColor: AppColors.background,
@@ -670,7 +702,7 @@ class _DrawEditViewState extends ConsumerState<_DrawEditView> {
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
-                            borderSide: BorderSide(color: AppColors.primary, width: 2),
+                            borderSide: BorderSide(color: AppColors.secondary, width: 2),
                           ),
                         ),
                       ),
@@ -685,7 +717,7 @@ class _DrawEditViewState extends ConsumerState<_DrawEditView> {
     );
   }
 
-  Widget _buildBottomButtons() {
+  Widget _buildCompleteEditButton() {
     return Container(
       padding: EdgeInsets.all(AppDimensions.paddingMedium),
       decoration: BoxDecoration(
@@ -701,7 +733,7 @@ class _DrawEditViewState extends ConsumerState<_DrawEditView> {
       child: SizedBox(
         width: double.infinity,
         height: 50,
-        child: ElevatedButton.icon(
+        child: ElevatedButton(
           onPressed: widget.onExitEditMode,
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.success,
@@ -709,10 +741,16 @@ class _DrawEditViewState extends ConsumerState<_DrawEditView> {
               borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
             ),
           ),
-          icon: Icon(Icons.check, color: AppColors.text),
-          label: Text(
-            'Завершить редактирование',
-            style: AppTextStyles.button,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.check, color: AppColors.text),
+              SizedBox(width: AppDimensions.paddingSmall),
+              Text(
+                'Завершить редактирование',
+                style: AppTextStyles.button,
+              ),
+            ],
           ),
         ),
       ),
@@ -846,8 +884,14 @@ class _DrawOrderStepState extends ConsumerState<_DrawOrderStep> {
     return SafeArea(
       child: Column(
         children: [
-          _buildStepIndicator(),
-          _buildInfoCard(),
+          // Заголовок шага
+          Padding(
+            padding: EdgeInsets.all(AppDimensions.paddingMedium),
+            child: Text(
+              'draw_order_input'.tr(),
+              style: AppTextStyles.h3.copyWith(color: AppColors.textSecondary),
+            ),
+          ),
           Expanded(
             child: ListView.builder(
               padding: EdgeInsets.all(AppDimensions.paddingMedium),
@@ -859,79 +903,6 @@ class _DrawOrderStepState extends ConsumerState<_DrawOrderStep> {
             ),
           ),
           _buildCompleteButton(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStepIndicator() {
-    return Container(
-      padding: EdgeInsets.all(AppDimensions.paddingMedium),
-      color: AppColors.surface,
-      child: Row(
-        children: [
-          _buildStepBadge(1, true),
-          Expanded(
-            child: Container(
-              height: 2,
-              color: AppColors.divider,
-              margin: EdgeInsets.symmetric(horizontal: AppDimensions.paddingSmall),
-            ),
-          ),
-          _buildStepBadge(2, false),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStepBadge(int step, bool isActive) {
-    return Container(
-      width: 40,
-      height: 40,
-      decoration: BoxDecoration(
-        color: isActive ? AppColors.primary : AppColors.surfaceMedium,
-        shape: BoxShape.circle,
-      ),
-      child: Center(
-        child: Text(
-          '$step',
-          style: AppTextStyles.h3.copyWith(
-            color: isActive ? AppColors.text : AppColors.textSecondary,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfoCard() {
-    return Container(
-      padding: EdgeInsets.all(AppDimensions.paddingMedium),
-      margin: EdgeInsets.all(AppDimensions.paddingMedium),
-      decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
-        border: Border.all(color: AppColors.primary.withOpacity(0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.info_outline, color: AppColors.primary, size: 24),
-              SizedBox(width: AppDimensions.paddingSmall),
-              Expanded(
-                child: Text(
-                  'draw_step_1_title'.tr(),
-                  style: AppTextStyles.h3.copyWith(color: AppColors.primary),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: AppDimensions.paddingSmall),
-          Text(
-            'draw_step_1_info'.tr(),
-            style: AppTextStyles.body.copyWith(color: AppColors.textPrimary),
-          ),
         ],
       ),
     );
@@ -1050,7 +1021,7 @@ class _DrawOrderStepState extends ConsumerState<_DrawOrderStep> {
       child: SizedBox(
         width: double.infinity,
         height: 50,
-        child: ElevatedButton.icon(
+        child: ElevatedButton(
           onPressed: allHaveOrders ? widget.onComplete : null,
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.primary,
@@ -1059,8 +1030,7 @@ class _DrawOrderStepState extends ConsumerState<_DrawOrderStep> {
               borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
             ),
           ),
-          icon: Icon(Icons.arrow_forward, color: AppColors.text),
-          label: Text('next_step'.tr(), style: AppTextStyles.button),
+          child: Text('next_step'.tr(), style: AppTextStyles.button),
         ),
       ),
     );
@@ -1177,18 +1147,20 @@ class _DrawSectorStepState extends ConsumerState<_DrawSectorStep> {
 
   @override
   Widget build(BuildContext context) {
-    // Сортируем команды по очередности
     final sortedTeams = List<TeamLocal>.from(widget.teams)
       ..sort((a, b) => (a.drawOrder ?? 0).compareTo(b.drawOrder ?? 0));
-
-    // Проверяем, завершена ли жеребьевка
-    final isDrawCompleted = sortedTeams.every((t) => t.sector != null && t.drawOrder != null);
 
     return SafeArea(
       child: Column(
         children: [
-          _buildStepIndicator(),
-          _buildInfoCard(),
+          // Заголовок шага
+          Padding(
+            padding: EdgeInsets.all(AppDimensions.paddingMedium),
+            child: Text(
+              'draw_sector_input'.tr(),
+              style: AppTextStyles.h3.copyWith(color: AppColors.textSecondary),
+            ),
+          ),
           Expanded(
             child: ListView.builder(
               padding: EdgeInsets.all(AppDimensions.paddingMedium),
@@ -1199,80 +1171,7 @@ class _DrawSectorStepState extends ConsumerState<_DrawSectorStep> {
               },
             ),
           ),
-          _buildCompleteButton(sortedTeams, isDrawCompleted),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStepIndicator() {
-    return Container(
-      padding: EdgeInsets.all(AppDimensions.paddingMedium),
-      color: AppColors.surface,
-      child: Row(
-        children: [
-          _buildStepBadge(1, false),
-          Expanded(
-            child: Container(
-              height: 2,
-              color: AppColors.primary,
-              margin: EdgeInsets.symmetric(horizontal: AppDimensions.paddingSmall),
-            ),
-          ),
-          _buildStepBadge(2, true),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStepBadge(int step, bool isActive) {
-    return Container(
-      width: 40,
-      height: 40,
-      decoration: BoxDecoration(
-        color: isActive ? AppColors.primary : AppColors.success,
-        shape: BoxShape.circle,
-      ),
-      child: Center(
-        child: step == 1 && !isActive
-            ? Icon(Icons.check, color: AppColors.text, size: 20)
-            : Text(
-          '$step',
-          style: AppTextStyles.h3.copyWith(color: AppColors.text),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfoCard() {
-    return Container(
-      padding: EdgeInsets.all(AppDimensions.paddingMedium),
-      margin: EdgeInsets.all(AppDimensions.paddingMedium),
-      decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
-        border: Border.all(color: AppColors.primary.withOpacity(0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.info_outline, color: AppColors.primary, size: 24),
-              SizedBox(width: AppDimensions.paddingSmall),
-              Expanded(
-                child: Text(
-                  'draw_step_2_title'.tr(),
-                  style: AppTextStyles.h3.copyWith(color: AppColors.primary),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: AppDimensions.paddingSmall),
-          Text(
-            'draw_step_2_info'.tr(),
-            style: AppTextStyles.body.copyWith(color: AppColors.textPrimary),
-          ),
+          _buildCompleteButton(sortedTeams),
         ],
       ),
     );
@@ -1290,20 +1189,20 @@ class _DrawSectorStepState extends ConsumerState<_DrawSectorStep> {
           children: [
             // Номер очередности
             Container(
-              width: 40,
-              height: 40,
+              width: 50,
+              height: 50,
               decoration: BoxDecoration(
-                color: hasSector
-                    ? AppColors.success.withOpacity(0.2)
-                    : AppColors.primary.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+                color: AppColors.primary.withOpacity(0.1),
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.primary, width: 2),
               ),
               child: Center(
-                child: hasSector
-                    ? Icon(Icons.check, color: AppColors.success, size: 20)
-                    : Text(
+                child: Text(
                   '${team.drawOrder}',
-                  style: AppTextStyles.bodyBold.copyWith(color: AppColors.primary),
+                  style: AppTextStyles.h3.copyWith(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
@@ -1336,7 +1235,7 @@ class _DrawSectorStepState extends ConsumerState<_DrawSectorStep> {
                 textAlign: TextAlign.center,
                 style: AppTextStyles.h3.copyWith(color: AppColors.textPrimary),
                 decoration: InputDecoration(
-                  hintText: 'С',
+                  hintText: '№',
                   hintStyle: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
                   filled: true,
                   fillColor: AppColors.background,
@@ -1354,7 +1253,7 @@ class _DrawSectorStepState extends ConsumerState<_DrawSectorStep> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
-                    borderSide: BorderSide(color: AppColors.primary, width: 2),
+                    borderSide: BorderSide(color: AppColors.secondary, width: 2),
                   ),
                 ),
               ),
@@ -1362,8 +1261,10 @@ class _DrawSectorStepState extends ConsumerState<_DrawSectorStep> {
 
             SizedBox(width: AppDimensions.paddingSmall),
 
-            // Кнопка сохранения
-            IconButton(
+            // Кнопка сохранения или галочка
+            hasSector
+                ? Icon(Icons.check_circle, color: AppColors.success, size: 24)
+                : IconButton(
               icon: Icon(Icons.save, color: AppColors.primary),
               onPressed: () => _saveSector(team),
             ),
@@ -1373,7 +1274,7 @@ class _DrawSectorStepState extends ConsumerState<_DrawSectorStep> {
     );
   }
 
-  Widget _buildCompleteButton(List<TeamLocal> teams, bool isDrawCompleted) {
+  Widget _buildCompleteButton(List<TeamLocal> teams) {
     final allHaveSectors = teams.every((t) => t.sector != null);
 
     return Container(
@@ -1389,55 +1290,49 @@ class _DrawSectorStepState extends ConsumerState<_DrawSectorStep> {
         ],
       ),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         children: [
-          // Кнопка "Завершить жеребьёвку" (показываем только если жеребьевка НЕ завершена)
-          if (!isDrawCompleted)
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton.icon(
-                onPressed: allHaveSectors ? _completeDraw : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.success,
-                  disabledBackgroundColor: AppColors.surfaceMedium,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
-                  ),
-                ),
-                icon: Icon(Icons.check, color: AppColors.text),
-                label: Text('complete_draw'.tr(), style: AppTextStyles.button),
-              ),
-            ),
-
-          // Кнопка "Сгенерировать протокол" (показываем только если все сектора заполнены)
-          if (allHaveSectors) ...[
-            if (!isDrawCompleted) SizedBox(height: AppDimensions.paddingSmall),
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: OutlinedButton(
-                onPressed: () => _generateDrawProtocol(teams),
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: AppColors.primary),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.description, color: AppColors.primary),
-                    SizedBox(width: AppDimensions.paddingSmall),
-                    Text(
-                      'generate_protocol'.tr(),
-                      style: AppTextStyles.body.copyWith(color: AppColors.primary),
-                    ),
-                  ],
+          // Кнопка "Завершить жеребьёвку"
+          SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: ElevatedButton(
+              onPressed: allHaveSectors ? _completeDraw : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.success,
+                disabledBackgroundColor: AppColors.surfaceMedium,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
                 ),
               ),
+              child: Text('complete_draw'.tr(), style: AppTextStyles.button),
             ),
-          ],
+          ),
+          SizedBox(height: AppDimensions.paddingSmall),
+          // Кнопка "Сгенерировать протокол"
+          SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: OutlinedButton(
+              onPressed: allHaveSectors ? () => _generateDrawProtocol(teams) : null,
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: AppColors.primary),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.description, color: AppColors.primary),
+                  SizedBox(width: AppDimensions.paddingSmall),
+                  Text(
+                    'generate_protocol'.tr(),
+                    style: AppTextStyles.body.copyWith(color: AppColors.primary),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
