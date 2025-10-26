@@ -690,5 +690,10 @@
   "protocol_dates_label": "Даты соревнования:",
   "protocol_formation_date_label": "Дата формирования протокола:",
   "protocol_no_participant_data": "Нет данных участников",
-  "protocol_attempt_number": "Попытка №{number}"
+  "protocol_attempt_number": "Попытка №{number}",
+
+  "delete_competition": "Удалить соревнование",
+  "delete_competition_warning": "Предупреждение об удалении соревнования",
+  "enter_word_to_confirm": "Введите одно из слов для подтверждения:",
+  "delete_upper": "УДАЛИТЬ"
 }

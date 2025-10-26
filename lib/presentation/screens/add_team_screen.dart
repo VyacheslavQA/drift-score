@@ -316,7 +316,7 @@ class _AddTeamScreenState extends ConsumerState<AddTeamScreen> {
               children: [
                 Expanded(
                   child: Text(
-                    '${'participant'.tr()} ${index + 1}',
+                    '${'participant'.tr()} ${_members.length - index}', // ✅ Обратная нумерация
                     style: AppTextStyles.bodyBold,
                   ),
                 ),
@@ -459,7 +459,7 @@ class _AddTeamScreenState extends ConsumerState<AddTeamScreen> {
               children: [
                 Expanded(
                   child: Text(
-                    '${'member'.tr()} ${index + 1}',
+                    '${'member'.tr()} ${_members.length - index}', // ✅ Обратная нумерация
                     style: AppTextStyles.bodyBold,
                   ),
                 ),
@@ -596,7 +596,7 @@ class _AddTeamScreenState extends ConsumerState<AddTeamScreen> {
 
   void _addMember() {
     setState(() {
-      _members.add(_MemberData(
+      _members.insert(0, _MemberData( // ✅ Вставляем в начало списка
         nameController: TextEditingController(),
         isCaptain: false,
         rank: 'none',

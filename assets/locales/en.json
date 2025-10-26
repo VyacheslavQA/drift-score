@@ -690,5 +690,10 @@
   "protocol_dates_label": "Competition dates:",
   "protocol_formation_date_label": "Protocol formation date:",
   "protocol_no_participant_data": "No participant data",
-  "protocol_attempt_number": "Attempt #{number}"
+  "protocol_attempt_number": "Attempt #{number}",
+
+  "delete_competition": "Delete Competition",
+  "delete_competition_warning": "Delete Competition Warning",
+  "enter_word_to_confirm": "Enter one of the words to confirm:",
+  "delete_upper": "DELETE"
 }

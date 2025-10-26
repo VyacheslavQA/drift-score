@@ -40,7 +40,8 @@ class _MyCompetitionsScreenState extends ConsumerState<MyCompetitionsScreen> {
             Text('my_competitions'.tr(), style: AppTextStyles.h3),
             Text(
               'fishing_type_${widget.fishingType}'.tr(),
-              style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
+              style: AppTextStyles.caption.copyWith(
+                  color: AppColors.textSecondary),
             ),
           ],
         ),
@@ -55,62 +56,74 @@ class _MyCompetitionsScreenState extends ConsumerState<MyCompetitionsScreen> {
             onPressed: () async {
               final confirm = await showDialog<bool>(
                 context: context,
-                builder: (dialogContext) => AlertDialog(
-                  backgroundColor: AppColors.surface,
-                  title: Text('Очистить все данные?', style: AppTextStyles.h3),
-                  content: Text(
-                    'Все соревнования будут удалены.\nЭто действие необратимо.',
-                    style: AppTextStyles.body.copyWith(color: AppColors.textPrimary),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(dialogContext, false),
-                      child: Text('cancel'.tr(), style: AppTextStyles.body.copyWith(color: AppColors.textSecondary)),
+                builder: (dialogContext) =>
+                    AlertDialog(
+                      backgroundColor: AppColors.surface,
+                      title: Text(
+                          'Очистить все данные?', style: AppTextStyles.h3),
+                      content: Text(
+                        'Все соревнования будут удалены.\nЭто действие необратимо.',
+                        style: AppTextStyles.body.copyWith(
+                            color: AppColors.textPrimary),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(dialogContext, false),
+                          child: Text('cancel'.tr(), style: AppTextStyles.body
+                              .copyWith(color: AppColors.textSecondary)),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => Navigator.pop(dialogContext, true),
+                          style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.error),
+                          child: Text(
+                              'delete_all'.tr(), style: AppTextStyles.button),
+                        ),
+                      ],
                     ),
-                    ElevatedButton(
-                      onPressed: () => Navigator.pop(dialogContext, true),
-                      style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
-                      child: Text('delete_all'.tr(), style: AppTextStyles.button),
-                    ),
-                  ],
-                ),
               );
 
               if (confirm == true) {
                 showDialog(
                   context: context,
                   barrierDismissible: false,
-                  builder: (context) => Center(
-                    child: Card(
-                      color: AppColors.surface,
-                      child: Padding(
-                        padding: EdgeInsets.all(AppDimensions.paddingLarge),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            CircularProgressIndicator(color: AppColors.primary),
-                            SizedBox(height: AppDimensions.paddingMedium),
-                            Text('Удаление...', style: AppTextStyles.body),
-                          ],
+                  builder: (context) =>
+                      Center(
+                        child: Card(
+                          color: AppColors.surface,
+                          child: Padding(
+                            padding: EdgeInsets.all(AppDimensions.paddingLarge),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                CircularProgressIndicator(
+                                    color: AppColors.primary),
+                                SizedBox(height: AppDimensions.paddingMedium),
+                                Text('Удаление...', style: AppTextStyles.body),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                  ),
                 );
 
                 try {
                   final isarService = IsarService();
-                  final allCompetitions = await isarService.getAllCompetitions();
+                  final allCompetitions = await isarService
+                      .getAllCompetitions();
                   for (var comp in allCompetitions) {
                     await isarService.deleteCompetition(comp.id!);
                   }
-                  print('✅ Deleted ${allCompetitions.length} competitions with cascade');
+                  print('✅ Deleted ${allCompetitions
+                      .length} competitions with cascade');
                 } catch (e) {
                   print('❌ Delete error: $e');
                 }
 
                 Navigator.of(context).pop();
-                ref.read(competitionProvider.notifier).loadAllCompetitionsForDevice();
+                ref
+                    .read(competitionProvider.notifier)
+                    .loadAllCompetitionsForDevice();
 
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -136,12 +149,14 @@ class _MyCompetitionsScreenState extends ConsumerState<MyCompetitionsScreen> {
                 return _buildCompetitionsList(filtered);
               },
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, stack) => Center(
-                child: Text(
-                  'error_loading_competitions'.tr(),
-                  style: AppTextStyles.body.copyWith(color: AppColors.error),
-                ),
-              ),
+              error: (error, stack) =>
+                  Center(
+                    child: Text(
+                      'error_loading_competitions'.tr(),
+                      style: AppTextStyles.body.copyWith(
+                          color: AppColors.error),
+                    ),
+                  ),
             ),
           ),
         ],
@@ -190,7 +205,9 @@ class _MyCompetitionsScreenState extends ConsumerState<MyCompetitionsScreen> {
   Widget _buildCompetitionsList(List<CompetitionLocal> competitions) {
     return RefreshIndicator(
       onRefresh: () async {
-        await ref.read(competitionProvider.notifier).loadAllCompetitionsForDevice();
+        await ref
+            .read(competitionProvider.notifier)
+            .loadAllCompetitionsForDevice();
       },
       child: ListView.builder(
         padding: EdgeInsets.all(AppDimensions.paddingMedium),
@@ -224,7 +241,8 @@ class _MyCompetitionsScreenState extends ConsumerState<MyCompetitionsScreen> {
         return await _showDeleteCompetitionDialog(context, competition);
       },
       onDismissed: (direction) {
-        ref.read(competitionProvider.notifier).deleteCompetition(competition.id);
+        ref.read(competitionProvider.notifier).deleteCompetition(
+            competition.id);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('competition_deleted'.tr())),
         );
@@ -237,7 +255,8 @@ class _MyCompetitionsScreenState extends ConsumerState<MyCompetitionsScreen> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => CompetitionDetailsScreen(competition: competition),
+                builder: (_) =>
+                    CompetitionDetailsScreen(competition: competition),
               ),
             );
           },
@@ -263,7 +282,8 @@ class _MyCompetitionsScreenState extends ConsumerState<MyCompetitionsScreen> {
                         Icon(
                           isSynced ? Icons.cloud_done : Icons.cloud_off,
                           size: 16,
-                          color: isSynced ? AppColors.success : AppColors.upcoming,
+                          color: isSynced ? AppColors.success : AppColors
+                              .upcoming,
                         ),
                         SizedBox(width: AppDimensions.paddingSmall),
                         Container(
@@ -273,11 +293,13 @@ class _MyCompetitionsScreenState extends ConsumerState<MyCompetitionsScreen> {
                           ),
                           decoration: BoxDecoration(
                             color: statusColor.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+                            borderRadius: BorderRadius.circular(
+                                AppDimensions.radiusSmall),
                           ),
                           child: Text(
                             statusText,
-                            style: AppTextStyles.caption.copyWith(color: statusColor),
+                            style: AppTextStyles.caption.copyWith(
+                                color: statusColor),
                           ),
                         ),
                       ],
@@ -285,25 +307,30 @@ class _MyCompetitionsScreenState extends ConsumerState<MyCompetitionsScreen> {
                   ],
                 ),
                 SizedBox(height: AppDimensions.paddingSmall),
-                _buildInfoRow(Icons.location_on, '${competition.cityOrRegion} • ${competition.lakeName}'),
+                _buildInfoRow(Icons.location_on,
+                    '${competition.cityOrRegion} • ${competition.lakeName}'),
                 SizedBox(height: 4),
                 _buildInfoRow(
                   Icons.calendar_today,
                   DateFormat('dd.MM.yyyy HH:mm').format(competition.startTime),
                 ),
                 SizedBox(height: 4),
-                _buildInfoRow(Icons.access_time, '${competition.durationHours} ${'hours'.tr()}'),
+                _buildInfoRow(Icons.access_time,
+                    '${competition.durationHours} ${'hours'.tr()}'),
                 SizedBox(height: 4),
-                _buildInfoRow(Icons.grid_on, '${competition.sectorsCount} ${'sectors'.tr()}'),
+                _buildInfoRow(Icons.grid_on,
+                    '${competition.sectorsCount} ${'sectors'.tr()}'),
                 if (competition.judges.isNotEmpty) ...[
                   SizedBox(height: AppDimensions.paddingSmall),
                   Row(
                     children: [
-                      Icon(Icons.people, size: 16, color: AppColors.textSecondary),
+                      Icon(Icons.people, size: 16,
+                          color: AppColors.textSecondary),
                       SizedBox(width: 4),
                       Text(
                         '${competition.judges.length} ${'judges'.tr()}',
-                        style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
+                        style: AppTextStyles.caption.copyWith(
+                            color: AppColors.textSecondary),
                       ),
                     ],
                   ),
@@ -319,7 +346,8 @@ class _MyCompetitionsScreenState extends ConsumerState<MyCompetitionsScreen> {
                       ),
                       child: Text(
                         'complete_competition'.tr(),
-                        style: AppTextStyles.body.copyWith(color: AppColors.success),
+                        style: AppTextStyles.body.copyWith(color: AppColors
+                            .success),
                       ),
                     ),
                   ),
@@ -340,7 +368,8 @@ class _MyCompetitionsScreenState extends ConsumerState<MyCompetitionsScreen> {
         Expanded(
           child: Text(
             text,
-            style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
+            style: AppTextStyles.caption.copyWith(
+                color: AppColors.textSecondary),
           ),
         ),
       ],
@@ -373,9 +402,11 @@ class _MyCompetitionsScreenState extends ConsumerState<MyCompetitionsScreen> {
     );
   }
 
-  List<CompetitionLocal> _filterCompetitions(List<CompetitionLocal> competitions) {
+  List<CompetitionLocal> _filterCompetitions(
+      List<CompetitionLocal> competitions) {
     // Фильтруем по типу рыбалки И по статусу
-    final byType = competitions.where((c) => c.fishingType == widget.fishingType).toList();
+    final byType = competitions.where((c) =>
+    c.fishingType == widget.fishingType).toList();
 
     if (_filter == 'all') return byType;
 
@@ -415,29 +446,33 @@ class _MyCompetitionsScreenState extends ConsumerState<MyCompetitionsScreen> {
   Future<void> _completeCompetition(CompetitionLocal competition) async {
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        title: Text('complete_competition'.tr(), style: AppTextStyles.h3),
-        content: Text(
-          'complete_competition_confirmation'.tr(),
-          style: AppTextStyles.body.copyWith(color: AppColors.textPrimary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text('cancel'.tr(), style: AppTextStyles.body.copyWith(color: AppColors.textSecondary)),
+      builder: (context) =>
+          AlertDialog(
+            backgroundColor: AppColors.surface,
+            title: Text('complete_competition'.tr(), style: AppTextStyles.h3),
+            content: Text(
+              'complete_competition_confirmation'.tr(),
+              style: AppTextStyles.body.copyWith(color: AppColors.textPrimary),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text('cancel'.tr(), style: AppTextStyles.body.copyWith(
+                    color: AppColors.textSecondary)),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.success),
+                child: Text('complete'.tr(), style: AppTextStyles.button),
+              ),
+            ],
           ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.success),
-            child: Text('complete'.tr(), style: AppTextStyles.button),
-          ),
-        ],
-      ),
     );
 
     if (confirm == true) {
-      await ref.read(competitionProvider.notifier).updateCompetitionStatus(competition.id, 'completed');
+      await ref.read(competitionProvider.notifier).updateCompetitionStatus(
+          competition.id, 'completed');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('competition_completed'.tr())),
       );
@@ -466,10 +501,11 @@ class _MyCompetitionsScreenState extends ConsumerState<MyCompetitionsScreen> {
       await Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => CreateCompetitionScreen(
-            accessCode: code,
-            fishingType: widget.fishingType,
-          ),
+          builder: (_) =>
+              CreateCompetitionScreen(
+                accessCode: code,
+                fishingType: widget.fishingType,
+              ),
         ),
       );
 
@@ -479,137 +515,189 @@ class _MyCompetitionsScreenState extends ConsumerState<MyCompetitionsScreen> {
     }
   }
 
-  
 
-  Future<bool> _showDeleteCompetitionDialog(BuildContext context, CompetitionLocal competition) async {
-    final confirmationController = TextEditingController();
-    bool isValid = false;
+  Future<bool?> _showDeleteCompetitionDialog(BuildContext context,
+      CompetitionLocal competition) async {
+    final TextEditingController confirmController = TextEditingController();
+    bool isButtonEnabled = false;
 
-    return await showDialog<bool>(
+    return showDialog<bool>(
       context: context,
-      barrierDismissible: false,
       builder: (BuildContext dialogContext) {
         return StatefulBuilder(
           builder: (context, setState) {
-            return AlertDialog(
-              backgroundColor: AppColors.surface,
-              title: Row(
-                children: [
-                  Icon(Icons.warning, color: AppColors.error, size: 28),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'delete_competition'.tr(),
-                      style: AppTextStyles.h3.copyWith(color: AppColors.error),
-                    ),
-                  ),
-                ],
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
               ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'delete_competition_warning'.tr(),
-                    style: AppTextStyles.body.copyWith(color: AppColors.textPrimary),
+              child: SingleChildScrollView(
+                child: Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade100,
+                    borderRadius: BorderRadius.circular(16),
                   ),
-                  SizedBox(height: AppDimensions.paddingMedium),
-                  Container(
-                    padding: EdgeInsets.all(AppDimensions.paddingSmall),
-                    decoration: BoxDecoration(
-                      color: AppColors.error.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
-                      border: Border.all(color: AppColors.error.withOpacity(0.3)),
-                    ),
-                    child: Text(
-                      competition.name,
-                      style: AppTextStyles.bodyBold.copyWith(color: AppColors.textPrimary),
-                    ),
-                  ),
-                  SizedBox(height: AppDimensions.paddingLarge),
-                  Text(
-                    'type_delete_to_confirm'.tr(),
-                    style: AppTextStyles.bodyBold.copyWith(color: AppColors.textPrimary),
-                  ),
-                  SizedBox(height: AppDimensions.paddingSmall),
-                  TextField(
-                    controller: confirmationController,
-                    textAlign: TextAlign.center,
-                    style: AppTextStyles.h3.copyWith(
-                      color: isValid ? AppColors.success : AppColors.textPrimary,
-                      letterSpacing: 2,
-                    ),
-                    decoration: InputDecoration(
-                      hintText: 'DELETE',
-                      hintStyle: AppTextStyles.body.copyWith(
-                        color: AppColors.textSecondary,
-                        letterSpacing: 2,
-                      ),
-                      filled: true,
-                      fillColor: AppColors.background,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
-                        borderSide: BorderSide(color: AppColors.divider),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
-                        borderSide: BorderSide(color: AppColors.divider),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
-                        borderSide: BorderSide(
-                          color: isValid ? AppColors.success : AppColors.primary,
-                          width: 2,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1E3A5F),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.warning,
+                                  color: Colors.red,
+                                  size: 30,
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    'delete_competition'.tr(),
+                                    style: const TextStyle(
+                                      color: Colors.red,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'delete_competition_warning'.tr(),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF2A4A6F),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                competition.name,
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 14,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            Text(
+                              'enter_word_to_confirm'.tr(),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            TextField(
+                              controller: confirmController,
+                              style: const TextStyle(color: Colors.white),
+                              decoration: InputDecoration(
+                                filled: true,
+                                fillColor: const Color(0xFF2A4A6F),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: BorderSide.none,
+                                ),
+                                hintText: 'delete_upper'.tr(),
+                                hintStyle: const TextStyle(
+                                  color: Colors.white38,
+                                ),
+                              ),
+                              onChanged: (value) {
+                                setState(() {
+                                  isButtonEnabled =
+                                      value.trim().toUpperCase() == 'DELETE' ||
+                                          value.trim().toUpperCase() ==
+                                              'УДАЛИТЬ' ||
+                                          value.trim().toUpperCase() == 'ЖОЮ';
+                                });
+                              },
+                            ),
+                            const SizedBox(height: 20),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                Expanded(
+                                  child: TextButton(
+                                    onPressed: () {
+                                      Navigator.of(dialogContext).pop(false);
+                                    },
+                                    style: TextButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 12,
+                                      ),
+                                      backgroundColor: Colors.white24,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      'cancel'.tr(),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: ElevatedButton(
+                                    onPressed: isButtonEnabled
+                                        ? () async {
+                                      Navigator.of(dialogContext).pop(true);
+                                    }
+                                        : null,
+                                    style: ElevatedButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 12,
+                                      ),
+                                      backgroundColor: isButtonEnabled
+                                          ? const Color(0xFF4A90E2)
+                                          : Colors.grey,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      'delete'.tr(),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
-                      suffixIcon: isValid ? Icon(Icons.check_circle, color: AppColors.success) : null,
-                    ),
-                    textCapitalization: TextCapitalization.characters,
-                    onChanged: (value) {
-                      final trimmed = value.trim().toUpperCase();
-                      final isValidNow = trimmed == 'DELETE' || trimmed == 'УДАЛИТЬ' || trimmed == 'ЖОЮ';
-                      setState(() {
-                        isValid = isValidNow;
-                      });
-                    },
+                    ],
                   ),
-                  SizedBox(height: AppDimensions.paddingSmall),
-                  Text(
-                    'accepted_words'.tr(),
-                    style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
+                ),
               ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    confirmationController.dispose();
-                    Navigator.pop(dialogContext, false);
-                  },
-                  child: Text(
-                    'cancel'.tr(),
-                    style: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
-                  ),
-                ),
-                ElevatedButton(
-                  onPressed: isValid
-                      ? () {
-                    confirmationController.dispose();
-                    Navigator.pop(dialogContext, true);
-                  }
-                      : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.error,
-                    disabledBackgroundColor: AppColors.surfaceMedium,
-                  ),
-                  child: Text('delete'.tr(), style: AppTextStyles.button),
-                ),
-              ],
             );
           },
         );
       },
-    ) ?? false;
+    );
   }
 }
