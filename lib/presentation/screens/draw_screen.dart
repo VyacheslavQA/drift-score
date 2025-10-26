@@ -860,6 +860,7 @@ class _DrawOrderStep extends ConsumerStatefulWidget {
 
 class _DrawOrderStepState extends ConsumerState<_DrawOrderStep> {
   final Map<int, TextEditingController> _orderControllers = {};
+  final Map<int, FocusNode> _focusNodes = {};
 
   @override
   void initState() {
@@ -868,6 +869,17 @@ class _DrawOrderStepState extends ConsumerState<_DrawOrderStep> {
       _orderControllers[team.id] = TextEditingController(
         text: team.drawOrder?.toString() ?? '',
       );
+      _focusNodes[team.id] = FocusNode();
+
+      // Автосохранение при потере фокуса
+      _focusNodes[team.id]!.addListener(() {
+        if (!_focusNodes[team.id]!.hasFocus) {
+          final text = _orderControllers[team.id]?.text.trim() ?? '';
+          if (text.isNotEmpty) {
+            _saveOrder(team);
+          }
+        }
+      });
     }
   }
 
@@ -875,6 +887,9 @@ class _DrawOrderStepState extends ConsumerState<_DrawOrderStep> {
   void dispose() {
     for (var controller in _orderControllers.values) {
       controller.dispose();
+    }
+    for (var node in _focusNodes.values) {
+      node.dispose();
     }
     super.dispose();
   }
@@ -961,6 +976,7 @@ class _DrawOrderStepState extends ConsumerState<_DrawOrderStep> {
               width: 80,
               child: TextFormField(
                 controller: _orderControllers[team.id],
+                focusNode: _focusNodes[team.id],
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 textAlign: TextAlign.center,
@@ -987,15 +1003,21 @@ class _DrawOrderStepState extends ConsumerState<_DrawOrderStep> {
                     borderSide: BorderSide(color: AppColors.primary, width: 2),
                   ),
                 ),
+                onFieldSubmitted: (_) {
+                  // Сохранение при нажатии Enter
+                  _saveOrder(team);
+                },
               ),
             ),
 
             SizedBox(width: AppDimensions.paddingSmall),
 
-            // Кнопка сохранения
-            IconButton(
-              icon: Icon(Icons.save, color: AppColors.primary),
-              onPressed: () => _saveOrder(team),
+            // Галочка если сохранено
+            SizedBox(
+              width: 24,
+              child: hasOrder
+                  ? Icon(Icons.check_circle, color: AppColors.success, size: 24)
+                  : SizedBox.shrink(),
             ),
           ],
         ),
@@ -1040,13 +1062,7 @@ class _DrawOrderStepState extends ConsumerState<_DrawOrderStep> {
     final orderText = _orderControllers[team.id]?.text.trim();
 
     if (orderText == null || orderText.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('enter_draw_order'.tr()),
-          backgroundColor: AppColors.error,
-        ),
-      );
-      return;
+      return; // Тихо выходим если пусто
     }
 
     final order = int.tryParse(orderText);
@@ -1055,6 +1071,7 @@ class _DrawOrderStepState extends ConsumerState<_DrawOrderStep> {
         SnackBar(
           content: Text('invalid_number'.tr()),
           backgroundColor: AppColors.error,
+          duration: Duration(seconds: 2),
         ),
       );
       return;
@@ -1068,30 +1085,19 @@ class _DrawOrderStepState extends ConsumerState<_DrawOrderStep> {
           SnackBar(
             content: Text('draw_order_duplicate'.tr()),
             backgroundColor: AppColors.error,
+            duration: Duration(seconds: 2),
           ),
         );
         return;
       }
     }
 
-    // Скрываем клавиатуру
-    FocusScope.of(context).unfocus();
-
     // Сохраняем
     try {
       await ref.read(teamProvider(widget.competition.id).notifier).saveDrawResults({
         team.id: DrawData(drawOrder: order, sector: team.sector),
       });
-
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('draw_order_saved'.tr()),
-          backgroundColor: AppColors.success,
-          duration: Duration(seconds: 1),
-        ),
-      );
+      // Автосохранение - не показываем уведомление
     } catch (e) {
       if (!mounted) return;
 
@@ -1099,6 +1105,7 @@ class _DrawOrderStepState extends ConsumerState<_DrawOrderStep> {
         SnackBar(
           content: Text('error_saving_draw'.tr()),
           backgroundColor: AppColors.error,
+          duration: Duration(seconds: 2),
         ),
       );
     }
@@ -1126,6 +1133,7 @@ class _DrawSectorStep extends ConsumerStatefulWidget {
 
 class _DrawSectorStepState extends ConsumerState<_DrawSectorStep> {
   final Map<int, TextEditingController> _sectorControllers = {};
+  final Map<int, FocusNode> _focusNodes = {};
 
   @override
   void initState() {
@@ -1134,6 +1142,17 @@ class _DrawSectorStepState extends ConsumerState<_DrawSectorStep> {
       _sectorControllers[team.id] = TextEditingController(
         text: team.sector?.toString() ?? '',
       );
+      _focusNodes[team.id] = FocusNode();
+
+      // Автосохранение при потере фокуса
+      _focusNodes[team.id]!.addListener(() {
+        if (!_focusNodes[team.id]!.hasFocus) {
+          final text = _sectorControllers[team.id]?.text.trim() ?? '';
+          if (text.isNotEmpty) {
+            _saveSector(team);
+          }
+        }
+      });
     }
   }
 
@@ -1141,6 +1160,9 @@ class _DrawSectorStepState extends ConsumerState<_DrawSectorStep> {
   void dispose() {
     for (var controller in _sectorControllers.values) {
       controller.dispose();
+    }
+    for (var node in _focusNodes.values) {
+      node.dispose();
     }
     super.dispose();
   }
@@ -1230,6 +1252,7 @@ class _DrawSectorStepState extends ConsumerState<_DrawSectorStep> {
               width: 80,
               child: TextFormField(
                 controller: _sectorControllers[team.id],
+                focusNode: _focusNodes[team.id],
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 textAlign: TextAlign.center,
@@ -1256,17 +1279,21 @@ class _DrawSectorStepState extends ConsumerState<_DrawSectorStep> {
                     borderSide: BorderSide(color: AppColors.secondary, width: 2),
                   ),
                 ),
+                onFieldSubmitted: (_) {
+                  // Сохранение при нажатии Enter
+                  _saveSector(team);
+                },
               ),
             ),
 
             SizedBox(width: AppDimensions.paddingSmall),
 
-            // Кнопка сохранения или галочка
-            hasSector
-                ? Icon(Icons.check_circle, color: AppColors.success, size: 24)
-                : IconButton(
-              icon: Icon(Icons.save, color: AppColors.primary),
-              onPressed: () => _saveSector(team),
+            // Галочка если сохранено
+            SizedBox(
+              width: 24,
+              child: hasSector
+                  ? Icon(Icons.check_circle, color: AppColors.success, size: 24)
+                  : SizedBox.shrink(),
             ),
           ],
         ),
@@ -1342,13 +1369,7 @@ class _DrawSectorStepState extends ConsumerState<_DrawSectorStep> {
     final sectorText = _sectorControllers[team.id]?.text.trim();
 
     if (sectorText == null || sectorText.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('enter_sector'.tr()),
-          backgroundColor: AppColors.error,
-        ),
-      );
-      return;
+      return; // Тихо выходим если пусто
     }
 
     final sector = int.tryParse(sectorText);
@@ -1357,6 +1378,7 @@ class _DrawSectorStepState extends ConsumerState<_DrawSectorStep> {
         SnackBar(
           content: Text('sector_invalid'.tr()),
           backgroundColor: AppColors.error,
+          duration: Duration(seconds: 2),
         ),
       );
       return;
@@ -1370,30 +1392,19 @@ class _DrawSectorStepState extends ConsumerState<_DrawSectorStep> {
           SnackBar(
             content: Text('sector_duplicate'.tr()),
             backgroundColor: AppColors.error,
+            duration: Duration(seconds: 2),
           ),
         );
         return;
       }
     }
 
-    // Скрываем клавиатуру
-    FocusScope.of(context).unfocus();
-
     // Сохраняем
     try {
       await ref.read(teamProvider(widget.competition.id).notifier).saveDrawResults({
         team.id: DrawData(drawOrder: team.drawOrder, sector: sector),
       });
-
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('sector_saved'.tr()),
-          backgroundColor: AppColors.success,
-          duration: Duration(seconds: 1),
-        ),
-      );
+      // Автосохранение - не показываем уведомление
     } catch (e) {
       if (!mounted) return;
 
@@ -1401,6 +1412,7 @@ class _DrawSectorStepState extends ConsumerState<_DrawSectorStep> {
         SnackBar(
           content: Text('error_saving_draw'.tr()),
           backgroundColor: AppColors.error,
+          duration: Duration(seconds: 2),
         ),
       );
     }
