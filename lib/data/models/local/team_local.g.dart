@@ -52,35 +52,41 @@ const TeamLocalSchema = CollectionSchema(
       name: r'lastSyncedAt',
       type: IsarType.dateTime,
     ),
-    r'members': PropertySchema(
+    r'memberDraws': PropertySchema(
       id: 7,
+      name: r'memberDraws',
+      type: IsarType.objectList,
+      target: r'MemberDraw',
+    ),
+    r'members': PropertySchema(
+      id: 8,
       name: r'members',
       type: IsarType.objectList,
       target: r'TeamMember',
     ),
     r'name': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'name',
       type: IsarType.string,
     ),
     r'penalties': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'penalties',
       type: IsarType.objectList,
       target: r'Penalty',
     ),
     r'sector': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'sector',
       type: IsarType.long,
     ),
     r'serverId': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'serverId',
       type: IsarType.string,
     ),
     r'updatedAt': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'updatedAt',
       type: IsarType.dateTime,
     )
@@ -119,7 +125,11 @@ const TeamLocalSchema = CollectionSchema(
     )
   },
   links: {},
-  embeddedSchemas: {r'TeamMember': TeamMemberSchema, r'Penalty': PenaltySchema},
+  embeddedSchemas: {
+    r'TeamMember': TeamMemberSchema,
+    r'Penalty': PenaltySchema,
+    r'MemberDraw': MemberDrawSchema
+  },
   getId: _teamLocalGetId,
   getLinks: _teamLocalGetLinks,
   attach: _teamLocalAttach,
@@ -137,6 +147,14 @@ int _teamLocalEstimateSize(
     final value = object.club;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
+    }
+  }
+  bytesCount += 3 + object.memberDraws.length * 3;
+  {
+    final offsets = allOffsets[MemberDraw]!;
+    for (var i = 0; i < object.memberDraws.length; i++) {
+      final value = object.memberDraws[i];
+      bytesCount += MemberDrawSchema.estimateSize(value, offsets, allOffsets);
     }
   }
   bytesCount += 3 + object.members.length * 3;
@@ -178,22 +196,28 @@ void _teamLocalSerialize(
   writer.writeLong(offsets[4], object.drawOrder);
   writer.writeBool(offsets[5], object.isSynced);
   writer.writeDateTime(offsets[6], object.lastSyncedAt);
-  writer.writeObjectList<TeamMember>(
+  writer.writeObjectList<MemberDraw>(
     offsets[7],
+    allOffsets,
+    MemberDrawSchema.serialize,
+    object.memberDraws,
+  );
+  writer.writeObjectList<TeamMember>(
+    offsets[8],
     allOffsets,
     TeamMemberSchema.serialize,
     object.members,
   );
-  writer.writeString(offsets[8], object.name);
+  writer.writeString(offsets[9], object.name);
   writer.writeObjectList<Penalty>(
-    offsets[9],
+    offsets[10],
     allOffsets,
     PenaltySchema.serialize,
     object.penalties,
   );
-  writer.writeLong(offsets[10], object.sector);
-  writer.writeString(offsets[11], object.serverId);
-  writer.writeDateTime(offsets[12], object.updatedAt);
+  writer.writeLong(offsets[11], object.sector);
+  writer.writeString(offsets[12], object.serverId);
+  writer.writeDateTime(offsets[13], object.updatedAt);
 }
 
 TeamLocal _teamLocalDeserialize(
@@ -211,24 +235,31 @@ TeamLocal _teamLocalDeserialize(
   object.id = id;
   object.isSynced = reader.readBool(offsets[5]);
   object.lastSyncedAt = reader.readDateTimeOrNull(offsets[6]);
-  object.members = reader.readObjectList<TeamMember>(
+  object.memberDraws = reader.readObjectList<MemberDraw>(
         offsets[7],
+        MemberDrawSchema.deserialize,
+        allOffsets,
+        MemberDraw(),
+      ) ??
+      [];
+  object.members = reader.readObjectList<TeamMember>(
+        offsets[8],
         TeamMemberSchema.deserialize,
         allOffsets,
         TeamMember(),
       ) ??
       [];
-  object.name = reader.readString(offsets[8]);
+  object.name = reader.readString(offsets[9]);
   object.penalties = reader.readObjectList<Penalty>(
-        offsets[9],
+        offsets[10],
         PenaltySchema.deserialize,
         allOffsets,
         Penalty(),
       ) ??
       [];
-  object.sector = reader.readLongOrNull(offsets[10]);
-  object.serverId = reader.readStringOrNull(offsets[11]);
-  object.updatedAt = reader.readDateTime(offsets[12]);
+  object.sector = reader.readLongOrNull(offsets[11]);
+  object.serverId = reader.readStringOrNull(offsets[12]);
+  object.updatedAt = reader.readDateTime(offsets[13]);
   return object;
 }
 
@@ -254,6 +285,14 @@ P _teamLocalDeserializeProp<P>(
     case 6:
       return (reader.readDateTimeOrNull(offset)) as P;
     case 7:
+      return (reader.readObjectList<MemberDraw>(
+            offset,
+            MemberDrawSchema.deserialize,
+            allOffsets,
+            MemberDraw(),
+          ) ??
+          []) as P;
+    case 8:
       return (reader.readObjectList<TeamMember>(
             offset,
             TeamMemberSchema.deserialize,
@@ -261,9 +300,9 @@ P _teamLocalDeserializeProp<P>(
             TeamMember(),
           ) ??
           []) as P;
-    case 8:
-      return (reader.readString(offset)) as P;
     case 9:
+      return (reader.readString(offset)) as P;
+    case 10:
       return (reader.readObjectList<Penalty>(
             offset,
             PenaltySchema.deserialize,
@@ -271,11 +310,11 @@ P _teamLocalDeserializeProp<P>(
             Penalty(),
           ) ??
           []) as P;
-    case 10:
-      return (reader.readLongOrNull(offset)) as P;
     case 11:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readLongOrNull(offset)) as P;
     case 12:
+      return (reader.readStringOrNull(offset)) as P;
+    case 13:
       return (reader.readDateTime(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -1133,6 +1172,95 @@ extension TeamLocalQueryFilter
   }
 
   QueryBuilder<TeamLocal, TeamLocal, QAfterFilterCondition>
+      memberDrawsLengthEqualTo(int length) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'memberDraws',
+        length,
+        true,
+        length,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<TeamLocal, TeamLocal, QAfterFilterCondition>
+      memberDrawsIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'memberDraws',
+        0,
+        true,
+        0,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<TeamLocal, TeamLocal, QAfterFilterCondition>
+      memberDrawsIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'memberDraws',
+        0,
+        false,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<TeamLocal, TeamLocal, QAfterFilterCondition>
+      memberDrawsLengthLessThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'memberDraws',
+        0,
+        true,
+        length,
+        include,
+      );
+    });
+  }
+
+  QueryBuilder<TeamLocal, TeamLocal, QAfterFilterCondition>
+      memberDrawsLengthGreaterThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'memberDraws',
+        length,
+        include,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<TeamLocal, TeamLocal, QAfterFilterCondition>
+      memberDrawsLengthBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'memberDraws',
+        lower,
+        includeLower,
+        upper,
+        includeUpper,
+      );
+    });
+  }
+
+  QueryBuilder<TeamLocal, TeamLocal, QAfterFilterCondition>
       membersLengthEqualTo(int length) {
     return QueryBuilder.apply(this, (query) {
       return query.listLength(
@@ -1712,6 +1840,13 @@ extension TeamLocalQueryFilter
 
 extension TeamLocalQueryObject
     on QueryBuilder<TeamLocal, TeamLocal, QFilterCondition> {
+  QueryBuilder<TeamLocal, TeamLocal, QAfterFilterCondition> memberDrawsElement(
+      FilterQuery<MemberDraw> q) {
+    return QueryBuilder.apply(this, (query) {
+      return query.object(q, r'memberDraws');
+    });
+  }
+
   QueryBuilder<TeamLocal, TeamLocal, QAfterFilterCondition> membersElement(
       FilterQuery<TeamMember> q) {
     return QueryBuilder.apply(this, (query) {
@@ -2133,6 +2268,13 @@ extension TeamLocalQueryProperty
   QueryBuilder<TeamLocal, DateTime?, QQueryOperations> lastSyncedAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'lastSyncedAt');
+    });
+  }
+
+  QueryBuilder<TeamLocal, List<MemberDraw>, QQueryOperations>
+      memberDrawsProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'memberDraws');
     });
   }
 
@@ -3406,3 +3548,516 @@ extension PenaltyQueryFilter
 
 extension PenaltyQueryObject
     on QueryBuilder<Penalty, Penalty, QFilterCondition> {}
+
+// coverage:ignore-file
+// ignore_for_file: duplicate_ignore, non_constant_identifier_names, constant_identifier_names, invalid_use_of_protected_member, unnecessary_cast, prefer_const_constructors, lines_longer_than_80_chars, require_trailing_commas, inference_failure_on_function_invocation, unnecessary_parenthesis, unnecessary_raw_strings, unnecessary_null_checks, join_return_with_assignment, prefer_final_locals, avoid_js_rounded_ints, avoid_positional_boolean_parameters, always_specify_types
+
+const MemberDrawSchema = Schema(
+  name: r'MemberDraw',
+  id: -2455924572831700512,
+  properties: {
+    r'memberIndex': PropertySchema(
+      id: 0,
+      name: r'memberIndex',
+      type: IsarType.long,
+    ),
+    r'memberName': PropertySchema(
+      id: 1,
+      name: r'memberName',
+      type: IsarType.string,
+    ),
+    r'sectorInZone': PropertySchema(
+      id: 2,
+      name: r'sectorInZone',
+      type: IsarType.long,
+    ),
+    r'zone': PropertySchema(
+      id: 3,
+      name: r'zone',
+      type: IsarType.string,
+    )
+  },
+  estimateSize: _memberDrawEstimateSize,
+  serialize: _memberDrawSerialize,
+  deserialize: _memberDrawDeserialize,
+  deserializeProp: _memberDrawDeserializeProp,
+);
+
+int _memberDrawEstimateSize(
+  MemberDraw object,
+  List<int> offsets,
+  Map<Type, List<int>> allOffsets,
+) {
+  var bytesCount = offsets.last;
+  bytesCount += 3 + object.memberName.length * 3;
+  {
+    final value = object.zone;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  return bytesCount;
+}
+
+void _memberDrawSerialize(
+  MemberDraw object,
+  IsarWriter writer,
+  List<int> offsets,
+  Map<Type, List<int>> allOffsets,
+) {
+  writer.writeLong(offsets[0], object.memberIndex);
+  writer.writeString(offsets[1], object.memberName);
+  writer.writeLong(offsets[2], object.sectorInZone);
+  writer.writeString(offsets[3], object.zone);
+}
+
+MemberDraw _memberDrawDeserialize(
+  Id id,
+  IsarReader reader,
+  List<int> offsets,
+  Map<Type, List<int>> allOffsets,
+) {
+  final object = MemberDraw();
+  object.memberIndex = reader.readLong(offsets[0]);
+  object.memberName = reader.readString(offsets[1]);
+  object.sectorInZone = reader.readLongOrNull(offsets[2]);
+  object.zone = reader.readStringOrNull(offsets[3]);
+  return object;
+}
+
+P _memberDrawDeserializeProp<P>(
+  IsarReader reader,
+  int propertyId,
+  int offset,
+  Map<Type, List<int>> allOffsets,
+) {
+  switch (propertyId) {
+    case 0:
+      return (reader.readLong(offset)) as P;
+    case 1:
+      return (reader.readString(offset)) as P;
+    case 2:
+      return (reader.readLongOrNull(offset)) as P;
+    case 3:
+      return (reader.readStringOrNull(offset)) as P;
+    default:
+      throw IsarError('Unknown property with id $propertyId');
+  }
+}
+
+extension MemberDrawQueryFilter
+    on QueryBuilder<MemberDraw, MemberDraw, QFilterCondition> {
+  QueryBuilder<MemberDraw, MemberDraw, QAfterFilterCondition>
+      memberIndexEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'memberIndex',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<MemberDraw, MemberDraw, QAfterFilterCondition>
+      memberIndexGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'memberIndex',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<MemberDraw, MemberDraw, QAfterFilterCondition>
+      memberIndexLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'memberIndex',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<MemberDraw, MemberDraw, QAfterFilterCondition>
+      memberIndexBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'memberIndex',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<MemberDraw, MemberDraw, QAfterFilterCondition> memberNameEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'memberName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MemberDraw, MemberDraw, QAfterFilterCondition>
+      memberNameGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'memberName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MemberDraw, MemberDraw, QAfterFilterCondition>
+      memberNameLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'memberName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MemberDraw, MemberDraw, QAfterFilterCondition> memberNameBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'memberName',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MemberDraw, MemberDraw, QAfterFilterCondition>
+      memberNameStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'memberName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MemberDraw, MemberDraw, QAfterFilterCondition>
+      memberNameEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'memberName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MemberDraw, MemberDraw, QAfterFilterCondition>
+      memberNameContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'memberName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MemberDraw, MemberDraw, QAfterFilterCondition> memberNameMatches(
+      String pattern,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'memberName',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MemberDraw, MemberDraw, QAfterFilterCondition>
+      memberNameIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'memberName',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<MemberDraw, MemberDraw, QAfterFilterCondition>
+      memberNameIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'memberName',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<MemberDraw, MemberDraw, QAfterFilterCondition>
+      sectorInZoneIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'sectorInZone',
+      ));
+    });
+  }
+
+  QueryBuilder<MemberDraw, MemberDraw, QAfterFilterCondition>
+      sectorInZoneIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'sectorInZone',
+      ));
+    });
+  }
+
+  QueryBuilder<MemberDraw, MemberDraw, QAfterFilterCondition>
+      sectorInZoneEqualTo(int? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'sectorInZone',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<MemberDraw, MemberDraw, QAfterFilterCondition>
+      sectorInZoneGreaterThan(
+    int? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'sectorInZone',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<MemberDraw, MemberDraw, QAfterFilterCondition>
+      sectorInZoneLessThan(
+    int? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'sectorInZone',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<MemberDraw, MemberDraw, QAfterFilterCondition>
+      sectorInZoneBetween(
+    int? lower,
+    int? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'sectorInZone',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<MemberDraw, MemberDraw, QAfterFilterCondition> zoneIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'zone',
+      ));
+    });
+  }
+
+  QueryBuilder<MemberDraw, MemberDraw, QAfterFilterCondition> zoneIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'zone',
+      ));
+    });
+  }
+
+  QueryBuilder<MemberDraw, MemberDraw, QAfterFilterCondition> zoneEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'zone',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MemberDraw, MemberDraw, QAfterFilterCondition> zoneGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'zone',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MemberDraw, MemberDraw, QAfterFilterCondition> zoneLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'zone',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MemberDraw, MemberDraw, QAfterFilterCondition> zoneBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'zone',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MemberDraw, MemberDraw, QAfterFilterCondition> zoneStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'zone',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MemberDraw, MemberDraw, QAfterFilterCondition> zoneEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'zone',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MemberDraw, MemberDraw, QAfterFilterCondition> zoneContains(
+      String value,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'zone',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MemberDraw, MemberDraw, QAfterFilterCondition> zoneMatches(
+      String pattern,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'zone',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<MemberDraw, MemberDraw, QAfterFilterCondition> zoneIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'zone',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<MemberDraw, MemberDraw, QAfterFilterCondition> zoneIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'zone',
+        value: '',
+      ));
+    });
+  }
+}
+
+extension MemberDrawQueryObject
+    on QueryBuilder<MemberDraw, MemberDraw, QFilterCondition> {}

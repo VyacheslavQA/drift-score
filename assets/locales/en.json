@@ -697,5 +697,21 @@
   "enter_word_to_confirm": "Enter one of the words to confirm:",
   "delete_upper": "DELETE",
   "draw_order_input": "Enter Draw Order",
-  "draw_sector_input": "Enter Sectors"
+  "draw_sector_input": "Enter Sectors",
+  "draw_completed_description": "Draw results have been saved",
+
+  "draw_type_selection": "Select Draw Type",
+  "draw_type_simple": "Simple Draw",
+  "draw_type_simple_description": "Each team receives:\n• Queue number\n• Sector number",
+  "draw_type_zonal": "Zonal Draw",
+  "draw_type_zonal_description": "Team members are distributed across zones:\n• Queue number\n• Member 1 → Zone A\n• Member 2 → Zone B\n• Member 3 → Zone C",
+  "draw_zonal_title": "Zonal Draw",
+  "draw_zonal_description": "Distribute team members across zones",
+  "zone": "Zone",
+  "occupied": "occupied",
+  "saved_for": "saved for",
+  "error_saving_zone": "Error saving zone",
+  "error_saving": "Error saving",
+  "complete_draw_question": "Complete draw?",
+  "complete_draw_zonal_confirmation": "All members distributed across zones. Complete draw?"
 }

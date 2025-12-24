@@ -24,6 +24,12 @@ class WeighingResultLocal {
   String? qrCode; // QR-код подтверждения
   String? signatureBase64; // Подпись (base64)
 
+  // --- INSERT START: Поля для зимней мормышки (зональная система) ---
+  int? placeInZone;  // Место в зоне (1, 2, 3, 4, ... без ограничения)
+  int? memberIndex;  // Индекс участника команды (0, 1, 2)
+  String? zone;      // Зона участника (A, B, C)
+  // --- INSERT END ---
+
   late bool isSynced;
   DateTime? lastSyncedAt;
 

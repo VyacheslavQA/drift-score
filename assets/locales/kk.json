@@ -696,6 +696,22 @@
   "enter_word_to_confirm": "Растау үшін сөздердің бірін енгізіңіз:",
   "delete_upper": "ЖОЮ",
   "draw_order_input": "Кезектілікті енгізу",
-  "draw_sector_input": "Секторларды енгізу"
+  "draw_sector_input": "Секторларды енгізу",
+  "draw_completed_description": "Жеребьевка нәтижелері сақталды",
+
+  "draw_type_selection": "Жеребьевка түрін таңдаңыз",
+  "draw_type_simple": "Қарапайым жеребьевка",
+  "draw_type_simple_description": "Әр команда алады:\n• Кезек нөмірі\n• Сектор нөмірі",
+  "draw_type_zonal": "Аймақтық жеребьевка",
+  "draw_type_zonal_description": "Команда мүшелері аймақтар бойынша бөлінеді:\n• Кезек нөмірі\n• Қатысушы 1 → Аймақ A\n• Қатысушы 2 → Аймақ B\n• Қатысушы 3 → Аймақ C",
+  "draw_zonal_title": "Аймақтық жеребьевка",
+  "draw_zonal_description": "Команда мүшелерін аймақтар бойынша бөліңіз",
+  "zone": "Аймақ",
+  "occupied": "бос емес",
+  "saved_for": "үшін сақталды",
+  "error_saving_zone": "Аймақты сақтау қатесі",
+  "error_saving": "Сақтау қатесі",
+  "complete_draw_question": "Жеребьевканы аяқтау?",
+  "complete_draw_zonal_confirmation": "Барлық қатысушылар аймақтар бойынша бөлінді. Жеребьевканы аяқтау?"
 
 }

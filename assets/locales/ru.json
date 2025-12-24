@@ -697,5 +697,21 @@
   "enter_word_to_confirm": "Введите одно из слов для подтверждения:",
   "delete_upper": "УДАЛИТЬ",
   "draw_order_input": "Ввод очерёдности",
-  "draw_sector_input": "Ввод секторов"
+  "draw_sector_input": "Ввод секторов",
+  "draw_completed_description": "Результаты жеребьёвки сохранены",
+
+  "draw_type_selection": "Выберите тип жеребьёвки",
+  "draw_type_simple": "Простая жеребьёвка",
+  "draw_type_simple_description": "Каждая команда получает:\n• Номер очереди\n• Номер сектора",
+  "draw_type_zonal": "Зональная жеребьёвка",
+  "draw_type_zonal_description": "Участники команды распределяются по зонам:\n• Номер очереди\n• Участник 1 → Зона A\n• Участник 2 → Зона B\n• Участник 3 → Зона C",
+  "draw_zonal_title": "Зональная жеребьёвка",
+  "draw_zonal_description": "Распределите участников команд по зонам",
+  "zone": "Зона",
+  "occupied": "занята",
+  "saved_for": "сохранена для",
+  "error_saving_zone": "Ошибка сохранения зоны",
+  "error_saving": "Ошибка сохранения",
+  "complete_draw_question": "Завершить жеребьёвку?",
+  "complete_draw_zonal_confirmation": "Все участники распределены по зонам. Завершить жеребьёвку?"
 }

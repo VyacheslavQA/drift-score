@@ -337,6 +337,47 @@ class TeamNotifier extends StateNotifier<AsyncValue<List<TeamLocal>>> {
       state = AsyncValue.error(e, stack);
     }
   }
+
+  /// Обновление зональной жеребьёвки (memberDraws)
+  Future<void> updateTeamMemberDraws(int teamId, List<MemberDraw> memberDraws) async {
+    print('🔵 updateTeamMemberDraws() called for team: $teamId');
+
+    try {
+      final team = await isar.teamLocals.get(teamId);
+
+      if (team == null) {
+        print('❌ Team not found: $teamId');
+        return;
+      }
+
+      team.memberDraws = memberDraws;
+      team.isSynced = false;
+      team.updatedAt = DateTime.now();
+
+      await isar.writeTxn(() async {
+        await isar.teamLocals.put(team);
+      });
+
+      print('✅ Member draws updated locally');
+
+      // Синхронизация с Firebase
+      final competitionServerId = await _getCompetitionServerId();
+      if (competitionServerId != null && competitionServerId.isNotEmpty) {
+        print('🔄 Syncing member draws to Firebase...');
+        try {
+          await syncService.syncTeamToFirebase(team, competitionServerId);
+          print('✅ Member draws synced to Firebase successfully');
+        } catch (e) {
+          print('⚠️ Error syncing member draws to Firebase: $e');
+        }
+      }
+
+      await loadTeams();
+    } catch (e, stack) {
+      print('❌ Error updating member draws: $e');
+      state = AsyncValue.error(e, stack);
+    }
+  }
 }
 
 /// Данные жеребьёвки для одной команды

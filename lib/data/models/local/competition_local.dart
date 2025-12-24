@@ -42,6 +42,9 @@ class CompetitionLocal {
   // 'top_5_weight' - топ-5 по весу
   // 'top_3_length' - топ-3 по длине
   // 'top_5_length' - топ-5 по длине
+  // --- INSERT START: Новый метод для зимней мормышки ---
+  // 'zoned_placement' - зональный подсчёт по местам (для ice_spoon)
+  // --- INSERT END ---
   // Для кастинга:
   // 'best_distance' - лучшая дальность заброса
   // 'average_distance' - средняя дальность

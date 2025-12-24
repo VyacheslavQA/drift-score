@@ -49,40 +49,55 @@ const WeighingResultLocalSchema = CollectionSchema(
       name: r'lastSyncedAt',
       type: IsarType.dateTime,
     ),
-    r'qrCode': PropertySchema(
+    r'memberIndex': PropertySchema(
       id: 6,
+      name: r'memberIndex',
+      type: IsarType.long,
+    ),
+    r'placeInZone': PropertySchema(
+      id: 7,
+      name: r'placeInZone',
+      type: IsarType.long,
+    ),
+    r'qrCode': PropertySchema(
+      id: 8,
       name: r'qrCode',
       type: IsarType.string,
     ),
     r'serverId': PropertySchema(
-      id: 7,
+      id: 9,
       name: r'serverId',
       type: IsarType.string,
     ),
     r'signatureBase64': PropertySchema(
-      id: 8,
+      id: 10,
       name: r'signatureBase64',
       type: IsarType.string,
     ),
     r'teamLocalId': PropertySchema(
-      id: 9,
+      id: 11,
       name: r'teamLocalId',
       type: IsarType.long,
     ),
     r'totalWeight': PropertySchema(
-      id: 10,
+      id: 12,
       name: r'totalWeight',
       type: IsarType.double,
     ),
     r'updatedAt': PropertySchema(
-      id: 11,
+      id: 13,
       name: r'updatedAt',
       type: IsarType.dateTime,
     ),
     r'weighingLocalId': PropertySchema(
-      id: 12,
+      id: 14,
       name: r'weighingLocalId',
       type: IsarType.long,
+    ),
+    r'zone': PropertySchema(
+      id: 15,
+      name: r'zone',
+      type: IsarType.string,
     )
   },
   estimateSize: _weighingResultLocalEstimateSize,
@@ -171,6 +186,12 @@ int _weighingResultLocalEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
+  {
+    final value = object.zone;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   return bytesCount;
 }
 
@@ -191,13 +212,16 @@ void _weighingResultLocalSerialize(
   );
   writer.writeBool(offsets[4], object.isSynced);
   writer.writeDateTime(offsets[5], object.lastSyncedAt);
-  writer.writeString(offsets[6], object.qrCode);
-  writer.writeString(offsets[7], object.serverId);
-  writer.writeString(offsets[8], object.signatureBase64);
-  writer.writeLong(offsets[9], object.teamLocalId);
-  writer.writeDouble(offsets[10], object.totalWeight);
-  writer.writeDateTime(offsets[11], object.updatedAt);
-  writer.writeLong(offsets[12], object.weighingLocalId);
+  writer.writeLong(offsets[6], object.memberIndex);
+  writer.writeLong(offsets[7], object.placeInZone);
+  writer.writeString(offsets[8], object.qrCode);
+  writer.writeString(offsets[9], object.serverId);
+  writer.writeString(offsets[10], object.signatureBase64);
+  writer.writeLong(offsets[11], object.teamLocalId);
+  writer.writeDouble(offsets[12], object.totalWeight);
+  writer.writeDateTime(offsets[13], object.updatedAt);
+  writer.writeLong(offsets[14], object.weighingLocalId);
+  writer.writeString(offsets[15], object.zone);
 }
 
 WeighingResultLocal _weighingResultLocalDeserialize(
@@ -220,13 +244,16 @@ WeighingResultLocal _weighingResultLocalDeserialize(
   object.id = id;
   object.isSynced = reader.readBool(offsets[4]);
   object.lastSyncedAt = reader.readDateTimeOrNull(offsets[5]);
-  object.qrCode = reader.readStringOrNull(offsets[6]);
-  object.serverId = reader.readStringOrNull(offsets[7]);
-  object.signatureBase64 = reader.readStringOrNull(offsets[8]);
-  object.teamLocalId = reader.readLong(offsets[9]);
-  object.totalWeight = reader.readDouble(offsets[10]);
-  object.updatedAt = reader.readDateTime(offsets[11]);
-  object.weighingLocalId = reader.readLong(offsets[12]);
+  object.memberIndex = reader.readLongOrNull(offsets[6]);
+  object.placeInZone = reader.readLongOrNull(offsets[7]);
+  object.qrCode = reader.readStringOrNull(offsets[8]);
+  object.serverId = reader.readStringOrNull(offsets[9]);
+  object.signatureBase64 = reader.readStringOrNull(offsets[10]);
+  object.teamLocalId = reader.readLong(offsets[11]);
+  object.totalWeight = reader.readDouble(offsets[12]);
+  object.updatedAt = reader.readDateTime(offsets[13]);
+  object.weighingLocalId = reader.readLong(offsets[14]);
+  object.zone = reader.readStringOrNull(offsets[15]);
   return object;
 }
 
@@ -256,19 +283,25 @@ P _weighingResultLocalDeserializeProp<P>(
     case 5:
       return (reader.readDateTimeOrNull(offset)) as P;
     case 6:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readLongOrNull(offset)) as P;
     case 7:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readLongOrNull(offset)) as P;
     case 8:
       return (reader.readStringOrNull(offset)) as P;
     case 9:
-      return (reader.readLong(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 10:
-      return (reader.readDouble(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 11:
-      return (reader.readDateTime(offset)) as P;
-    case 12:
       return (reader.readLong(offset)) as P;
+    case 12:
+      return (reader.readDouble(offset)) as P;
+    case 13:
+      return (reader.readDateTime(offset)) as P;
+    case 14:
+      return (reader.readLong(offset)) as P;
+    case 15:
+      return (reader.readStringOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -1049,6 +1082,154 @@ extension WeighingResultLocalQueryFilter on QueryBuilder<WeighingResultLocal,
   }
 
   QueryBuilder<WeighingResultLocal, WeighingResultLocal, QAfterFilterCondition>
+      memberIndexIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'memberIndex',
+      ));
+    });
+  }
+
+  QueryBuilder<WeighingResultLocal, WeighingResultLocal, QAfterFilterCondition>
+      memberIndexIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'memberIndex',
+      ));
+    });
+  }
+
+  QueryBuilder<WeighingResultLocal, WeighingResultLocal, QAfterFilterCondition>
+      memberIndexEqualTo(int? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'memberIndex',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<WeighingResultLocal, WeighingResultLocal, QAfterFilterCondition>
+      memberIndexGreaterThan(
+    int? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'memberIndex',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<WeighingResultLocal, WeighingResultLocal, QAfterFilterCondition>
+      memberIndexLessThan(
+    int? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'memberIndex',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<WeighingResultLocal, WeighingResultLocal, QAfterFilterCondition>
+      memberIndexBetween(
+    int? lower,
+    int? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'memberIndex',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<WeighingResultLocal, WeighingResultLocal, QAfterFilterCondition>
+      placeInZoneIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'placeInZone',
+      ));
+    });
+  }
+
+  QueryBuilder<WeighingResultLocal, WeighingResultLocal, QAfterFilterCondition>
+      placeInZoneIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'placeInZone',
+      ));
+    });
+  }
+
+  QueryBuilder<WeighingResultLocal, WeighingResultLocal, QAfterFilterCondition>
+      placeInZoneEqualTo(int? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'placeInZone',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<WeighingResultLocal, WeighingResultLocal, QAfterFilterCondition>
+      placeInZoneGreaterThan(
+    int? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'placeInZone',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<WeighingResultLocal, WeighingResultLocal, QAfterFilterCondition>
+      placeInZoneLessThan(
+    int? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'placeInZone',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<WeighingResultLocal, WeighingResultLocal, QAfterFilterCondition>
+      placeInZoneBetween(
+    int? lower,
+    int? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'placeInZone',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<WeighingResultLocal, WeighingResultLocal, QAfterFilterCondition>
       qrCodeIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -1743,6 +1924,160 @@ extension WeighingResultLocalQueryFilter on QueryBuilder<WeighingResultLocal,
       ));
     });
   }
+
+  QueryBuilder<WeighingResultLocal, WeighingResultLocal, QAfterFilterCondition>
+      zoneIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'zone',
+      ));
+    });
+  }
+
+  QueryBuilder<WeighingResultLocal, WeighingResultLocal, QAfterFilterCondition>
+      zoneIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'zone',
+      ));
+    });
+  }
+
+  QueryBuilder<WeighingResultLocal, WeighingResultLocal, QAfterFilterCondition>
+      zoneEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'zone',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<WeighingResultLocal, WeighingResultLocal, QAfterFilterCondition>
+      zoneGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'zone',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<WeighingResultLocal, WeighingResultLocal, QAfterFilterCondition>
+      zoneLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'zone',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<WeighingResultLocal, WeighingResultLocal, QAfterFilterCondition>
+      zoneBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'zone',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<WeighingResultLocal, WeighingResultLocal, QAfterFilterCondition>
+      zoneStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'zone',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<WeighingResultLocal, WeighingResultLocal, QAfterFilterCondition>
+      zoneEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'zone',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<WeighingResultLocal, WeighingResultLocal, QAfterFilterCondition>
+      zoneContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'zone',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<WeighingResultLocal, WeighingResultLocal, QAfterFilterCondition>
+      zoneMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'zone',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<WeighingResultLocal, WeighingResultLocal, QAfterFilterCondition>
+      zoneIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'zone',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<WeighingResultLocal, WeighingResultLocal, QAfterFilterCondition>
+      zoneIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'zone',
+        value: '',
+      ));
+    });
+  }
 }
 
 extension WeighingResultLocalQueryObject on QueryBuilder<WeighingResultLocal,
@@ -1827,6 +2162,34 @@ extension WeighingResultLocalQuerySortBy
       sortByLastSyncedAtDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'lastSyncedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<WeighingResultLocal, WeighingResultLocal, QAfterSortBy>
+      sortByMemberIndex() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'memberIndex', Sort.asc);
+    });
+  }
+
+  QueryBuilder<WeighingResultLocal, WeighingResultLocal, QAfterSortBy>
+      sortByMemberIndexDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'memberIndex', Sort.desc);
+    });
+  }
+
+  QueryBuilder<WeighingResultLocal, WeighingResultLocal, QAfterSortBy>
+      sortByPlaceInZone() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'placeInZone', Sort.asc);
+    });
+  }
+
+  QueryBuilder<WeighingResultLocal, WeighingResultLocal, QAfterSortBy>
+      sortByPlaceInZoneDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'placeInZone', Sort.desc);
     });
   }
 
@@ -1927,6 +2290,20 @@ extension WeighingResultLocalQuerySortBy
       return query.addSortBy(r'weighingLocalId', Sort.desc);
     });
   }
+
+  QueryBuilder<WeighingResultLocal, WeighingResultLocal, QAfterSortBy>
+      sortByZone() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'zone', Sort.asc);
+    });
+  }
+
+  QueryBuilder<WeighingResultLocal, WeighingResultLocal, QAfterSortBy>
+      sortByZoneDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'zone', Sort.desc);
+    });
+  }
 }
 
 extension WeighingResultLocalQuerySortThenBy
@@ -2012,6 +2389,34 @@ extension WeighingResultLocalQuerySortThenBy
       thenByLastSyncedAtDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'lastSyncedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<WeighingResultLocal, WeighingResultLocal, QAfterSortBy>
+      thenByMemberIndex() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'memberIndex', Sort.asc);
+    });
+  }
+
+  QueryBuilder<WeighingResultLocal, WeighingResultLocal, QAfterSortBy>
+      thenByMemberIndexDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'memberIndex', Sort.desc);
+    });
+  }
+
+  QueryBuilder<WeighingResultLocal, WeighingResultLocal, QAfterSortBy>
+      thenByPlaceInZone() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'placeInZone', Sort.asc);
+    });
+  }
+
+  QueryBuilder<WeighingResultLocal, WeighingResultLocal, QAfterSortBy>
+      thenByPlaceInZoneDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'placeInZone', Sort.desc);
     });
   }
 
@@ -2112,6 +2517,20 @@ extension WeighingResultLocalQuerySortThenBy
       return query.addSortBy(r'weighingLocalId', Sort.desc);
     });
   }
+
+  QueryBuilder<WeighingResultLocal, WeighingResultLocal, QAfterSortBy>
+      thenByZone() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'zone', Sort.asc);
+    });
+  }
+
+  QueryBuilder<WeighingResultLocal, WeighingResultLocal, QAfterSortBy>
+      thenByZoneDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'zone', Sort.desc);
+    });
+  }
 }
 
 extension WeighingResultLocalQueryWhereDistinct
@@ -2148,6 +2567,20 @@ extension WeighingResultLocalQueryWhereDistinct
       distinctByLastSyncedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'lastSyncedAt');
+    });
+  }
+
+  QueryBuilder<WeighingResultLocal, WeighingResultLocal, QDistinct>
+      distinctByMemberIndex() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'memberIndex');
+    });
+  }
+
+  QueryBuilder<WeighingResultLocal, WeighingResultLocal, QDistinct>
+      distinctByPlaceInZone() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'placeInZone');
     });
   }
 
@@ -2200,6 +2633,13 @@ extension WeighingResultLocalQueryWhereDistinct
       return query.addDistinctBy(r'weighingLocalId');
     });
   }
+
+  QueryBuilder<WeighingResultLocal, WeighingResultLocal, QDistinct>
+      distinctByZone({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'zone', caseSensitive: caseSensitive);
+    });
+  }
 }
 
 extension WeighingResultLocalQueryProperty
@@ -2250,6 +2690,20 @@ extension WeighingResultLocalQueryProperty
     });
   }
 
+  QueryBuilder<WeighingResultLocal, int?, QQueryOperations>
+      memberIndexProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'memberIndex');
+    });
+  }
+
+  QueryBuilder<WeighingResultLocal, int?, QQueryOperations>
+      placeInZoneProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'placeInZone');
+    });
+  }
+
   QueryBuilder<WeighingResultLocal, String?, QQueryOperations>
       qrCodeProperty() {
     return QueryBuilder.apply(this, (query) {
@@ -2296,6 +2750,12 @@ extension WeighingResultLocalQueryProperty
       weighingLocalIdProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'weighingLocalId');
+    });
+  }
+
+  QueryBuilder<WeighingResultLocal, String?, QQueryOperations> zoneProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'zone');
     });
   }
 }

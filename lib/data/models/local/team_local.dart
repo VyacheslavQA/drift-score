@@ -22,6 +22,10 @@ class TeamLocal {
   int? sector;
   int? drawOrder;
 
+  // --- INSERT START: Зональная жеребьёвка (для зимней мормышки) ---
+  List<MemberDraw> memberDraws = [];
+  // --- INSERT END ---
+
   late bool isSynced;
   DateTime? lastSyncedAt;
 
@@ -47,3 +51,13 @@ class Penalty {
   late DateTime createdAt;
   late String addedByJudgeId; // Кто добавил
 }
+
+// --- INSERT START: Класс для зональной жеребьёвки ---
+@embedded
+class MemberDraw {
+  late String memberName;  // ФИО участника
+  late int memberIndex;    // Индекс участника (0, 1, 2)
+  String? zone;            // Зона (A, B, C)
+  int? sectorInZone;       // Сектор внутри зоны (опционально, для будущего)
+}
+// --- INSERT END ---

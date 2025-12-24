@@ -27,7 +27,8 @@ class DrawScreen extends ConsumerStatefulWidget {
 }
 
 class _DrawScreenState extends ConsumerState<DrawScreen> {
-  int _currentStep = 0; // 0 = очередность, 1 = сектора
+  int _currentStep = -1; // -1 = выбор типа, 0 = очередность, 1 = сектора/зоны
+  String _drawType = ''; // 'simple' | 'zonal'
   bool _isEditMode = false; // Режим редактирования
 
   @override
@@ -72,16 +73,14 @@ class _DrawScreenState extends ConsumerState<DrawScreen> {
             return _buildEmptyState();
           }
 
-          // Определяем текущий этап
-          final hasAllOrders = teams.every((t) => t.drawOrder != null);
-          final hasAllSectors = teams.every((t) => t.sector != null);
-          final isDrawCompleted = hasAllOrders && hasAllSectors;
+          final isDrawCompleted = _isDrawComplete(teams);
 
           // Если жеребьевка завершена и НЕ в режиме редактирования, показываем только просмотр
           if (isDrawCompleted && !_isEditMode) {
             return _DrawCompletedView(
               competition: widget.competition,
               teams: teams,
+              drawType: _getDrawType(teams),
               onEdit: () {
                 setState(() {
                   _isEditMode = true;
@@ -95,6 +94,7 @@ class _DrawScreenState extends ConsumerState<DrawScreen> {
             return _DrawEditView(
               competition: widget.competition,
               teams: teams,
+              drawType: _getDrawType(teams),
               onExitEditMode: () {
                 setState(() {
                   _isEditMode = false;
@@ -103,21 +103,41 @@ class _DrawScreenState extends ConsumerState<DrawScreen> {
             );
           }
 
-          // Если жеребьевка уже полностью завершена, открываем сразу 2-й шаг
-          if (hasAllOrders && hasAllSectors && _currentStep == 0) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) {
-                setState(() => _currentStep = 1);
-              }
-            });
+
+          // Шаг -1: Выбор типа жеребьёвки
+          if (_currentStep == -1) {
+            return _DrawTypeSelectionStep(
+              competition: widget.competition,
+              onTypeSelected: (type) {
+                setState(() {
+                  _drawType = type;
+                  _currentStep = 0;
+                });
+              },
+            );
           }
 
+          // Шаг 0: Очередность
+          final hasAllOrders = teams.every((t) => t.drawOrder != null);
           if (_currentStep == 0 || !hasAllOrders) {
             return _DrawOrderStep(
               competition: widget.competition,
               teams: teams,
               onComplete: () {
                 setState(() => _currentStep = 1);
+              },
+            );
+          }
+
+          // Шаг 1: Сектора (простая) или Зоны (зональная)
+          if (_drawType == 'zonal' || widget.competition.sectorStructure == 'zoned') {
+            return _DrawZonalStep(
+              competition: widget.competition,
+              teams: teams,
+              onEditModeExit: () {
+                setState(() {
+                  _isEditMode = false;
+                });
               },
             );
           } else {
@@ -168,6 +188,35 @@ class _DrawScreenState extends ConsumerState<DrawScreen> {
       ),
     );
   }
+  // Проверка завершенности жеребьёвки
+  bool _isDrawComplete(List<TeamLocal> teams) {
+    if (teams.isEmpty) return false;
+
+    final hasAllOrders = teams.every((t) => t.drawOrder != null);
+
+    // Для зональной жеребьёвки
+    if (widget.competition.sectorStructure == 'zoned' || _drawType == 'zonal') {
+      return hasAllOrders && teams.every((t) =>
+      t.memberDraws.length == t.members.length &&
+          t.memberDraws.every((d) => d.zone != null)
+      );
+    }
+
+    // Для простой жеребьёвки
+    return hasAllOrders && teams.every((t) => t.sector != null);
+  }
+
+  // Определение типа жеребьёвки
+  String _getDrawType(List<TeamLocal> teams) {
+    if (teams.isEmpty) return '';
+
+    // Проверяем наличие зональных данных
+    if (teams.any((t) => t.memberDraws.isNotEmpty)) {
+      return 'zonal';
+    }
+
+    return 'simple';
+  }
 }
 
 // ========================================
@@ -177,11 +226,13 @@ class _DrawScreenState extends ConsumerState<DrawScreen> {
 class _DrawCompletedView extends StatelessWidget {
   final CompetitionLocal competition;
   final List<TeamLocal> teams;
+  final String drawType; // 'simple' | 'zonal'
   final VoidCallback onEdit;
 
   const _DrawCompletedView({
     required this.competition,
     required this.teams,
+    required this.drawType,
     required this.onEdit,
   });
 
@@ -473,11 +524,13 @@ class _DrawCompletedView extends StatelessWidget {
 class _DrawEditView extends ConsumerStatefulWidget {
   final CompetitionLocal competition;
   final List<TeamLocal> teams;
+  final String drawType; // 'simple' | 'zonal'
   final VoidCallback onExitEditMode;
 
   const _DrawEditView({
     required this.competition,
     required this.teams,
+    required this.drawType,
     required this.onExitEditMode,
   });
 
@@ -871,6 +924,11 @@ class _DrawOrderStepState extends ConsumerState<_DrawOrderStep> {
       );
       _focusNodes[team.id] = FocusNode();
 
+      // Слушатель для обновления UI при вводе
+      _orderControllers[team.id]!.addListener(() {
+        setState(() {}); // Обновляем UI при каждом изменении
+      });
+
       // Автосохранение при потере фокуса
       _focusNodes[team.id]!.addListener(() {
         if (!_focusNodes[team.id]!.hasFocus) {
@@ -1009,16 +1067,6 @@ class _DrawOrderStepState extends ConsumerState<_DrawOrderStep> {
                 },
               ),
             ),
-
-            SizedBox(width: AppDimensions.paddingSmall),
-
-            // Галочка если сохранено
-            SizedBox(
-              width: 24,
-              child: hasOrder
-                  ? Icon(Icons.check_circle, color: AppColors.success, size: 24)
-                  : SizedBox.shrink(),
-            ),
           ],
         ),
       ),
@@ -1026,7 +1074,11 @@ class _DrawOrderStepState extends ConsumerState<_DrawOrderStep> {
   }
 
   Widget _buildCompleteButton() {
-    final allHaveOrders = widget.teams.every((t) => t.drawOrder != null);
+    // Проверяем, что все поля заполнены (есть текст)
+    final allFieldsFilled = widget.teams.every((team) {
+      final text = _orderControllers[team.id]?.text.trim() ?? '';
+      return text.isNotEmpty;
+    });
 
     return Container(
       padding: EdgeInsets.all(AppDimensions.paddingMedium),
@@ -1044,7 +1096,7 @@ class _DrawOrderStepState extends ConsumerState<_DrawOrderStep> {
         width: double.infinity,
         height: 50,
         child: ElevatedButton(
-          onPressed: allHaveOrders ? widget.onComplete : null,
+          onPressed: allFieldsFilled ? widget.onComplete : null,
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.primary,
             disabledBackgroundColor: AppColors.surfaceMedium,
@@ -1143,6 +1195,11 @@ class _DrawSectorStepState extends ConsumerState<_DrawSectorStep> {
         text: team.sector?.toString() ?? '',
       );
       _focusNodes[team.id] = FocusNode();
+
+      // Слушатель для обновления UI при вводе
+      _sectorControllers[team.id]!.addListener(() {
+        setState(() {}); // Обновляем UI при каждом изменении
+      });
 
       // Автосохранение при потере фокуса
       _focusNodes[team.id]!.addListener(() {
@@ -1285,16 +1342,6 @@ class _DrawSectorStepState extends ConsumerState<_DrawSectorStep> {
                 },
               ),
             ),
-
-            SizedBox(width: AppDimensions.paddingSmall),
-
-            // Галочка если сохранено
-            SizedBox(
-              width: 24,
-              child: hasSector
-                  ? Icon(Icons.check_circle, color: AppColors.success, size: 24)
-                  : SizedBox.shrink(),
-            ),
           ],
         ),
       ),
@@ -1302,7 +1349,11 @@ class _DrawSectorStepState extends ConsumerState<_DrawSectorStep> {
   }
 
   Widget _buildCompleteButton(List<TeamLocal> teams) {
-    final allHaveSectors = teams.every((t) => t.sector != null);
+    // Проверяем, что все поля заполнены (есть текст)
+    final allFieldsFilled = teams.every((team) {
+      final text = _sectorControllers[team.id]?.text.trim() ?? '';
+      return text.isNotEmpty;
+    });
 
     return Container(
       padding: EdgeInsets.all(AppDimensions.paddingMedium),
@@ -1323,7 +1374,7 @@ class _DrawSectorStepState extends ConsumerState<_DrawSectorStep> {
             width: double.infinity,
             height: 50,
             child: ElevatedButton(
-              onPressed: allHaveSectors ? _completeDraw : null,
+              onPressed: allFieldsFilled ? _completeDraw : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.success,
                 disabledBackgroundColor: AppColors.surfaceMedium,
@@ -1340,7 +1391,7 @@ class _DrawSectorStepState extends ConsumerState<_DrawSectorStep> {
             width: double.infinity,
             height: 50,
             child: OutlinedButton(
-              onPressed: allHaveSectors ? () => _generateDrawProtocol(teams) : null,
+              onPressed: allFieldsFilled ? () => _generateDrawProtocol(teams) : null,
               style: OutlinedButton.styleFrom(
                 side: BorderSide(color: AppColors.primary),
                 shape: RoundedRectangleBorder(
@@ -1568,6 +1619,450 @@ class _DrawSectorStepState extends ConsumerState<_DrawSectorStep> {
         SnackBar(
           content: Text('draw_protocol_error'.tr()),
           backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
+}
+
+// ========================================
+// ЭТАП -1: ВЫБОР ТИПА ЖЕРЕБЬЁВКИ
+// ========================================
+
+class _DrawTypeSelectionStep extends StatelessWidget {
+  final CompetitionLocal competition;
+  final Function(String) onTypeSelected;
+
+  const _DrawTypeSelectionStep({
+    required this.competition,
+    required this.onTypeSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.all(AppDimensions.paddingLarge),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Заголовок
+            Text(
+              'draw_type_selection'.tr(),
+              style: AppTextStyles.h2,
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: AppDimensions.paddingLarge),
+
+            // Карточка "Простая жеребьёвка"
+            _buildTypeCard(
+              context: context,
+              title: 'draw_type_simple'.tr(),
+              description: 'draw_type_simple_description'.tr(),
+              icon: Icons.grid_on,
+              color: AppColors.primary,
+              onTap: () => onTypeSelected('simple'),
+            ),
+
+            SizedBox(height: AppDimensions.paddingMedium),
+
+            // Карточка "Зональная жеребьёвка"
+            _buildTypeCard(
+              context: context,
+              title: 'draw_type_zonal'.tr(),
+              description: 'draw_type_zonal_description'.tr(),
+              icon: Icons.location_on,
+              color: AppColors.secondary,
+              onTap: () => onTypeSelected('zonal'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTypeCard({
+    required BuildContext context,
+    required String title,
+    required String description,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Card(
+      color: AppColors.surface,
+      elevation: 2,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+        child: Padding(
+          padding: EdgeInsets.all(AppDimensions.paddingLarge),
+          child: Column(
+            children: [
+              // Иконка
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, size: 40, color: color),
+              ),
+              SizedBox(height: AppDimensions.paddingMedium),
+
+              // Заголовок
+              Text(
+                title,
+                style: AppTextStyles.h3.copyWith(color: color),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: AppDimensions.paddingSmall),
+
+              // Описание
+              Text(
+                description,
+                style: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ========================================
+// ЭТАП 1B: ЗОНАЛЬНАЯ ЖЕРЕБЬЁВКА
+// ========================================
+
+class _DrawZonalStep extends ConsumerStatefulWidget {
+  final CompetitionLocal competition;
+  final List<TeamLocal> teams;
+  final VoidCallback? onEditModeExit;
+
+  const _DrawZonalStep({
+    required this.competition,
+    required this.teams,
+    this.onEditModeExit,
+  });
+
+  @override
+  ConsumerState<_DrawZonalStep> createState() => _DrawZonalStepState();
+}
+
+class _DrawZonalStepState extends ConsumerState<_DrawZonalStep> {
+  final Map<int, Map<int, String?>> _memberZones = {}; // teamId -> {memberIndex -> zone}
+
+  @override
+  void initState() {
+    super.initState();
+    // Загружаем существующие данные
+    for (var team in widget.teams) {
+      _memberZones[team.id] = {};
+      for (var draw in team.memberDraws) {
+        _memberZones[team.id]![draw.memberIndex] = draw.zone;
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final sortedTeams = List<TeamLocal>.from(widget.teams)
+      ..sort((a, b) => (a.drawOrder ?? 0).compareTo(b.drawOrder ?? 0));
+
+    return SafeArea(
+      child: Column(
+        children: [
+          // Заголовок
+          Padding(
+            padding: EdgeInsets.all(AppDimensions.paddingMedium),
+            child: Column(
+              children: [
+                Text(
+                  'draw_zonal_title'.tr(),
+                  style: AppTextStyles.h3.copyWith(color: AppColors.textSecondary),
+                ),
+                SizedBox(height: AppDimensions.paddingSmall),
+                Text(
+                  'draw_zonal_description'.tr(),
+                  style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+
+          Expanded(
+            child: ListView.builder(
+              padding: EdgeInsets.all(AppDimensions.paddingMedium),
+              itemCount: sortedTeams.length,
+              itemBuilder: (context, index) {
+                final team = sortedTeams[index];
+                return _buildTeamZoneCard(team);
+              },
+            ),
+          ),
+
+          _buildCompleteButton(sortedTeams),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTeamZoneCard(TeamLocal team) {
+    final zones = ['A', 'B', 'C'];
+
+    return Card(
+      color: AppColors.surface,
+      margin: EdgeInsets.only(bottom: AppDimensions.paddingMedium),
+      child: Padding(
+        padding: EdgeInsets.all(AppDimensions.paddingMedium),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Шапка карточки
+            Row(
+              children: [
+                // Номер очередности
+                Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.primary, width: 2),
+                  ),
+                  child: Center(
+                    child: Text(
+                      '${team.drawOrder}',
+                      style: AppTextStyles.h3.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(width: AppDimensions.paddingMedium),
+
+                // Название команды
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(team.name, style: AppTextStyles.bodyBold),
+                      Text(
+                        team.city,
+                        style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+
+            SizedBox(height: AppDimensions.paddingMedium),
+            Divider(color: AppColors.divider),
+            SizedBox(height: AppDimensions.paddingSmall),
+
+            // Список участников с выбором зон
+            ...List.generate(team.members.length, (memberIndex) {
+              final member = team.members[memberIndex];
+              final selectedZone = _memberZones[team.id]?[memberIndex];
+
+              return Padding(
+                padding: EdgeInsets.only(bottom: AppDimensions.paddingSmall),
+                child: Row(
+                  children: [
+                    // ФИО участника
+                    Expanded(
+                      flex: 2,
+                      child: Text(
+                        member.fullName,
+                        style: AppTextStyles.body,
+                      ),
+                    ),
+
+                    SizedBox(width: AppDimensions.paddingSmall),
+
+                    // Дропдаун зоны
+                    Expanded(
+                      child: Container(
+                        padding: EdgeInsets.symmetric(horizontal: AppDimensions.paddingSmall),
+                        decoration: BoxDecoration(
+                          color: AppColors.background,
+                          borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+                          border: Border.all(
+                            color: selectedZone != null ? AppColors.success : AppColors.divider,
+                          ),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: selectedZone,
+                            hint: Text(
+                              'zone'.tr(),
+                              style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
+                            ),
+                            isExpanded: true,
+                            items: zones.map((zone) {
+                              // Проверяем, занята ли зона другим участником этой команды
+                              final isOccupied = _memberZones[team.id]?.values.contains(zone) == true &&
+                                  _memberZones[team.id]?[memberIndex] != zone;
+
+                              return DropdownMenuItem(
+                                value: zone,
+                                enabled: !isOccupied,
+                                child: Text(
+                                  '${'zone'.tr()} $zone${isOccupied ? ' (${'occupied'.tr()})' : ''}',
+                                  style: AppTextStyles.body.copyWith(
+                                    color: isOccupied ? AppColors.textSecondary : AppColors.textPrimary,
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                            onChanged: (value) {
+                              if (value != null) {
+                                _saveZone(team, memberIndex, value);
+                              }
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCompleteButton(List<TeamLocal> teams) {
+    // Проверяем, что все участники всех команд распределены по зонам
+    final allComplete = teams.every((team) {
+      if (_memberZones[team.id] == null) return false;
+      return team.members.asMap().entries.every((entry) {
+        final zone = _memberZones[team.id]![entry.key];
+        return zone != null && zone.isNotEmpty;
+      });
+    });
+
+    return Container(
+      padding: EdgeInsets.all(AppDimensions.paddingMedium),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 4,
+            offset: Offset(0, -2),
+          ),
+        ],
+      ),
+      child: SizedBox(
+        width: double.infinity,
+        height: 50,
+        child: ElevatedButton(
+          onPressed: allComplete ? _completeDraw : null,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.success,
+            disabledBackgroundColor: AppColors.surfaceMedium,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+            ),
+          ),
+          child: Text('complete_draw'.tr(), style: AppTextStyles.button),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _saveZone(TeamLocal team, int memberIndex, String zone) async {
+    setState(() {
+      _memberZones[team.id] ??= {};
+      _memberZones[team.id]![memberIndex] = zone;
+    });
+
+    // Сохраняем в базу
+    try {
+      final member = team.members[memberIndex];
+
+      // Обновляем или создаем MemberDraw
+      final updatedDraws = List<MemberDraw>.from(team.memberDraws);
+      final existingIndex = updatedDraws.indexWhere((d) => d.memberIndex == memberIndex);
+
+      final newDraw = MemberDraw()
+        ..memberName = member.fullName
+        ..memberIndex = memberIndex
+        ..zone = zone;
+
+      if (existingIndex >= 0) {
+        updatedDraws[existingIndex] = newDraw;
+      } else {
+        updatedDraws.add(newDraw);
+      }
+
+      // Сохраняем команду через провайдер
+      await ref.read(teamProvider(widget.competition.id).notifier).updateTeamMemberDraws(
+        team.id,
+        updatedDraws,
+      );
+
+      print('✅ ${'zone'.tr()} $zone ${'saved_for'.tr()} ${member.fullName}');
+    } catch (e) {
+      print('❌ ${'error_saving_zone'.tr()}: $e');
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${'error_saving'.tr()}: $e'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
+
+  Future<void> _completeDraw() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: Text('complete_draw_question'.tr(), style: AppTextStyles.h3),
+        content: Text(
+          'complete_draw_zonal_confirmation'.tr(),
+          style: AppTextStyles.body.copyWith(color: AppColors.textPrimary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(
+              'cancel'.tr(),
+              style: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.success),
+            child: Text('complete'.tr(), style: AppTextStyles.button),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      if (widget.onEditModeExit != null) {
+        widget.onEditModeExit!();
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('draw_completed'.tr()),
+          backgroundColor: AppColors.success,
         ),
       );
     }
