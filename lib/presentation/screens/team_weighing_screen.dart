@@ -18,6 +18,8 @@ class TeamWeighingScreen extends ConsumerStatefulWidget {
   final WeighingLocal weighing;
   final TeamLocal team;
   final WeighingResultLocal? existingResult;
+  final int? memberIndex; // Для зональной системы
+  final String? zone;      // Для зональной системы
 
   const TeamWeighingScreen({
     super.key,
@@ -25,6 +27,8 @@ class TeamWeighingScreen extends ConsumerStatefulWidget {
     required this.weighing,
     required this.team,
     this.existingResult,
+    this.memberIndex,
+    this.zone,
   });
 
   @override
@@ -34,6 +38,13 @@ class TeamWeighingScreen extends ConsumerStatefulWidget {
 class _TeamWeighingScreenState extends ConsumerState<TeamWeighingScreen> {
   late List<FishCatch> _fishes;
   bool _isReadOnly = false; // Режим просмотра (если есть подпись)
+  final TextEditingController _placeInZoneController = TextEditingController();
+
+  // Проверка: зональная система для зимней мормышки
+  bool get isZonalSystem {
+    return widget.competition.fishingType == 'ice_spoon' &&
+        widget.competition.scoringMethod == 'zoned_placement';
+  }
 
   @override
   void initState() {
@@ -44,10 +55,21 @@ class _TeamWeighingScreenState extends ConsumerState<TeamWeighingScreen> {
       // Если есть подпись - режим только просмотра
       _isReadOnly = widget.existingResult!.signatureBase64 != null &&
           widget.existingResult!.signatureBase64!.isNotEmpty;
+
+      // Загружаем место в зоне (если есть)
+      if (widget.existingResult!.placeInZone != null) {
+        _placeInZoneController.text = widget.existingResult!.placeInZone.toString();
+      }
     } else {
       _fishes = [];
       _isReadOnly = false;
     }
+  }
+
+  @override
+  void dispose() {
+    _placeInZoneController.dispose();
+    super.dispose();
   }
 
   String _getFishTypeName(String fishType) {
@@ -62,6 +84,13 @@ class _TeamWeighingScreenState extends ConsumerState<TeamWeighingScreen> {
     return fishType;
   }
 
+  String _getMemberDisplayName() {
+    if (widget.memberIndex != null && widget.memberIndex! < widget.team.members.length) {
+      return widget.team.members[widget.memberIndex!].fullName;
+    }
+    return widget.team.name;
+  }
+
   @override
   Widget build(BuildContext context) {
     final totalWeight = _fishes.fold(0.0, (sum, f) => sum + f.weight);
@@ -70,14 +99,14 @@ class _TeamWeighingScreenState extends ConsumerState<TeamWeighingScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text(widget.team.name),
+        title: Text(isZonalSystem ? _getMemberDisplayName() : widget.team.name),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
       body: SafeArea(
         child: Column(
           children: [
-            // Информация о команде и взвешивании
+            // Информация о команде/участнике и взвешивании
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(AppDimensions.paddingMedium),
@@ -90,9 +119,21 @@ class _TeamWeighingScreenState extends ConsumerState<TeamWeighingScreen> {
                   Row(
                     children: [
                       Expanded(
-                        child: Text(
-                          widget.team.name,
-                          style: AppTextStyles.h3,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              isZonalSystem ? _getMemberDisplayName() : widget.team.name,
+                              style: AppTextStyles.h3,
+                            ),
+                            if (isZonalSystem) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                widget.team.name,
+                                style: AppTextStyles.caption,
+                              ),
+                            ],
+                          ],
                         ),
                       ),
                       if (_isReadOnly)
@@ -126,13 +167,40 @@ class _TeamWeighingScreenState extends ConsumerState<TeamWeighingScreen> {
                         ),
                     ],
                   ),
-                  if (widget.team.sector != null) ...[
+
+                  // Зона (для зональной системы)
+                  if (isZonalSystem && widget.zone != null) ...[
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.secondary.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(color: AppColors.secondary),
+                          ),
+                          child: Text(
+                            '${'zone'.tr()} ${widget.zone}',
+                            style: AppTextStyles.bodyBold.copyWith(color: AppColors.secondary),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+
+                  // Сектор (для обычной системы)
+                  if (!isZonalSystem && widget.team.sector != null) ...[
                     const SizedBox(height: 4),
                     Text(
                       '${'sector'.tr()} ${widget.team.sector}',
                       style: AppTextStyles.body,
                     ),
                   ],
+
                   const SizedBox(height: AppDimensions.paddingSmall),
                   Text(
                     '${'weighing_day'.tr()} ${widget.weighing.dayNumber} - '
@@ -181,6 +249,22 @@ class _TeamWeighingScreenState extends ConsumerState<TeamWeighingScreen> {
                         _buildStatItem('weighing_average_weight'.tr(), '${avgWeight.toStringAsFixed(3)} kg'),
                       ],
                     ),
+
+                    // Поле "Место в зоне" для зональной системы
+                    if (isZonalSystem) ...[
+                      const SizedBox(height: AppDimensions.paddingMedium),
+                      TextFormField(
+                        controller: _placeInZoneController,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          labelText: 'place_in_zone'.tr(),
+                          hintText: 'enter_place_in_zone'.tr(),
+                          border: const OutlineInputBorder(),
+                          prefixIcon: const Icon(Icons.emoji_events),
+                        ),
+                      ),
+                    ],
+
                     const SizedBox(height: AppDimensions.paddingMedium),
                     ElevatedButton(
                       onPressed: _fishes.isNotEmpty ? _saveResult : null,
@@ -209,12 +293,39 @@ class _TeamWeighingScreenState extends ConsumerState<TeamWeighingScreen> {
                     ),
                   ],
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                child: Column(
                   children: [
-                    _buildStatItem('weighing_fish_count'.tr(), '${_fishes.length}'),
-                    _buildStatItem('weighing_total_weight'.tr(), '${totalWeight.toStringAsFixed(3)} kg'),
-                    _buildStatItem('weighing_average_weight'.tr(), '${avgWeight.toStringAsFixed(3)} kg'),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _buildStatItem('weighing_fish_count'.tr(), '${_fishes.length}'),
+                        _buildStatItem('weighing_total_weight'.tr(), '${totalWeight.toStringAsFixed(3)} kg'),
+                        _buildStatItem('weighing_average_weight'.tr(), '${avgWeight.toStringAsFixed(3)} kg'),
+                      ],
+                    ),
+
+                    // Показываем место в зоне (если есть)
+                    if (isZonalSystem && widget.existingResult?.placeInZone != null) ...[
+                      const SizedBox(height: AppDimensions.paddingSmall),
+                      Container(
+                        padding: const EdgeInsets.all(AppDimensions.paddingSmall),
+                        decoration: BoxDecoration(
+                          color: AppColors.secondary.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.emoji_events, color: AppColors.secondary),
+                            const SizedBox(width: AppDimensions.paddingSmall),
+                            Text(
+                              '${'place_in_zone'.tr()}: ${widget.existingResult!.placeInZone}',
+                              style: AppTextStyles.bodyBold.copyWith(color: AppColors.secondary),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -548,6 +659,32 @@ class _TeamWeighingScreenState extends ConsumerState<TeamWeighingScreen> {
   Future<void> _saveResult() async {
     if (_fishes.isEmpty) return;
 
+    // Валидация места в зоне для зональной системы
+    int? placeInZone;
+    if (isZonalSystem) {
+      final placeText = _placeInZoneController.text.trim();
+      if (placeText.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('enter_place_in_zone'.tr()),
+            backgroundColor: AppColors.error,
+          ),
+        );
+        return;
+      }
+
+      placeInZone = int.tryParse(placeText);
+      if (placeInZone == null || placeInZone <= 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('invalid_place_in_zone'.tr()),
+            backgroundColor: AppColors.error,
+          ),
+        );
+        return;
+      }
+    }
+
     // Вычисляем данные для экрана подтверждения
     final totalWeight = _fishes.fold(0.0, (sum, f) => sum + f.weight);
     final fishCount = _fishes.length;
@@ -572,6 +709,9 @@ class _TeamWeighingScreenState extends ConsumerState<TeamWeighingScreen> {
         teamId: widget.team.id,
         fishes: _fishes,
         signatureBase64: signatureBase64,
+        placeInZone: placeInZone,
+        memberIndex: widget.memberIndex,
+        zone: widget.zone,
       );
 
       if (success && mounted) {

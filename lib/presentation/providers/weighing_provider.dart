@@ -253,6 +253,9 @@ class WeighingResultNotifier extends StateNotifier<AsyncValue<List<WeighingResul
     required List<FishCatch> fishes,
     String? signatureBase64,
     String? qrCode,
+    int? placeInZone,      // Для зимней мормышки
+    int? memberIndex,      // Для зимней мормышки
+    String? zone,          // Для зимней мормышки
   }) async {
     try {
       print('💾 Saving team result: teamId=$teamId, weighingId=$weighingId, fishCount=${fishes.length}');
@@ -265,6 +268,7 @@ class WeighingResultNotifier extends StateNotifier<AsyncValue<List<WeighingResul
 
       print('💾 Calculated: totalWeight=$totalWeight, avgWeight=$averageWeight, fishCount=${fishes.length}');
       print('💾 Signature: ${signatureBase64 != null ? "provided (${signatureBase64.length} chars)" : "not provided"}');
+      print('💾 Zone data: placeInZone=$placeInZone, memberIndex=$memberIndex, zone=$zone');
 
       WeighingResultLocal result;
 
@@ -276,6 +280,9 @@ class WeighingResultNotifier extends StateNotifier<AsyncValue<List<WeighingResul
         existing.fishCount = fishes.length;
         existing.qrCode = qrCode;
         existing.signatureBase64 = signatureBase64;
+        existing.placeInZone = placeInZone;
+        existing.memberIndex = memberIndex;
+        existing.zone = zone;
         existing.updatedAt = DateTime.now();
         existing.isSynced = false;
 
@@ -292,6 +299,9 @@ class WeighingResultNotifier extends StateNotifier<AsyncValue<List<WeighingResul
           ..fishCount = fishes.length
           ..qrCode = qrCode
           ..signatureBase64 = signatureBase64
+          ..placeInZone = placeInZone
+          ..memberIndex = memberIndex
+          ..zone = zone
           ..isSynced = false
           ..createdAt = DateTime.now()
           ..updatedAt = DateTime.now();

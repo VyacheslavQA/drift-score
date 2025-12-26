@@ -713,5 +713,9 @@
   "error_saving_zone": "Ошибка сохранения зоны",
   "error_saving": "Ошибка сохранения",
   "complete_draw_question": "Завершить жеребьёвку?",
-  "complete_draw_zonal_confirmation": "Все участники распределены по зонам. Завершить жеребьёвку?"
+  "complete_draw_zonal_confirmation": "Все участники распределены по зонам. Завершить жеребьёвку?",
+
+  "enter_place_in_zone": "Введите место (1, 2, 3, ...)",
+  "invalid_place_in_zone": "Некорректное место в зоне",
+  "scoring_zoned_placement": "Зональная система (места в зонах)"
 }

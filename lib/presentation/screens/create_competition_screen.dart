@@ -610,6 +610,7 @@ class _CreateCompetitionScreenState extends ConsumerState<CreateCompetitionScree
               DropdownMenuItem(value: 'top_3_length', child: Text('scoring_top_3_length'.tr())),
               DropdownMenuItem(value: 'top_5_length', child: Text('scoring_top_5_length'.tr())),
               DropdownMenuItem(value: 'total_count', child: Text('scoring_total_count'.tr())),
+              DropdownMenuItem(value: 'zoned_placement', child: Text('scoring_zoned_placement'.tr())),
             ],
             onChanged: (value) {
               if (value != null) setState(() => _scoringMethod = value);

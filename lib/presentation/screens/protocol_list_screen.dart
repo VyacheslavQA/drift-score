@@ -28,15 +28,21 @@ class _ProtocolListScreenState extends ConsumerState<ProtocolListScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   late bool _isCasting;
+  late bool _isZonalIceSpoon;
 
   @override
   void initState() {
     super.initState();
     _isCasting = widget.competition.fishingType == 'casting';
+    _isZonalIceSpoon = widget.competition.fishingType == 'ice_spoon' &&
+        widget.competition.scoringMethod == 'zoned_placement';
 
     // Для кастинга: 3 вкладки (Попытки, Промежуточный, Финальный)
     // Для рыбалки: 6 вкладок (Жеребьевка + 5 остальных)
-    _tabController = TabController(length: _isCasting ? 3 : 6, vsync: this);
+    _tabController = TabController(
+        length: _isCasting ? 3 : (_isZonalIceSpoon ? 4 : 6),
+        vsync: this
+    );
 
     Future.microtask(() {
       _loadProtocols();
@@ -70,12 +76,19 @@ class _ProtocolListScreenState extends ConsumerState<ProtocolListScreen>
           unselectedLabelColor: Colors.white70,
           tabs: _isCasting
               ? [
-            Tab(text: 'protocols_attempts'.tr()), // Протоколы попыток
-            Tab(text: 'protocols_intermediate'.tr()), // Промежуточный
-            Tab(text: 'protocols_final'.tr()), // Финальный
+            Tab(text: 'protocols_attempts'.tr()),
+            Tab(text: 'protocols_intermediate'.tr()),
+            Tab(text: 'protocols_final'.tr()),
+          ]
+              : _isZonalIceSpoon  // ← НОВОЕ УСЛОВИЕ
+              ? [
+            Tab(text: 'Жеребьевка'),
+            Tab(text: 'Тур 1'),
+            Tab(text: 'Тур 2'),
+            Tab(text: 'Финальный'),
           ]
               : [
-            Tab(text: 'Жеребьевка'), // Протокол жеребьевки
+            Tab(text: 'Жеребьевка'),
             Tab(text: 'protocols_weighing'.tr()),
             Tab(text: 'protocols_intermediate'.tr()),
             Tab(text: 'protocols_big_fish'.tr()),
@@ -88,22 +101,29 @@ class _ProtocolListScreenState extends ConsumerState<ProtocolListScreen>
         child: state.isLoading
             ? const Center(child: CircularProgressIndicator())
             : TabBarView(
-          controller: _tabController,
-          children: _isCasting
-              ? [
-            _buildCastingAttemptsTab(state.protocols),
-            _buildCastingIntermediateTab(state.protocols),
-            _buildCastingFinalTab(state.protocols),
-          ]
-              : [
-            _buildDrawProtocolTab(state.protocols), // Новая вкладка жеребьевки
-            _buildWeighingProtocolsTab(state.protocols),
-            _buildIntermediateProtocolsTab(state.protocols),
-            _buildBigFishProtocolsTab(state.protocols),
-            _buildSummaryProtocolTab(state.protocols),
-            _buildFinalProtocolTab(state.protocols),
-          ],
-        ),
+        controller: _tabController,
+        children: _isCasting
+            ? [
+          _buildCastingAttemptsTab(state.protocols),
+          _buildCastingIntermediateTab(state.protocols),
+          _buildCastingFinalTab(state.protocols),
+        ]
+            : _isZonalIceSpoon  // ← НОВОЕ УСЛОВИЕ
+            ? [
+          _buildDrawProtocolTab(state.protocols),
+          _buildIceSpoonTour1Tab(state.protocols),  // ← НОВЫЙ МЕТОД
+          _buildIceSpoonTour2Tab(state.protocols),  // ← НОВЫЙ МЕТОД
+          _buildIceSpoonFinalTab(state.protocols),  // ← НОВЫЙ МЕТОД
+        ]
+            : [
+          _buildDrawProtocolTab(state.protocols),
+          _buildWeighingProtocolsTab(state.protocols),
+          _buildIntermediateProtocolsTab(state.protocols),
+          _buildBigFishProtocolsTab(state.protocols),
+          _buildSummaryProtocolTab(state.protocols),
+          _buildFinalProtocolTab(state.protocols),
+        ],
+      ),
       ),
     );
   }
@@ -597,6 +617,161 @@ class _ProtocolListScreenState extends ConsumerState<ProtocolListScreen>
     );
   }
 
+  // ========== ЗИМНЯЯ МОРМЫШКА ПРОТОКОЛЫ ==========
+
+  Widget _buildIceSpoonTour1Tab(List<ProtocolLocal> allProtocols) {
+    final protocol = allProtocols.where((p) => p.type == 'ice_spoon_tour' && p.weighingNumber == 1).firstOrNull;
+
+    return Column(
+      children: [
+        Padding(
+          padding: EdgeInsets.all(AppDimensions.paddingMedium),
+          child: SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: protocol == null ? () => _generateIceSpoonTourProtocol(1) : null,
+              icon: Icon(
+                protocol == null ? Icons.auto_fix_high : Icons.check_circle,
+                size: 18,
+              ),
+              label: Text(
+                protocol == null
+                    ? 'Сгенерировать протокол Тура 1'
+                    : 'Протокол Тура 1 создан',
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: protocol == null ? AppColors.primary : Colors.grey,
+                foregroundColor: Colors.white,
+                padding: EdgeInsets.symmetric(vertical: AppDimensions.paddingMedium),
+              ),
+            ),
+          ),
+        ),
+        Expanded(
+          child: protocol == null
+              ? _buildEmptyState('Протокол Тура 1 ещё не создан')
+              : RefreshIndicator(
+            onRefresh: _loadProtocols,
+            child: ListView(
+              padding: EdgeInsets.all(AppDimensions.paddingMedium),
+              children: [
+                _buildProtocolCard(
+                  protocol: protocol,
+                  title: 'Протокол Тура 1',
+                  subtitle: _formatDateTime(protocol.createdAt),
+                  icon: Icons.looks_one,
+                  color: AppColors.primary,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildIceSpoonTour2Tab(List<ProtocolLocal> allProtocols) {
+    final protocol = allProtocols.where((p) => p.type == 'ice_spoon_tour' && p.weighingNumber == 2).firstOrNull;
+
+    return Column(
+      children: [
+        Padding(
+          padding: EdgeInsets.all(AppDimensions.paddingMedium),
+          child: SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: protocol == null ? () => _generateIceSpoonTourProtocol(2) : null,
+              icon: Icon(
+                protocol == null ? Icons.auto_fix_high : Icons.check_circle,
+                size: 18,
+              ),
+              label: Text(
+                protocol == null
+                    ? 'Сгенерировать протокол Тура 2'
+                    : 'Протокол Тура 2 создан',
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: protocol == null ? Colors.orange : Colors.grey,
+                foregroundColor: Colors.white,
+                padding: EdgeInsets.symmetric(vertical: AppDimensions.paddingMedium),
+              ),
+            ),
+          ),
+        ),
+        Expanded(
+          child: protocol == null
+              ? _buildEmptyState('Протокол Тура 2 ещё не создан')
+              : RefreshIndicator(
+            onRefresh: _loadProtocols,
+            child: ListView(
+              padding: EdgeInsets.all(AppDimensions.paddingMedium),
+              children: [
+                _buildProtocolCard(
+                  protocol: protocol,
+                  title: 'Протокол Тура 2',
+                  subtitle: _formatDateTime(protocol.createdAt),
+                  icon: Icons.looks_two,
+                  color: Colors.orange,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildIceSpoonFinalTab(List<ProtocolLocal> allProtocols) {
+    final protocol = allProtocols.where((p) => p.type == 'ice_spoon_final').firstOrNull;
+
+    return Column(
+      children: [
+        Padding(
+          padding: EdgeInsets.all(AppDimensions.paddingMedium),
+          child: SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: protocol == null ? () => _generateIceSpoonFinalProtocol() : null,
+              icon: Icon(
+                protocol == null ? Icons.auto_fix_high : Icons.check_circle,
+                size: 18,
+              ),
+              label: Text(
+                protocol == null
+                    ? 'Сгенерировать финальный протокол'
+                    : 'Финальный протокол создан',
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: protocol == null ? Colors.red : Colors.grey,
+                foregroundColor: Colors.white,
+                padding: EdgeInsets.symmetric(vertical: AppDimensions.paddingMedium),
+              ),
+            ),
+          ),
+        ),
+        Expanded(
+          child: protocol == null
+              ? _buildEmptyState('Финальный протокол ещё не создан')
+              : RefreshIndicator(
+            onRefresh: _loadProtocols,
+            child: ListView(
+              padding: EdgeInsets.all(AppDimensions.paddingMedium),
+              children: [
+                _buildProtocolCard(
+                  protocol: protocol,
+                  title: 'Финальный протокол',
+                  subtitle: _formatDateTime(protocol.createdAt),
+                  icon: Icons.emoji_events,
+                  color: Colors.red,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   // ========== ОБЩИЕ МЕТОДЫ ==========
 
   Widget _buildProtocolCard({
@@ -855,6 +1030,52 @@ class _ProtocolListScreenState extends ConsumerState<ProtocolListScreen>
     } catch (e) {
       Navigator.pop(context);
       _showSnackBar('protocols_generation_error'.tr(namedArgs: {'error': e.toString()}), isError: true);
+    }
+  }
+
+  // ========== ГЕНЕРАЦИЯ ПРОТОКОЛОВ: ЗИМНЯЯ МОРМЫШКА ==========
+
+  Future<void> _generateIceSpoonTourProtocol(int tourNumber) async {
+    _showLoadingDialog('Генерация протокола Тура $tourNumber...');
+
+    try {
+      final protocol = await ref.read(protocolProvider.notifier)
+          .generateIceSpoonTourProtocol(widget.competition.id!, tourNumber);
+
+      Navigator.pop(context);
+
+      if (protocol != null) {
+        await _loadProtocols();
+        if (mounted) setState(() {});
+        _showSnackBar('Протокол Тура $tourNumber создан!');
+      } else {
+        _showSnackBar('Недостаточно данных для генерации', isError: true);
+      }
+    } catch (e) {
+      Navigator.pop(context);
+      _showSnackBar('Ошибка генерации: ${e.toString()}', isError: true);
+    }
+  }
+
+  Future<void> _generateIceSpoonFinalProtocol() async {
+    _showLoadingDialog('Генерация финального протокола...');
+
+    try {
+      final protocol = await ref.read(protocolProvider.notifier)
+          .generateIceSpoonFinalProtocol(widget.competition.id!);
+
+      Navigator.pop(context);
+
+      if (protocol != null) {
+        await _loadProtocols();
+        if (mounted) setState(() {});
+        _showSnackBar('Финальный протокол создан!');
+      } else {
+        _showSnackBar('Недостаточно данных для генерации', isError: true);
+      }
+    } catch (e) {
+      Navigator.pop(context);
+      _showSnackBar('Ошибка генерации: ${e.toString()}', isError: true);
     }
   }
 

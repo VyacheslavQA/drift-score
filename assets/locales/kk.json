@@ -712,6 +712,10 @@
   "error_saving_zone": "Аймақты сақтау қатесі",
   "error_saving": "Сақтау қатесі",
   "complete_draw_question": "Жеребьевканы аяқтау?",
-  "complete_draw_zonal_confirmation": "Барлық қатысушылар аймақтар бойынша бөлінді. Жеребьевканы аяқтау?"
+  "complete_draw_zonal_confirmation": "Барлық қатысушылар аймақтар бойынша бөлінді. Жеребьевканы аяқтау?",
+
+  "enter_place_in_zone": "Орынды енгізіңіз (1, 2, 3, ...)",
+  "invalid_place_in_zone": "Аймақтағы орын қате",
+  "scoring_zoned_placement": "Аймақтық жүйе (аймақтардағы орындар)"
 
 }

@@ -713,5 +713,9 @@
   "error_saving_zone": "Error saving zone",
   "error_saving": "Error saving",
   "complete_draw_question": "Complete draw?",
-  "complete_draw_zonal_confirmation": "All members distributed across zones. Complete draw?"
+  "complete_draw_zonal_confirmation": "All members distributed across zones. Complete draw?",
+
+  "enter_place_in_zone": "Enter place (1, 2, 3, ...)",
+  "invalid_place_in_zone": "Invalid place in zone",
+  "scoring_zoned_placement": "Zonal system (placement in zones)"
 }

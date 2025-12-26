@@ -318,6 +318,36 @@ class ProtocolNotifier extends StateNotifier<ProtocolState> {
         return null;
     }
   }
+
+  // ========== ГЕНЕРАЦИЯ ПРОТОКОЛОВ: ЗИМНЯЯ МОРМЫШКА ==========
+
+  Future<ProtocolLocal?> generateIceSpoonTourProtocol(
+      int competitionId, int tourNumber) async {
+    final competition = await _isarService.getCompetition(competitionId);
+    if (competition == null) return null;
+
+    if (competition.fishingType == 'ice_spoon' &&
+        competition.scoringMethod == 'zoned_placement') {
+      return _iceSpoonGenerator.generateIceSpoonTourProtocol(
+          competitionId, tourNumber);
+    }
+
+    print('⚠️ Not a zonal ice_spoon competition');
+    return null;
+  }
+
+  Future<ProtocolLocal?> generateIceSpoonFinalProtocol(int competitionId) async {
+    final competition = await _isarService.getCompetition(competitionId);
+    if (competition == null) return null;
+
+    if (competition.fishingType == 'ice_spoon' &&
+        competition.scoringMethod == 'zoned_placement') {
+      return _iceSpoonGenerator.generateIceSpoonFinalProtocol(competitionId);
+    }
+
+    print('⚠️ Not a zonal ice_spoon competition');
+    return null;
+  }
 }
 
 // ========== PROVIDER ==========
