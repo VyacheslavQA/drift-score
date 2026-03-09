@@ -2,6 +2,8 @@ import 'dart:convert';
 import '../models/local/protocol_local.dart';
 import 'protocol_export/core/builder_factory.dart';
 import 'protocol_export/core/export_types.dart';
+import 'protocol_export/builders/carp/carp_pdf_builder.dart';
+import 'protocol_export/builders/carp/carp_excel_builder.dart';
 
 /// Главный сервис экспорта протоколов
 ///
@@ -21,6 +23,19 @@ class ProtocolExportService {
     try {
       // Определяем тип протокола из строки
       final protocolType = ProtocolTypeExtension.fromString(protocol.type);
+
+      // ✅ Жеребьёвка универсальна — не зависит от типа рыбалки
+      // CarpPdfBuilder содержит полную реализацию _buildPdfDrawTable
+      if (protocol.type == 'draw') {
+        final builder = CarpPdfBuilder();
+        await builder.buildAndSave(
+          protocolType: protocolType,
+          data: data,
+          protocolId: protocol.id,
+        );
+        print('✅ PDF протокол жеребьёвки успешно экспортирован');
+        return;
+      }
 
       // Получаем тип рыбалки из данных
       final fishingTypeStr = data['fishingType'] as String?;
@@ -58,6 +73,19 @@ class ProtocolExportService {
     try {
       // Определяем тип протокола из строки
       final protocolType = ProtocolTypeExtension.fromString(protocol.type);
+
+      // ✅ Жеребьёвка универсальна — не зависит от типа рыбалки
+      // CarpExcelBuilder содержит полную реализацию таблицы жеребьёвки
+      if (protocol.type == 'draw') {
+        final builder = CarpExcelBuilder();
+        await builder.buildAndSave(
+          protocolType: protocolType,
+          data: data,
+          protocolId: protocol.id,
+        );
+        print('✅ Excel протокол жеребьёвки успешно экспортирован');
+        return;
+      }
 
       // Получаем тип рыбалки из данных
       final fishingTypeStr = data['fishingType'] as String?;

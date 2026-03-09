@@ -37,7 +37,8 @@ class _ProtocolViewScreenState extends State<ProtocolViewScreen> {
           PopupMenuButton<String>(
             icon: const Icon(Icons.share),
             onSelected: (value) => _handleExport(value, data),
-            itemBuilder: (context) => [
+            itemBuilder: (context) =>
+            [
               PopupMenuItem(
                 value: 'pdf',
                 child: Row(
@@ -167,7 +168,8 @@ class _ProtocolViewScreenState extends State<ProtocolViewScreen> {
       case 'casting_attempt':
         return 'Протокол попытки №${widget.protocol.weighingNumber}';
       case 'casting_intermediate':
-        return 'Промежуточный протокол (после ${widget.protocol.weighingNumber} попыток)';
+        return 'Промежуточный протокол (после ${widget.protocol
+            .weighingNumber} попыток)';
       case 'casting_final':
         return 'Финальный протокол кастинга';
       default:
@@ -176,6 +178,11 @@ class _ProtocolViewScreenState extends State<ProtocolViewScreen> {
   }
 
   Widget _buildProtocolContent(Map<String, dynamic> data) {
+    // ✅ Сначала проверяем тип протокола — для жеребьёвки fishingType не нужен
+    if (widget.protocol.type == 'draw') {
+      return _buildDrawProtocolContent(data);
+    }
+
     final fishingType = data['fishingType'] as String?;
 
     switch (fishingType) {
@@ -196,5 +203,52 @@ class _ProtocolViewScreenState extends State<ProtocolViewScreen> {
           ),
         );
     }
+  }
+
+  Widget _buildDrawProtocolContent(Map<String, dynamic> data) {
+    // ✅ Ключ 'drawData' — именно так сохраняется в draw_screen.dart
+    final drawData = data['drawData'] as List<dynamic>? ?? [];
+
+    if (drawData.isEmpty) {
+      return const Center(
+        child: Text('Нет данных жеребьёвки'),
+      );
+    }
+
+    return Card(
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: DataTable(
+          columns: const [
+            DataColumn(label: Text(
+                '№', style: TextStyle(fontWeight: FontWeight.bold))),
+            DataColumn(label: Text(
+                'Команда', style: TextStyle(fontWeight: FontWeight.bold))),
+            DataColumn(label: Text(
+                'Город', style: TextStyle(fontWeight: FontWeight.bold))),
+            DataColumn(label: Text(
+                'Жеребьёвка', style: TextStyle(fontWeight: FontWeight.bold))),
+            DataColumn(label: Text(
+                'Сектор', style: TextStyle(fontWeight: FontWeight.bold))),
+          ],
+          rows: drawData
+              .asMap()
+              .entries
+              .map<DataRow>((entry) {
+            final index = entry.key;
+            final row = entry.value as Map<String, dynamic>;
+            return DataRow(
+              cells: [
+                DataCell(Text('${index + 1}')),
+                DataCell(Text(row['teamName']?.toString() ?? '')),
+                DataCell(Text(row['city']?.toString() ?? '')),
+                DataCell(Text('${row['drawOrder'] ?? ''}')),
+                DataCell(Text('${row['sector'] ?? ''}')),
+              ],
+            );
+          }).toList(),
+        ),
+      ),
+    );
   }
 }

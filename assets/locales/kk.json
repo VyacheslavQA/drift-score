@@ -172,6 +172,7 @@
   "admin_access_granted": "Әкімші қол жетімділігі берілді",
   "code_accepted": "Код қабылданды",
   "field_required": "Міндетті өріс",
+  "field_order": "№",
   "invalid_number": "Жарамсыз сан",
   "city_or_region": "Қала/Облыс",
   "lake_name": "Көл атауы",

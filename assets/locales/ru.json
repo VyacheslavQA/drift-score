@@ -171,6 +171,7 @@
   "admin_access_granted": "Получен доступ администратора",
   "code_accepted": "Код принят",
   "field_required": "Обязательное поле",
+  "field_order": "№",
   "invalid_number": "Неверное число",
   "city_or_region": "Город/Область",
   "lake_name": "Название озера",
