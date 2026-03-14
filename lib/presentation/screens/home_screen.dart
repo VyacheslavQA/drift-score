@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_dimensions.dart';
@@ -21,6 +22,22 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _logoTapCount = 0;
   DateTime? _lastTapTime;
+  String _appVersion = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadVersion(); // ← вызываем при старте
+  }
+
+  Future<void> _loadVersion() async {
+    final info = await PackageInfo.fromPlatform();
+    if (mounted) {
+      setState(() {
+        _appVersion = info.version; // например: 1.0.0
+      });
+    }
+  }
 
   void _onLogoTap() {
     final now = DateTime.now();
@@ -388,7 +405,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   },
                 ),
 
-                const SizedBox(height: 40),
+                const SizedBox(height: 100),
+
+                // Версия приложения
+                Text(
+                  'v$_appVersion',
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+
+                const SizedBox(height: 16),
               ],
             ),
           ),
