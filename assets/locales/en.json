@@ -269,7 +269,7 @@
   "sector_invalid": "Invalid sector number",
   "sector_saved": "Sector saved",
   "enter_sector": "Enter sector number",
-  "next_step": "Next →",
+  "next_step": "Next",
   "complete_draw": "Complete Draw",
   "complete_draw_confirmation": "Are you sure you want to complete the draw? Results will be finalized after completion.",
   "draw_completed": "Draw Completed",
@@ -718,5 +718,6 @@
 
   "enter_place_in_zone": "Enter place (1, 2, 3, ...)",
   "invalid_place_in_zone": "Invalid place in zone",
-  "scoring_zoned_placement": "Zonal system (placement in zones)"
+  "scoring_zoned_placement": "Zonal system (placement in zones)",
+  "edit_mode_active": "Edit Mode"
 }

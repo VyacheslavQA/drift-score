@@ -807,11 +807,11 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
       padding: EdgeInsets.all(AppDimensions.paddingMedium),
       decoration: BoxDecoration(
         color: isActive && !isUsedUp
-            ? AppColors.surfaceMedium
-            : AppColors.surfaceMedium.withOpacity(0.5),
+            ? AppColors.surface
+            : AppColors.surface.withOpacity(0.6),
         borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
         border: Border.all(
-          color: statusColor.withOpacity(0.3),
+          color: statusColor.withOpacity(0.5), // было 0.3
           width: 2,
         ),
       ),

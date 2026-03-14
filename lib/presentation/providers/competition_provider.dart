@@ -5,6 +5,7 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'dart:io';
 import '../../data/models/local/competition_local.dart';
 import '../../data/services/sync_service.dart';
+import '../../data/services/isar_service.dart';
 
 final isarProvider = Provider<Isar>((ref) {
   throw UnimplementedError('Isar instance must be overridden');
@@ -404,10 +405,9 @@ class CompetitionNotifier extends StateNotifier<AsyncValue<List<CompetitionLocal
       final competition = await isar.competitionLocals.get(id);
       final serverId = competition?.serverId;
 
-      await isar.writeTxn(() async {
-        final deleted = await isar.competitionLocals.delete(id);
-        print('✅ Competition deleted locally: $deleted');
-      });
+      // ✅ Каскадное удаление: соревнование + команды + жеребьёвка + взвешивания + протоколы
+      await IsarService().deleteCompetition(id);
+      print('✅ Competition and all related data deleted locally');
 
       // Удаление из Firebase
       if (serverId != null && serverId.isNotEmpty) {

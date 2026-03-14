@@ -268,7 +268,7 @@
   "sector_invalid": "Неверный номер сектора",
   "sector_saved": "Сектор сохранён",
   "enter_sector": "Введите номер сектора",
-  "next_step": "Далее →",
+  "next_step": "Далее",
   "complete_draw": "Завершить жеребьёвку",
   "complete_draw_confirmation": "Вы уверены, что хотите завершить жеребьёвку? После завершения результаты будут зафиксированы.",
   "draw_completed": "Жеребьёвка завершена",
@@ -718,5 +718,6 @@
 
   "enter_place_in_zone": "Введите место (1, 2, 3, ...)",
   "invalid_place_in_zone": "Некорректное место в зоне",
-  "scoring_zoned_placement": "Зональная система (места в зонах)"
+  "scoring_zoned_placement": "Зональная система (места в зонах)",
+  "edit_mode_active": "Режим редактирования"
 }

@@ -1074,7 +1074,6 @@ class _DrawOrderStepState extends ConsumerState<_DrawOrderStep> {
   }
 
   Widget _buildCompleteButton() {
-    // Проверяем, что все поля заполнены (есть текст)
     final allFieldsFilled = widget.teams.every((team) {
       final text = _orderControllers[team.id]?.text.trim() ?? '';
       return text.isNotEmpty;
@@ -1096,7 +1095,7 @@ class _DrawOrderStepState extends ConsumerState<_DrawOrderStep> {
         width: double.infinity,
         height: 50,
         child: ElevatedButton(
-          onPressed: allFieldsFilled ? widget.onComplete : null,
+          onPressed: allFieldsFilled ? _saveAllAndProceed : null,
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.primary,
             disabledBackgroundColor: AppColors.surfaceMedium,
@@ -1108,6 +1107,23 @@ class _DrawOrderStepState extends ConsumerState<_DrawOrderStep> {
         ),
       ),
     );
+  }
+
+// ✅ НОВЫЙ МЕТОД: сохраняем все поля, потом переходим
+  Future<void> _saveAllAndProceed() async {
+    // Скрываем клавиатуру
+    FocusScope.of(context).unfocus();
+
+    // Сохраняем все команды у которых ещё нет drawOrder в базе
+    for (var team in widget.teams) {
+      final text = _orderControllers[team.id]?.text.trim() ?? '';
+      if (text.isNotEmpty && team.drawOrder == null) {
+        await _saveOrder(team);
+      }
+    }
+
+    // Переходим на следующий шаг
+    widget.onComplete();
   }
 
   Future<void> _saveOrder(TeamLocal team) async {
